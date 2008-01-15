@@ -15,55 +15,43 @@ struct guppi_params {
     int n_chan;                 /* Number of spectral channels */
     double f_ctr;               /* Band center frequency (MHz) */
     int band_dir;               /* +1=forward, -1=reversed freqs */
-    int n_pol;                  /* Number of polarizations recorded */
-    int n_bit;                  /* Number of bits in output data */
+    int n_pol;                  /* Number of polarizations recorded (1 = summed) */
+    int n_bits;                 /* Number of bits in output data */
     
     /* Time, pointing coordinates */
     int mjd_i;                  /* Epoch of first sample (MJD) int part   */
     double mjd_f;               /* Epoch of first sample (MJD) frac part  */
-    int ra_h;                   /* Right ascension hours (J2000)         */
-    int ra_m;                   /* Right ascension minutes (J2000)       */
-    double ra_s;                /* Right ascension seconds (J2000)       */
-    int dec_d;                  /* Declination degrees (J2000)           */
-    int dec_m;                  /* Declination minutes (J2000)           */
-    double dec_s;               /* Declination seconds (J2000)           */
-    double az;                  /* Telescope azimuth (deg)               */
-    double el;                  /* Telescope elevation (deg)             */
+    double ra_deg;              /* Right ascension (degrees, J2000) */
+    double dec_deg;             /* Declination (degrees, J2000) */
+    double az;                  /* Telescope azimuth (degrees) */
+    double el;                  /* Telescope elevation (degrees) */
 
-    /* Observer info */
-    char source[100];           /* Object being observed                 */
-    char observer[100];         /* Observer[s] for the data set          */
-    char project[100];          /* Project ID                            */
-    char notes[500];            /* Any additional notes                  */
+    /* String observation info */
+    char basefilenm[128];       /* base filename for raw data */
+    char source[128];           /* Object being observed */
+    char observer[128];         /* Observer[s] for the data set */
+    char project[128];          /* Project ID */
+    char notes[512];            /* Any additional notes */
+    char guppi_vers[32];        /* guppi_dac version string */
 
     /* Telescope info */
-    char telescope[40];         /* Telescope used                        */
-    char instrument[100];       /* Instrument used                       */
-    char receiver[40];          /* Receiver name                         */
-    char pol_mode[40];          /* Lin or Circ                           */
-    double feed_angle;          /* Feed rotation angle                   */
+    char telescope[128];        /* Telescope used */
+    char instrument[128];       /* Instrument used */
+    char receiver[32];          /* Receiver name */
+    char pol_mode[16];          /* Linear or Circular */
+    double feed_angle;          /* Feed rotation angle */
+    int tracking;               /* 0 = driftscan, 1 = tracking */
 
     /* Backend hardware info */
-    int decimation_factor;      /* Number of raw spectra integrated      */
-    int n_bit_adc;              /* Number of bits sampled by ADCs        */
-    int pfb_overlap;            /* PFB overlap factor                    */
-    float scale[16*1024];       /* Per-channel scale factor              */
+    int decimation_factor;      /* Number of raw spectra integrated */
+    int n_bits_adc;             /* Number of bits sampled by ADCs */
+    int pfb_overlap;            /* PFB overlap factor */
+    float scale[16*1024];       /* Per-channel scale factor */
+    float offset[16*1024];      /* Per-channel offset */
 
     /* Cal info */
-    int cal_state;              /* 1=on, 0=off                           */
-    double cal_freq;            /* Pulsed cal frequency (Hz)             */
-
-    /* Leftovers from old struct.. delete if not needed! */
-    double dm;                  /* Radio -- Dispersion Measure (cm-3 pc) */
-    double freq;                /* Radio -- Low chan central freq (Mhz)  */
-    double freqband;            /* Radio -- Total Bandwidth (Mhz)        */
-    double chan_wid;            /* Radio -- Channel Bandwidth (Mhz)      */
-    int bary;                   /* Barycentered?  1=yes, 0=no            */
-    int numonoff;               /* The number of onoff pairs in the data */
-    char name[200];             /* Data file name without suffix         */
-    char analyzer[100];         /* Who analyzed the data                 */
-    char band[40];              /* Type of observation (EM band)         */
-    char filt[7];               /* IR,Opt,UV -- Photometric Filter       */
+    int cal_state;              /* 1=on, 0=off */
+    double cal_freq;            /* Pulsed cal frequency (Hz) */
 };
 
 /* Write info from param struct into fits-style buffer */
