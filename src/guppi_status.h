@@ -1,0 +1,68 @@
+/* guppi_status.h
+ *
+ * Routines dealing with the guppi status shared memory
+ * segment.  Info is passed through this segment using 
+ * a FITS-like keyword=value syntax.
+ */
+#ifndef _GUPPI_STATUS_H
+#define _GUPPI_STATUS_H
+
+#include <semaphore.h>
+
+#include "guppi_params.h"
+
+#define GUPPI_STATUS_SHMID 642
+#define GUPPI_STATUS_KEYFILE "/tmp/guppi_status_key"
+#define GUPPI_STATUS_SEMID "/guppi_status"
+#define GUPPI_STATUS_SIZE (2880*4) // FITS-style buffer
+#define GUPPI_STATUS_CARD 80 // Size of each FITS "card"
+
+#define GUPPI_LOCK 1
+#define GUPPI_NOLOCK 0
+
+/* Structure describes status memory area */
+struct guppi_status {
+    int shmid;   /* Shared memory segment id */
+    sem_t *lock; /* POSIX semaphore descriptor for locking */
+    char *buf;   /* Pointer to data area */
+};
+
+/* Return a pointer to the status shared mem area, 
+ * creating it if it doesn't exist.  Attaches/creates 
+ * lock semaphore as well.  Returns nonzero on error.
+ */
+int guppi_status_attach(struct guppi_status *s);
+
+/* Lock/unlock the status buffer.  guppi_status_lock() will wait for
+ * the buffer to become unlocked.  Return non-zero on errors.
+ */
+int guppi_status_lock(struct guppi_status *s);
+int guppi_status_unlock(struct guppi_status *s);
+
+/* Check the buffer for appropriate formatting (existence of "END").
+ * If not found, zero it out and add END.
+ */
+void guppi_status_chkinit(struct guppi_status *s);
+
+/* Read the given keyword from the shared mem buffer, and 
+ * convert to the specified datatype.  Use cfitsio-style 
+ * codes (TFLOAT, TINT, etc) for datatype.  lock param
+ * specifies whether or not to lock buffer (if doing many reads, 
+ * locking can be done externally).
+ */
+int guppi_get_param(struct guppi_status *s, int datatype, const char *key, 
+        void *value, int lock);
+
+/* Set the specified keyword to the specified value.  If the key
+ * exists in the buf already, it is overwritten.  Otherwise a new key
+ * is added at the end.  lock param same as above.
+ */
+int guppi_set_param(struct guppi_status *s, int datatype, const char *key, 
+        const void *value, int lock);
+
+/* Fill the guppi_params struct with info from the shared 
+ * memory buffer buf.  Returns non-zero on error.
+ */
+int guppi_read_params(struct guppi_status *s, struct guppi_params *p);
+
+#endif
