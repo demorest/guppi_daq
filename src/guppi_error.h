@@ -7,6 +7,7 @@
 
 /* Some exit codes */
 #define GUPPI_OK         0
+#define GUPPI_TIMEOUT    1 // Call timed out 
 #define GUPPI_ERR_GEN   -1 // Super non-informative
 #define GUPPI_ERR_SYS   -2 // Failed system call
 #define GUPPI_ERR_PARAM -3 // Parameter out of range

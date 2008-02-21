@@ -15,7 +15,9 @@ struct guppi_databuf {
     int semid;          /* ID of locking semaphore set */
     int n_block;        /* Number of data blocks in buffer */
     size_t block_size;  /* Size of each data block (bytes) */
+    size_t header_size; /* Size of each block header (bytes) */
     char data_type[40]; /* Type of data in buffer */
+    char **header;      /* n_block pointers to block headers */
     char **data;        /* n_block pointers to data blocks */
 };
 
@@ -35,7 +37,7 @@ union semun {
  * if other errors occured trying to allocate it).
  */
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
-        int databuf_id);
+        size_t header_size, int databuf_id);
 
 /* Return a pointer to a existing shmem segment with given id.
  * Returns error if segment does not exist 

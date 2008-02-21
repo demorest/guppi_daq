@@ -14,7 +14,7 @@
 #include "guppi_error.h"
 
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
-        int databuf_id) {
+        size_t header_size, int databuf_id) {
 
     /* Create keyfile if it doesn't exist */
     FILE *key_file=NULL;
@@ -38,8 +38,10 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Calc databuf size */
-    size_t hdr_size = 8192 * (1 + sizeof(struct guppi_databuf)/8192);
-    size_t databuf_size = block_size * n_block + hdr_size;
+    size_t shmem_hdr_size = sizeof(struct guppi_databuf) 
+        + sizeof(char *)*2*n_block;
+    shmem_hdr_size = 8192 * (1 + shmem_hdr_size/8192); /* round up */
+    size_t databuf_size = (block_size+header_size) * n_block + shmem_hdr_size;
 
     /* Get shared memory block, error if it already exists */
     int shmid;
@@ -63,10 +65,14 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     d->semid = 0;
     d->n_block = n_block;
     d->block_size = block_size;
+    d->header_size = header_size;
     sprintf(d->data_type, "unknown");
-    d->data = (char **)((char *)d + sizeof(struct guppi_databuf));
+    d->header = (char **)((char *)d + sizeof(struct guppi_databuf));
+    d->data = (char **)((char *)d->header + sizeof(char *)*n_block);
     for (i=0; i<n_block; i++) {
-        d->data[i] = (char *)d + hdr_size + i*databuf_size;
+        d->header[i] = (char *)d + shmem_hdr_size + i*header_size;
+        d->data[i] = (char *)d + shmem_hdr_size + n_block*header_size 
+            + i*databuf_size;
     }
 
     /* Get semaphores set up */
