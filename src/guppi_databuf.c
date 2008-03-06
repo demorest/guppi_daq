@@ -59,8 +59,15 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
         return(NULL);
     }
 
+    /* Zero out memory */
+    memset(d, 0, databuf_size);
+
     /* Fill params into databuf */
     int i;
+    char end_key[81];
+    memset(end_key, ' ', 80);
+    strncpy(end_key, "END", 3);
+    end_key[80]='\0';
     d->shmid = shmid;
     d->semid = 0;
     d->n_block = n_block;
@@ -71,6 +78,7 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     d->data = (char **)((char *)d->header + sizeof(char *)*n_block);
     for (i=0; i<n_block; i++) {
         d->header[i] = (char *)d + shmem_hdr_size + i*header_size;
+        memcpy(d->header[i], end_key, 80);
         d->data[i] = (char *)d + shmem_hdr_size + n_block*header_size 
             + i*databuf_size;
     }
