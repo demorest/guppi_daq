@@ -55,9 +55,9 @@ struct guppi_params {
 };
 
 /* Write info from param struct into fits-style buffer */
-void write_params(char *buf, struct guppi_params *p);
+void guppi_write_params(char *buf, struct guppi_params *p);
 
 /* Parse info from buffer into param struct */
-int read_params(char *buf, struct guppi_params *p);
+int guppi_read_params(char *buf, struct guppi_params *p);
 
 #endif

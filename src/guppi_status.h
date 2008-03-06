@@ -44,9 +44,4 @@ int guppi_status_unlock(struct guppi_status *s);
  */
 void guppi_status_chkinit(struct guppi_status *s);
 
-/* Fill the guppi_params struct with info from the shared 
- * memory buffer buf.  Returns non-zero on error.
- */
-int guppi_read_params(struct guppi_status *s, struct guppi_params *p);
-
 #endif
