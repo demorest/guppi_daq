@@ -80,6 +80,18 @@ int guppi_udp_wait(struct guppi_udp_params *p) {
     else { return(GUPPI_ERR_SYS); }  /* Other error */
 }
 
+int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
+    int rv = recv(p->sock, b, GUPPI_MAX_PACKET_SIZE, 0);
+    if (rv==-1) { return(GUPPI_ERR_SYS); }
+    else if (p->packet_size) {
+        if (rv!=p->packet_size) { return(GUPPI_ERR_PACKET); }
+        else { return(GUPPI_OK); }
+    } else { 
+        p->packet_size = rv;
+        return(GUPPI_OK); 
+    }
+}
+
 int guppi_udp_close(struct guppi_udp_params *p) {
     close(p->sock);
     return(GUPPI_OK);

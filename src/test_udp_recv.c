@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
     };
     int opt, opti;
     p.port = 5000;
+    p.packet_size=0; /* Initially don't care */
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -68,12 +69,9 @@ int main(int argc, char *argv[]) {
     }
     printf("sock=%d\n", p.sock);
 
+    int rv2;
     unsigned long long packet_count=0, max_id=0;
-    const size_t max_packet = 8192;
-    char *buf = (char *)malloc(max_packet);
-    struct guppi_udp_packet *packet = 
-        (struct guppi_udp_packet *)buf;
-    size_t psize, init_psize;
+    struct guppi_udp_packet packet;
     int first=1;
     signal(SIGINT, stop_running);
     printf("Waiting for data (sock=%d).\n", p.sock);
@@ -81,26 +79,26 @@ int main(int argc, char *argv[]) {
         rv = guppi_udp_wait(&p);
         if (rv==GUPPI_OK) {
             /* recv data ,etc */
-            psize = recv(p.sock, buf, max_packet, 0);
-            if (psize==-1) { 
-                if (errno!=EAGAIN) {
-                    printf("sock=%d\n", p.sock);
-                    perror("recv");
-                    exit(1);
+            rv2 = guppi_udp_recv(&p, &packet);
+            if (rv2!=GUPPI_OK) {
+                if (rv2==GUPPI_ERR_PACKET) { 
+                    fprintf(stderr, "unexpected packet size\n");
+                } else if (rv2==GUPPI_ERR_SYS) {
+                    if (errno!=EAGAIN) {
+                        printf("sock=%d\n", p.sock);
+                        perror("recv");
+                        exit(1);
+                    }
+                } else {
+                    fprintf(stderr, "Unknown error = %d\n", rv2);
                 }
             } else {
                 if (first) { 
-                    printf("Receiving (packet_size=%d).\n", (int)psize);
-                    init_psize=psize;
+                    printf("Receiving (packet_size=%d).\n", (int)p.packet_size);
                     first=0;
-                } else {
-                    if (psize!=init_psize) { 
-                        fprintf(stderr, "psize %d!=%d\n", 
-                                (int)psize, (int)init_psize);
-                    }
-                }
+                } 
                 packet_count++;
-                if (packet->seq_num>max_id) { max_id=packet->seq_num; }
+                if (packet.seq_num>max_id) { max_id=packet.seq_num; }
             }
         } else if (rv==GUPPI_TIMEOUT) {
             if (first==0) { run=0; }
