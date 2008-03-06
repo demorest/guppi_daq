@@ -21,7 +21,7 @@
  */
 void *guppi_net_thread(void *_up) {
 
-    /* Get param struct */
+    /* Get UDP param struct */
     struct guppi_udp_params *up =
         (struct guppi_udp_params *)_up;
 
@@ -34,6 +34,14 @@ void *guppi_net_thread(void *_up) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+
+    /* Read in general parameters */
+    struct guppi_params gp;
+    pthread_cleanup_push((void *)guppi_status_unlock, &st);
+    guppi_status_lock(&st);
+    //guppi_read_params(st.buf, &gp);
+    guppi_status_unlock(&st);
+    pthread_cleanup_pop(0);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -51,7 +59,7 @@ void *guppi_net_thread(void *_up) {
                 "Error opening UDP socket.");
         pthread_exit(NULL);
     }
-    pthread_cleanup_push((void*)guppi_udp_close, up);
+    pthread_cleanup_push((void *)guppi_udp_close, up);
 
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
@@ -122,6 +130,7 @@ void *guppi_net_thread(void *_up) {
                 hputi4(db->header[curblock], "NPKT", npacket_block);
                 hputi4(db->header[curblock], "NDROP", ndropped_block);
                 /* TODO add more meaningful params? (mjd, nchan, etc) */
+                //guppi_write_params(db->header[curblock], gp);
                 guppi_databuf_set_filled(db, curblock);
             }
 
