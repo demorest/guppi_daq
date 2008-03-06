@@ -44,22 +44,6 @@ int guppi_status_unlock(struct guppi_status *s);
  */
 void guppi_status_chkinit(struct guppi_status *s);
 
-/* Read the given keyword from the shared mem buffer, and 
- * convert to the specified datatype.  Use cfitsio-style 
- * codes (TFLOAT, TINT, etc) for datatype.  lock param
- * specifies whether or not to lock buffer (if doing many reads, 
- * locking can be done externally).
- */
-int guppi_get_param(struct guppi_status *s, int datatype, const char *key, 
-        void *value, int lock);
-
-/* Set the specified keyword to the specified value.  If the key
- * exists in the buf already, it is overwritten.  Otherwise a new key
- * is added at the end.  lock param same as above.
- */
-int guppi_set_param(struct guppi_status *s, int datatype, const char *key, 
-        const void *value, int lock);
-
 /* Fill the guppi_params struct with info from the shared 
  * memory buffer buf.  Returns non-zero on error.
  */

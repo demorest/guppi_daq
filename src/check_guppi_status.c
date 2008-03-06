@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <fitsio.h>
 
+#include "fitshead.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 
@@ -47,22 +47,22 @@ int main(int argc, char *argv[]) {
                 break;
             case 's':
                 if (key) 
-                    guppi_set_param(&s, TSTRING, key, optarg, GUPPI_NOLOCK);
+                    hputs(s.buf, key, optarg);
                 break;
             case 'f':
                 flttmp = atof(optarg);
                 if (key) 
-                    guppi_set_param(&s, TFLOAT, key, &flttmp, GUPPI_NOLOCK);
+                    hputr4(s.buf, key, flttmp);
                 break;
             case 'd':
                 dbltmp = atof(optarg);
                 if (key) 
-                    guppi_set_param(&s, TDOUBLE, key, &dbltmp, GUPPI_NOLOCK);
+                    hputr8(s.buf, key, dbltmp);
                 break;
             case 'i':
                 inttmp = atoi(optarg);
                 if (key) 
-                    guppi_set_param(&s, TINT, key, &inttmp, GUPPI_NOLOCK);
+                    hputi4(s.buf, key, inttmp);
                 break;
             case 'q':
                 quiet=1;
