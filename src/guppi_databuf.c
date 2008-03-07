@@ -13,8 +13,6 @@
 #include "guppi_databuf.h"
 #include "guppi_error.h"
 
-static void setup_databuf_pointers(struct guppi_databuf *d);
-
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
         size_t header_size, int databuf_id) {
 

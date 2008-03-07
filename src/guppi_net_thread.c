@@ -76,6 +76,7 @@ void *guppi_net_thread(void *_up) {
     unsigned long long curblock_seq_num=0, nextblock_seq_num=0;
     unsigned long long last_seq_num=2048;
     unsigned curblock=-1;
+    char *curheader=NULL, *curdata=NULL;
     unsigned block_packet_idx=0, last_block_packet_idx=0;
 
     /* Main loop */
@@ -125,12 +126,12 @@ void *guppi_net_thread(void *_up) {
 
             if (curblock>=0) { 
                 /* Close out current block */
-                hputi4(db->header[curblock], "PKTIDX", curblock_seq_num);
-                hputi4(db->header[curblock], "PKTSIZE", packet_data_size);
-                hputi4(db->header[curblock], "NPKT", npacket_block);
-                hputi4(db->header[curblock], "NDROP", ndropped_block);
+                hputi4(curheader, "PKTIDX", curblock_seq_num);
+                hputi4(curheader, "PKTSIZE", packet_data_size);
+                hputi4(curheader, "NPKT", npacket_block);
+                hputi4(curheader, "NDROP", ndropped_block);
                 /* TODO add more meaningful params? (mjd, nchan, etc) */
-                //guppi_write_params(db->header[curblock], gp);
+                //guppi_write_params(curheader, gp);
                 guppi_databuf_set_filled(db, curblock);
             }
 
@@ -141,6 +142,8 @@ void *guppi_net_thread(void *_up) {
 
             /* Advance to next one */
             curblock = (curblock + 1) % db->n_block;
+            curheader = guppi_databuf_header(db, curblock);
+            curdata = guppi_databuf_data(db, curblock);
             last_block_packet_idx = 0;
             curblock_seq_num = p.seq_num / packets_per_block;
             nextblock_seq_num = curblock_seq_num + packets_per_block;
@@ -149,7 +152,7 @@ void *guppi_net_thread(void *_up) {
 
         /* Skip dropped blocks, put packet in right spot */
         block_packet_idx = p.seq_num - curblock_seq_num;
-        dataptr = db->data[curblock] + last_block_packet_idx*packet_data_size;
+        dataptr = curdata + last_block_packet_idx*packet_data_size;
         for (i=last_block_packet_idx; i<block_packet_idx; i++) {
             memset(dataptr, 0, packet_data_size);
             dataptr += packet_data_size;
