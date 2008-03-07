@@ -75,7 +75,7 @@ void *guppi_net_thread(void *_up) {
     unsigned long long nbogus_total=0, nbogus_block=0;
     unsigned long long curblock_seq_num=0, nextblock_seq_num=0;
     unsigned long long last_seq_num=2048;
-    unsigned curblock=-1;
+    int curblock=-1;
     char *curheader=NULL, *curdata=NULL;
     unsigned block_packet_idx=0, last_block_packet_idx=0;
 
@@ -117,9 +117,10 @@ void *guppi_net_thread(void *_up) {
 
         /* Check seq num diff */
         seq_num_diff = p.seq_num - last_seq_num;
-        if (seq_num_diff<1024) { force_new_block=1; }
-        else if (seq_num_diff<0) { continue; } /* No going backwards */
-        else { force_new_block=0; }
+        if (seq_num_diff<0) { 
+            if (seq_num_diff<-1024) { force_new_block=1; }
+            else  { continue; } /* No going backwards */
+        } else { force_new_block=0; }
 
         /* Determine if we go to next block */
         if ((p.seq_num>=nextblock_seq_num) || force_new_block) {
@@ -145,7 +146,7 @@ void *guppi_net_thread(void *_up) {
             curheader = guppi_databuf_header(db, curblock);
             curdata = guppi_databuf_data(db, curblock);
             last_block_packet_idx = 0;
-            curblock_seq_num = p.seq_num / packets_per_block;
+            curblock_seq_num = p.seq_num - (p.seq_num % packets_per_block);
             nextblock_seq_num = curblock_seq_num + packets_per_block;
             guppi_databuf_wait_free(db, curblock);
         }

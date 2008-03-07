@@ -30,7 +30,6 @@ void *guppi_net_thread(void *_up);
 
 int main(int argc, char *argv[]) {
 
-    int rv;
     struct guppi_udp_params p;
 
     static struct option long_opts[] = {
@@ -40,7 +39,6 @@ int main(int argc, char *argv[]) {
     };
     int opt, opti;
     p.port = 5000;
-    p.packet_size=0; /* Initially don't care */
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -64,10 +62,12 @@ int main(int argc, char *argv[]) {
     strcpy(p.sender, argv[optind]);
     p.packet_size = 8200; /* Expected 8k + 8 byte seq num */
 
+    /* Init shared mem */
+
     /* Launch net thread */
     pthread_t net_thread_id;
     int rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
-            (void *)p);
+            (void *)&p);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
         perror("pthread_create");
