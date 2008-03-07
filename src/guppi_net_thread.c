@@ -178,6 +178,8 @@ void *guppi_net_thread(void *_up) {
             dataptr += packet_data_size;
             ndropped_block++;
             ndropped_total++;
+            npacket_total++;
+            npacket_block++;
         }
         memcpy(dataptr, p.data, packet_data_size);
         npacket_total++;
