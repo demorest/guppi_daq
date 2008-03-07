@@ -3,6 +3,7 @@
  * Routine to read packets from network and put them
  * into shared memory blocks.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,7 @@ void *guppi_net_thread(void *_up) {
     }
 
     /* Read in general parameters */
-    struct guppi_params gp;
+    //struct guppi_params gp;
     pthread_cleanup_push((void *)guppi_status_unlock, &st);
     guppi_status_lock(&st);
     //guppi_read_params(st.buf, &gp);
