@@ -14,6 +14,7 @@ struct guppi_databuf {
     int shmid;          /* ID of this shared mem segment */
     int semid;          /* ID of locking semaphore set */
     int n_block;        /* Number of data blocks in buffer */
+    size_t struct_size; /* Size alloced for this struct (bytes) */
     size_t block_size;  /* Size of each data block (bytes) */
     size_t header_size; /* Size of each block header (bytes) */
     char data_type[40]; /* Type of data in buffer */
@@ -43,6 +44,9 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
  * Returns error if segment does not exist 
  */
 struct guppi_databuf *guppi_databuf_attach(int databuf_id);
+
+/* Returns lock status for given block_id */
+int guppi_databuf_block_status(struct guppi_databuf *d, int block_id);
 
 /* Databuf locking functions.  Each block in the buffer
  * can be marked as free or filled.  The "wait" functions

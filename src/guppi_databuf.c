@@ -13,6 +13,8 @@
 #include "guppi_databuf.h"
 #include "guppi_error.h"
 
+static void setup_databuf_pointers(struct guppi_databuf *d);
+
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
         size_t header_size, int databuf_id) {
 
@@ -38,10 +40,10 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Calc databuf size */
-    size_t shmem_hdr_size = sizeof(struct guppi_databuf) 
+    size_t struct_size = sizeof(struct guppi_databuf) 
         + sizeof(char *)*2*n_block;
-    shmem_hdr_size = 8192 * (1 + shmem_hdr_size/8192); /* round up */
-    size_t databuf_size = (block_size+header_size) * n_block + shmem_hdr_size;
+    struct_size = 8192 * (1 + struct_size/8192); /* round up */
+    size_t databuf_size = (block_size+header_size) * n_block + struct_size;
 
     /* Get shared memory block, error if it already exists */
     int shmid;
@@ -71,17 +73,12 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     d->shmid = shmid;
     d->semid = 0;
     d->n_block = n_block;
+    d->struct_size = struct_size;
     d->block_size = block_size;
     d->header_size = header_size;
     sprintf(d->data_type, "unknown");
-    d->header = (char **)((char *)d + sizeof(struct guppi_databuf));
-    d->data = (char **)((char *)d->header + sizeof(char *)*n_block);
-    for (i=0; i<n_block; i++) {
-        d->header[i] = (char *)d + shmem_hdr_size + i*header_size;
-        memcpy(d->header[i], end_key, 80);
-        d->data[i] = (char *)d + shmem_hdr_size + n_block*header_size 
-            + i*databuf_size;
-    }
+    setup_databuf_pointers(d);
+    for (i=0; i<n_block; i++) { memcpy(d->header[i], end_key, 80); }
 
     /* Get semaphores set up */
     d->semid = semget(shm_key, n_block, 0644 | IPC_CREAT);
@@ -99,6 +96,22 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     free(arg.array);
 
     return(d);
+}
+
+/* Pointers need to be recalculated for each new segment 
+ * that is attached.  This should only be called after 
+ * shared mem has been allocated, and the size parameters
+ * are filled in.
+ */
+static void setup_databuf_pointers(struct guppi_databuf *d) {
+    int i;
+    d->header = (char **)((char *)d + sizeof(struct guppi_databuf));
+    d->data = (char **)((char *)d->header + sizeof(char *)*d->n_block);
+    for (i=0; i<d->n_block; i++) {
+        d->header[i] = (char *)d + d->struct_size + i*d->header_size;
+        d->data[i] = (char *)d + d->struct_size + d->n_block*d->header_size 
+            + i*d->block_size;
+    }
 }
 
 struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
@@ -127,9 +140,14 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
         guppi_error("guppi_databuf_create", "shmat error");
         return(NULL);
     }
+    setup_databuf_pointers(d);
 
     return(d);
 
+}
+
+int guppi_databuf_block_status(struct guppi_databuf *d, int block_id) {
+    return(semctl(d->semid, block_id, GETVAL));
 }
 
 int guppi_databuf_wait_free(struct guppi_databuf *d, int block_id) {
