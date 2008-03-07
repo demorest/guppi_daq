@@ -55,14 +55,16 @@ int main(int argc, char *argv[]) {
     if (create) { 
         db = guppi_databuf_create(8, 16*1024*1024, 2880*8, db_id);
         if (db==NULL) {
-            fprintf(stderr, "Error creating databuf (may already exist).\n");
+            fprintf(stderr, "Error creating databuf %d (may already exist).\n",
+                    db_id);
             exit(1);
         }
     } else {
         db = guppi_databuf_attach(db_id);
         if (db==NULL) { 
             fprintf(stderr, 
-                    "Error attaching to databuf (may not exist).\n");
+                    "Error attaching to databuf %d (may not exist).\n",
+                    db_id);
             exit(1);
         }
     }
@@ -79,16 +81,18 @@ int main(int argc, char *argv[]) {
     /* loop over blocks */
     int i;
     char buf[81];
-    char *ptr, *hend;
+    char *hdr, *ptr, *hend;
     for (i=0; i<db->n_block; i++) {
         printf("block %d status=%d\n", i, 
                 guppi_databuf_block_status(db, i));
-        hend = ksearch(db->header[i], "END");
+        hdr = guppi_databuf_header(db, i);
+        hend = ksearch(hdr, "END");
         if (hend==NULL) {
             printf("header not initialized\n");
         } else {
+            hend += 80;
             printf("header:\n");
-            for (ptr=db->header[i]; ptr<hend; ptr+=80) {
+            for (ptr=hdr; ptr<hend; ptr+=80) {
                 strncpy(buf, ptr, 80);
                 buf[79]='\0';
                 printf("%s\n", buf);

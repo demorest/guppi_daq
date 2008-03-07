@@ -40,8 +40,7 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Calc databuf size */
-    size_t struct_size = sizeof(struct guppi_databuf) 
-        + sizeof(char *)*2*n_block;
+    size_t struct_size = sizeof(struct guppi_databuf);
     struct_size = 8192 * (1 + struct_size/8192); /* round up */
     size_t databuf_size = (block_size+header_size) * n_block + struct_size;
 
@@ -77,8 +76,9 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     d->block_size = block_size;
     d->header_size = header_size;
     sprintf(d->data_type, "unknown");
-    setup_databuf_pointers(d);
-    for (i=0; i<n_block; i++) { memcpy(d->header[i], end_key, 80); }
+    for (i=0; i<n_block; i++) { 
+        memcpy(guppi_databuf_header(d,i), end_key, 80); 
+    }
 
     /* Get semaphores set up */
     d->semid = semget(shm_key, n_block, 0644 | IPC_CREAT);
@@ -98,20 +98,13 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     return(d);
 }
 
-/* Pointers need to be recalculated for each new segment 
- * that is attached.  This should only be called after 
- * shared mem has been allocated, and the size parameters
- * are filled in.
- */
-static void setup_databuf_pointers(struct guppi_databuf *d) {
-    int i;
-    d->header = (char **)((char *)d + sizeof(struct guppi_databuf));
-    d->data = (char **)((char *)d->header + sizeof(char *)*d->n_block);
-    for (i=0; i<d->n_block; i++) {
-        d->header[i] = (char *)d + d->struct_size + i*d->header_size;
-        d->data[i] = (char *)d + d->struct_size + d->n_block*d->header_size 
-            + i*d->block_size;
-    }
+char *guppi_databuf_header(struct guppi_databuf *d, int block_id) {
+    return((char *)d + d->struct_size + block_id*d->header_size);
+}
+
+char *guppi_databuf_data(struct guppi_databuf *d, int block_id) {
+    return((char *)d + d->struct_size + d->n_block*d->header_size
+            + block_id*d->block_size);
 }
 
 struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
@@ -140,7 +133,6 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
         guppi_error("guppi_databuf_create", "shmat error");
         return(NULL);
     }
-    setup_databuf_pointers(d);
 
     return(d);
 

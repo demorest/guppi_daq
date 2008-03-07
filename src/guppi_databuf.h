@@ -18,8 +18,6 @@ struct guppi_databuf {
     size_t block_size;  /* Size of each data block (bytes) */
     size_t header_size; /* Size of each block header (bytes) */
     char data_type[40]; /* Type of data in buffer */
-    char **header;      /* n_block pointers to block headers */
-    char **data;        /* n_block pointers to data blocks */
 };
 
 #define GUPPI_DATABUF_KEYFILE "/tmp/guppi_databuf_key"
@@ -44,6 +42,12 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
  * Returns error if segment does not exist 
  */
 struct guppi_databuf *guppi_databuf_attach(int databuf_id);
+
+/* These return pointers to the header or data area for 
+ * the given block_id.
+ */
+char *guppi_databuf_header(struct guppi_databuf *d, int block_id);
+char *guppi_databuf_data(struct guppi_databuf *d, int block_id);
 
 /* Returns lock status for given block_id */
 int guppi_databuf_block_status(struct guppi_databuf *d, int block_id);
