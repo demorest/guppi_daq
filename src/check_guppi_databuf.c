@@ -17,8 +17,6 @@ void usage() {
 
 int main(int argc, char *argv[]) {
 
-    int rv;
-
     /* Loop over cmd line to fill in params */
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
