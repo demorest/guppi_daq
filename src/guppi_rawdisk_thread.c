@@ -53,10 +53,13 @@ void guppi_rawdisk_thread(void *args) {
     pthread_cleanup_push((void *)fclose, fhdr);
     pthread_cleanup_push((void *)fclose, fraw);
 
+    /* Write header to hdr file */
+    fprintf(fhdr, "# pktidx pktsize npkt ndrop\n");
+
     /* Loop */
-    int npacket=0, packetsize=0;
+    int packetidx=0, npacket=0, ndrop=0, packetsize=0;
     int curblock=0;
-    char *ptr, *hend, buf[81];
+    char *ptr, *hend;
     while (1) {
 
         /* Wait for buf to have data */
@@ -64,15 +67,19 @@ void guppi_rawdisk_thread(void *args) {
 
         /* Parse packet size, npacket from header */
         ptr = guppi_databuf_header(db, curblock);
+        hgeti4(ptr, "PKTIDX", &packetidx);
         hgeti4(ptr, "PKTSIZE", &packetsize);
         hgeti4(ptr, "NPKT", &npacket);
+        hgeti4(ptr, "NDROP", &ndrop);
+
+        /* Write stats to separate file */
+        fprintf(fhdr, "%d %d %d %d\n", packetidx, packetsize, npacket,
+                ndrop);
 
         /* Write header to file */
         hend = ksearch(ptr, "END");
         for (ptr=ptr; ptr<hend; ptr+=80) {
-            memcpy(buf, ptr, 80);
-            buf[79]='\0';
-            fprintf(fhdr, "%s\n", buf);
+            fwrite(ptr, 80, 1, fraw);
         }
 
         /* Write data */
