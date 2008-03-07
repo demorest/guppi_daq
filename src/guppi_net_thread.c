@@ -78,6 +78,8 @@ void *guppi_net_thread(void *_up) {
     int curblock=-1;
     char *curheader=NULL, *curdata=NULL;
     unsigned block_packet_idx=0, last_block_packet_idx=0;
+    double drop_frac_avg=0.0;
+    const double drop_lpf = 0.25;
 
     /* Main loop */
     unsigned i, force_new_block=0;
@@ -135,6 +137,22 @@ void *guppi_net_thread(void *_up) {
                 //guppi_write_params(curheader, gp);
                 guppi_databuf_set_filled(db, curblock);
             }
+
+            if (npacket_block) { 
+                drop_frac_avg = (1.0-drop_lpf)*drop_frac_avg 
+                    + drop_lpf*(double)ndropped_block/(double)npacket_block;
+            }
+
+            /* Put drop stats in general status area */
+            hputr8(st.buf, "DROPAVG", drop_frac_avg);
+            hputr8(st.buf, "DROPTOT", 
+                    npacket_total ? 
+                    (double)ndropped_total/(double)npacket_total 
+                    : 0.0);
+            hputr8(st.buf, "DROPBLK", 
+                    npacket_block ? 
+                    (double)ndropped_block/(double)npacket_block 
+                    : 0.0);
 
             /* Reset block counters */
             npacket_block=0;
