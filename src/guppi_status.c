@@ -16,29 +16,8 @@
 
 int guppi_status_attach(struct guppi_status *s) {
 
-    /* Look for key file, create it if not existing */
-    FILE *key_file=NULL;
-    key_file = fopen(GUPPI_STATUS_KEYFILE, "r");
-    if (key_file==NULL) {
-        key_file = fopen(GUPPI_STATUS_KEYFILE, "w");
-        if (key_file==NULL) {
-            /* Couldn't create keyfile */
-            guppi_error("guppi_status_attach", 
-                    "Couldn't read or create shmem keyfile.");
-            return(GUPPI_ERR_SYS);
-        }
-        fclose(key_file);
-    }
-
-    /* Create shmem key */
-    key_t status_shm_key = ftok(GUPPI_STATUS_KEYFILE, GUPPI_STATUS_SHMID);
-    if (status_shm_key==-1) {
-        guppi_error("guppi_status_attach", "ftok error");
-        return(GUPPI_ERR_SYS);
-    }
-
     /* Get shared mem id (creating it if necessary) */
-    s->shmid = shmget(status_shm_key, GUPPI_STATUS_SIZE, 0644 | IPC_CREAT);
+    s->shmid = shmget(GUPPI_STATUS_KEY, GUPPI_STATUS_SIZE, 0644 | IPC_CREAT);
     if (s->shmid==-1) { 
         guppi_error("guppi_status_attach", "shmget error");
         return(GUPPI_ERR_SYS);
