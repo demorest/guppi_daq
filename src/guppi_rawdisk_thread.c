@@ -43,15 +43,18 @@ void guppi_rawdisk_thread(void *args) {
     }
 
     /* Open output file */
-    FILE *f = fopen("guppi_raw.dat", "w");
-    if (f==NULL) { 
+    FILE *fraw = fopen("guppi_raw.dat", "w");
+    FILE *fhdr = fopen("guppi_hdr.dat", "w");
+    if ((fraw==NULL) || (fhdr==NULL)) { 
         guppi_error("guppi_rawdisk_thread",
                 "Error opening output file.");
         pthread_exit(NULL);
     }
-    pthread_cleanup_push((void *)fclose, f);
+    pthread_cleanup_push((void *)fclose, fhdr);
+    pthread_cleanup_push((void *)fclose, fraw);
 
     /* Loop */
+    int npacket=0, packetsize=0;
     int curblock=0;
     char *ptr, *hend, buf[81];
     while (1) {
@@ -59,19 +62,30 @@ void guppi_rawdisk_thread(void *args) {
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
 
-        /* Write header to file */
+        /* Parse packet size, npacket from header */
         ptr = guppi_databuf_header(db, curblock);
+        hgeti4(ptr, "PKTSIZE", &packetsize);
+        hgeti4(ptr, "NPKT", &npacket);
+
+        /* Write header to file */
         hend = ksearch(ptr, "END");
         for (ptr=ptr; ptr<hend; ptr+=80) {
             memcpy(buf, ptr, 80);
             buf[79]='\0';
-            fprintf(f, "%s\n", buf);
+            fprintf(fhdr, "%s\n", buf);
         }
 
-        /* TODO : write data */
+        /* Write data */
+        ptr = guppi_databuf_data(db, curblock);
+        rv = fwrite(ptr, packetsize, npacket, fraw);
+        if (rv != npacket) { 
+            guppi_error("guppi_rawdisk_thread", 
+                    "Error writing data.");
+        }
 
         /* flush output */
-        fflush(f);
+        fflush(fraw);
+        fflush(fhdr);
 
         /* Mark as free */
         guppi_databuf_set_free(db, curblock);
@@ -84,6 +98,7 @@ void guppi_rawdisk_thread(void *args) {
 
     }
 
+    pthread_cleanup_pop(0); /* Closes push(fclose) */
     pthread_cleanup_pop(0); /* Closes push(fclose) */
 
 }
