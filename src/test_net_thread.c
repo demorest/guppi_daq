@@ -4,6 +4,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -24,6 +25,10 @@ void usage() {
             "  -h, --help        This message\n"
            );
 }
+
+/* Control-C handler */
+int run=1;
+void cc(int sig) { run=0; }
 
 /* net thread */
 void *guppi_net_thread(void *_up);
@@ -86,8 +91,11 @@ int main(int argc, char *argv[]) {
     }
 
     /* Wait for end */
-    rv = pthread_join(disk_thread_id, NULL);
-    rv = pthread_join(net_thread_id, NULL);
+    run=1;
+    signal(SIGINT, cc);
+    while (run) { sleep(1); }
+    pthread_cancel(disk_thread_id);
+    pthread_cancel(net_thread_id);
 
     exit(0);
 }
