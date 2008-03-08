@@ -58,6 +58,13 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
         return(NULL);
     }
 
+    /* Try to lock in memory */
+    int rv = shmctl(shmid, SHM_LOCK, NULL);
+    if (rv==-1) {
+        guppi_error("guppi_databuf_create", "Error locking shared memory.");
+        perror("shmctl");
+    }
+
     /* Zero out memory */
     memset(d, 0, databuf_size);
 
@@ -86,7 +93,6 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Init semaphores to 0 */
-    int rv;
     union semun arg;
     arg.array = (unsigned short *)malloc(sizeof(unsigned short)*n_block);
     memset(arg.array, 0, sizeof(unsigned short)*n_block);
