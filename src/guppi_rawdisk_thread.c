@@ -48,10 +48,10 @@ void guppi_rawdisk_thread(void *args) {
     }
 
     /* Read in general parameters */
-    //struct guppi_params gp;
+    struct guppi_params gp;
     pthread_cleanup_push((void *)guppi_status_unlock, &st);
     guppi_status_lock(&st);
-    //guppi_read_params(st.buf, &gp);
+    guppi_read_params(st.buf, &gp);
     guppi_status_unlock(&st);
     pthread_cleanup_pop(0);
 
@@ -87,8 +87,11 @@ void guppi_rawdisk_thread(void *args) {
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
 
-        /* Parse packet size, npacket from header */
+        /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
+        guppi_read_params(ptr, &gp);
+
+        /* Parse packet size, npacket from header */
         hgeti4(ptr, "PKTIDX", &packetidx);
         hgeti4(ptr, "PKTSIZE", &packetsize);
         hgeti4(ptr, "NPKT", &npacket);

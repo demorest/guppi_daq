@@ -58,6 +58,6 @@ struct guppi_params {
 void guppi_write_params(char *buf, struct guppi_params *p);
 
 /* Parse info from buffer into param struct */
-int guppi_read_params(char *buf, struct guppi_params *p);
+void guppi_read_params(char *buf, struct guppi_params *p);
 
 #endif

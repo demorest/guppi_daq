@@ -60,10 +60,10 @@ void *guppi_net_thread(void *_up) {
     }
 
     /* Read in general parameters */
-    //struct guppi_params gp;
+    struct guppi_params gp;
     pthread_cleanup_push((void *)guppi_status_unlock, &st);
     guppi_status_lock(&st);
-    //guppi_read_params(st.buf, &gp);
+    guppi_read_params(st.buf, &gp);
     guppi_status_unlock(&st);
     pthread_cleanup_pop(0);
 
@@ -157,8 +157,7 @@ void *guppi_net_thread(void *_up) {
                 hputi4(curheader, "PKTSIZE", packet_data_size);
                 hputi4(curheader, "NPKT", npacket_block);
                 hputi4(curheader, "NDROP", ndropped_block);
-                /* TODO add more meaningful params? (mjd, nchan, etc) */
-                //guppi_write_params(curheader, gp);
+                guppi_write_params(curheader, &gp);
                 guppi_databuf_set_filled(db, curblock);
             }
 
