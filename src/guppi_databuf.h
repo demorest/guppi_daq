@@ -43,6 +43,13 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
  */
 struct guppi_databuf *guppi_databuf_attach(int databuf_id);
 
+/* Clear out either the whole databuf (set all sems to 0, 
+ * clear all header blocks) or a single FITS-style
+ * header block.
+ */
+void guppi_databuf_clear(struct guppi_databuf *d);
+void guppi_fitsbuf_clear(char *buf);
+
 /* These return pointers to the header or data area for 
  * the given block_id.
  */

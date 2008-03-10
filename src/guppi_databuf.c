@@ -10,6 +10,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 
+#include "fitshead.h"
 #include "guppi_databuf.h"
 #include "guppi_error.h"
 
@@ -100,6 +101,33 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     free(arg.array);
 
     return(d);
+}
+
+void guppi_databuf_clear(struct guppi_databuf *d) {
+
+    /* Zero out semaphores */
+    union semun arg;
+    arg.array = (unsigned short *)malloc(sizeof(unsigned short)*d->n_block);
+    memset(arg.array, 0, sizeof(unsigned short)*d->n_block);
+    semctl(d->semid, 0, SETALL, arg);
+    free(arg.array);
+
+    /* Clear all headers */
+    int i;
+    for (i=0; i<d->n_block; i++) {
+        guppi_fitsbuf_clear(guppi_databuf_header(d, i));
+    }
+
+}
+
+void guppi_fitsbuf_clear(char *buf) {
+    char *end, *ptr;
+    end = ksearch(buf, "END");
+    if (end!=NULL) {
+        for (ptr=buf; ptr<=end; ptr+=80) memset(ptr, ' ', 80);
+    }
+    memset(buf, ' ' , 80);
+    strncpy(buf, "END", 3);
 }
 
 char *guppi_databuf_header(struct guppi_databuf *d, int block_id) {
