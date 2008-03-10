@@ -3,10 +3,15 @@
  * Write databuf blocks out to disk.
  */
 
+#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sched.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/types.h>
 
 #include "fitshead.h"
 #include "guppi_error.h"
@@ -15,8 +20,25 @@
 
 void guppi_rawdisk_thread(void *args) {
 
+    /* Set cpu affinity */
+    cpu_set_t cpuset, cpuset_orig;
+    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
+    CPU_ZERO(&cpuset);
+    CPU_SET(1, &cpuset);
+    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    if (rv<0) { 
+        guppi_error("guppi_rawdisk_thread", "Error setting cpu affinity.");
+        perror("sched_setaffinity");
+    }
+
+    /* Set priority */
+    rv = setpriority(PRIO_PROCESS, 0, 0);
+    if (rv<0) {
+        guppi_error("guppi_rawdisk_thread", "Error setting priority level.");
+        perror("set_priority");
+    }
+
     /* Attach to status shared mem area */
-    int rv;
     struct guppi_status st;
     rv = guppi_status_attach(&st);
     if (rv!=GUPPI_OK) {

@@ -4,10 +4,16 @@
  * into shared memory blocks.
  */
 
+#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <sched.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/types.h>
 
 #include "fitshead.h"
 #include "guppi_error.h"
@@ -22,12 +28,29 @@
  */
 void *guppi_net_thread(void *_up) {
 
+    /* Set cpu affinity */
+    cpu_set_t cpuset, cpuset_orig;
+    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
+    CPU_ZERO(&cpuset);
+    CPU_SET(3, &cpuset);
+    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    if (rv<0) { 
+        guppi_error("guppi_net_thread", "Error setting cpu affinity.");
+        perror("sched_setaffinity");
+    }
+
+    /* Set priority */
+    rv = setpriority(PRIO_PROCESS, 0, 0);
+    if (rv<0) {
+        guppi_error("guppi_net_thread", "Error setting priority level.");
+        perror("set_priority");
+    }
+
     /* Get UDP param struct */
     struct guppi_udp_params *up =
         (struct guppi_udp_params *)_up;
 
     /* Attach to status shared mem area */
-    int rv;
     struct guppi_status st;
     rv = guppi_status_attach(&st);
     if (rv!=GUPPI_OK) {

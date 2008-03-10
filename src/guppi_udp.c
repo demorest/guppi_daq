@@ -66,6 +66,19 @@ int guppi_udp_init(struct guppi_udp_params *p) {
     /* Non-blocking recv */
     fcntl(p->sock, F_SETFL, O_NONBLOCK);
 
+    /* Increase recv buffer for this sock */
+    int bufsize = 32*1024*1024;
+    socklen_t ss = sizeof(int);
+    rv = setsockopt(p->sock, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(int));
+    if (rv<0) { 
+        guppi_error("guppi_udp_init", "Error setting rcvbuf size.");
+        perror("setsockopt");
+    } 
+    rv = getsockopt(p->sock, SOL_SOCKET, SO_RCVBUF, &bufsize, &ss); 
+    if (rv==0) { 
+        printf("guppi_udp_init: SO_RCVBUF=%d\n", bufsize);
+    }
+
     /* Poll command */
     p->pfd.fd = p->sock;
     p->pfd.events = POLLIN;
