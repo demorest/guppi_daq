@@ -206,6 +206,18 @@ void *guppi_net_thread(void *_up) {
             ndropped_block=0;
             nbogus_block=0;
 
+            /* If new obs started, reset total counters, resync
+             * with current observing params from status shmem.
+             */
+            if (force_new_block) {
+                npacket_total=0;
+                ndropped_total=0;
+                nbogus_total=0;
+                guppi_status_lock_safe(&st);
+                guppi_read_params(st.buf, &gp);
+                guppi_status_unlock_safe(&st);
+            }
+
             /* Advance to next one */
             curblock = (curblock + 1) % db->n_block;
             curheader = guppi_databuf_header(db, curblock);
