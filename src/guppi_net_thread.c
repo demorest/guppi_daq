@@ -87,6 +87,7 @@ void *guppi_net_thread(void *_up) {
 
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
+     * TODO : Figure out how/if to deal with packet size changing.
      */
     struct guppi_udp_packet p;
     size_t packet_hdr_size = (char *)p.data - (char *)(&p);
@@ -106,7 +107,7 @@ void *guppi_net_thread(void *_up) {
     const double drop_lpf = 0.25;
 
     /* Main loop */
-    unsigned i, force_new_block=0;
+    unsigned i, force_new_block=0, waiting=0;
     char *dataptr;
     long long seq_num_diff;
     while (1) {
@@ -115,7 +116,13 @@ void *guppi_net_thread(void *_up) {
         rv = guppi_udp_wait(up);
         if (rv!=GUPPI_OK) {
             if (rv==GUPPI_TIMEOUT) { 
-                // TODO set status to "waiting for data"?
+                /* Set "waiting" flag */
+                if (!waiting) {
+                    guppi_status_lock(&st);
+                    hputs(st.buf, "NETSTAT", "waiting");
+                    guppi_status_unlock(&st);
+                    waiting=1;
+                }
                 continue; 
             } else {
                 guppi_error("guppi_net_thread", 
@@ -139,6 +146,14 @@ void *guppi_net_thread(void *_up) {
                 perror("guppi_udp_recv");
                 pthread_exit(NULL);
             }
+        }
+
+        /* Update status if needed */
+        if (waiting) {
+            guppi_status_lock(&st);
+            hputs(st.buf, "NETSTAT", "receiving");
+            guppi_status_unlock(&st);
+            waiting=0;
         }
 
         /* Check seq num diff */
