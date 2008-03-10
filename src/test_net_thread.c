@@ -17,7 +17,10 @@
 #include "guppi_udp.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
+#include "guppi_databuf.h"
 #include "guppi_params.h"
+
+#include "guppi_thread_main.h"
 
 void usage() {
     fprintf(stderr,
@@ -28,11 +31,7 @@ void usage() {
            );
 }
 
-/* Control-C handler */
-int run=1;
-void cc(int sig) { run=0; }
-
-/* net thread */
+/* Thread declarations */
 void *guppi_net_thread(void *_up);
 void *guppi_rawdisk_thread(void *args);
 
@@ -72,11 +71,18 @@ int main(int argc, char *argv[]) {
 
     /* Init shared mem */
     struct guppi_status stat;
+    struct guppi_databuf *dbuf=NULL;
     int rv = guppi_status_attach(&stat);
     if (rv!=GUPPI_OK) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
+    dbuf = guppi_databuf_attach(1);
+    if (dbuf==NULL) {
+        fprintf(stderr, "Error connecting to guppi_databuf\n");
+        exit(1);
+    }
+    guppi_databuf_clear(dbuf);
 
     /* Fake parameters */
     struct guppi_params gp;
@@ -92,6 +98,9 @@ int main(int argc, char *argv[]) {
     guppi_status_lock(&stat);
     guppi_write_params(stat.buf, &gp);
     guppi_status_unlock(&stat);
+
+    run=1;
+    signal(SIGINT, cc);
 
     /* Launch net thread */
     pthread_t net_thread_id;
@@ -109,16 +118,19 @@ int main(int argc, char *argv[]) {
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
         perror("pthread_create");
-        pthread_cancel(net_thread_id);
         exit(1);
     }
 
     /* Wait for end */
-    run=1;
-    signal(SIGINT, cc);
     while (run) { sleep(1); }
     pthread_cancel(disk_thread_id);
     pthread_cancel(net_thread_id);
+    pthread_kill(disk_thread_id,SIGINT);
+    pthread_kill(net_thread_id,SIGINT);
+    pthread_join(net_thread_id,NULL);
+    printf("Joined net thread\n"); fflush(stdout);
+    pthread_join(disk_thread_id,NULL);
+    printf("Joined disk thread\n"); fflush(stdout);
 
     exit(0);
 }

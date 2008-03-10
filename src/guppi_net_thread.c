@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sched.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -20,6 +21,9 @@
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_udp.h"
+
+#define STATUS_KEY "NETSTAT"  /* Define before guppi_threads.h */
+#include "guppi_threads.h"
 
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
@@ -58,14 +62,18 @@ void *guppi_net_thread(void *_up) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)set_exit_status, &st);
+
+    /* Init status */
+    guppi_status_lock_safe(&st);
+    hputs(st.buf, STATUS_KEY, "init");
+    guppi_status_unlock_safe(&st);
 
     /* Read in general parameters */
     struct guppi_params gp;
-    pthread_cleanup_push((void *)guppi_status_unlock, &st);
-    guppi_status_lock(&st);
+    guppi_status_lock_safe(&st);
     guppi_read_params(st.buf, &gp);
-    guppi_status_unlock(&st);
-    pthread_cleanup_pop(0);
+    guppi_status_unlock_safe(&st);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -107,20 +115,21 @@ void *guppi_net_thread(void *_up) {
     const double drop_lpf = 0.25;
 
     /* Main loop */
-    unsigned i, force_new_block=0, waiting=0;
+    unsigned i, force_new_block=0, waiting=-1;
     char *dataptr;
     long long seq_num_diff;
-    while (1) {
+    signal(SIGINT,cc);
+    while (run) {
 
         /* Wait for data */
         rv = guppi_udp_wait(up);
         if (rv!=GUPPI_OK) {
             if (rv==GUPPI_TIMEOUT) { 
                 /* Set "waiting" flag */
-                if (!waiting) {
-                    guppi_status_lock(&st);
-                    hputs(st.buf, "NETSTAT", "waiting");
-                    guppi_status_unlock(&st);
+                if (waiting!=1) {
+                    guppi_status_lock_safe(&st);
+                    hputs(st.buf, STATUS_KEY, "waiting");
+                    guppi_status_unlock_safe(&st);
                     waiting=1;
                 }
                 continue; 
@@ -149,10 +158,10 @@ void *guppi_net_thread(void *_up) {
         }
 
         /* Update status if needed */
-        if (waiting) {
-            guppi_status_lock(&st);
-            hputs(st.buf, "NETSTAT", "receiving");
-            guppi_status_unlock(&st);
+        if (waiting!=0) {
+            guppi_status_lock_safe(&st);
+            hputs(st.buf, STATUS_KEY, "receiving");
+            guppi_status_unlock_safe(&st);
             waiting=0;
         }
 
@@ -228,6 +237,9 @@ void *guppi_net_thread(void *_up) {
         pthread_testcancel();
     }
 
+    pthread_exit(NULL);
+
     /* Have to close all push's */
     pthread_cleanup_pop(0); /* Closes push(guppi_udp_close) */
+    pthread_cleanup_pop(0); /* Closes set_exit_status */
 }

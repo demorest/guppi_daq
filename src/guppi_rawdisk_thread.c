@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sched.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -17,6 +18,9 @@
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
+
+#define STATUS_KEY "DISKSTAT"
+#include "guppi_threads.h"
 
 void guppi_rawdisk_thread(void *args) {
 
@@ -46,14 +50,18 @@ void guppi_rawdisk_thread(void *args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)set_exit_status, &st);
+
+    /* Init status */
+    guppi_status_lock_safe(&st);
+    hputs(st.buf, STATUS_KEY, "init");
+    guppi_status_unlock_safe(&st);
 
     /* Read in general parameters */
     struct guppi_params gp;
-    pthread_cleanup_push((void *)guppi_status_unlock, &st);
-    guppi_status_lock(&st);
+    guppi_status_lock_safe(&st);
     guppi_read_params(st.buf, &gp);
-    guppi_status_unlock(&st);
-    pthread_cleanup_pop(0);
+    guppi_status_unlock_safe(&st);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -82,10 +90,21 @@ void guppi_rawdisk_thread(void *args) {
     int packetidx=0, npacket=0, ndrop=0, packetsize=0;
     int curblock=0;
     char *ptr, *hend;
-    while (1) {
+    signal(SIGINT,cc);
+    while (run) {
+
+        /* Note waiting status */
+        guppi_status_lock_safe(&st);
+        hputs(st.buf, STATUS_KEY, "waiting");
+        guppi_status_unlock_safe(&st);
 
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
+
+        /* Note waiting status */
+        guppi_status_lock_safe(&st);
+        hputs(st.buf, STATUS_KEY, "writing");
+        guppi_status_unlock_safe(&st);
 
         /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
@@ -130,7 +149,10 @@ void guppi_rawdisk_thread(void *args) {
 
     }
 
+    pthread_exit(NULL);
+
     pthread_cleanup_pop(0); /* Closes push(fclose) */
     pthread_cleanup_pop(0); /* Closes push(fclose) */
+    pthread_cleanup_pop(0); /* Closes set_exit_status */
 
 }
