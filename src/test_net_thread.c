@@ -16,6 +16,8 @@
 
 #include "guppi_udp.h"
 #include "guppi_error.h"
+#include "guppi_status.h"
+#include "guppi_params.h"
 
 void usage() {
     fprintf(stderr,
@@ -69,10 +71,31 @@ int main(int argc, char *argv[]) {
     p.packet_size = 8200; /* Expected 8k + 8 byte seq num */
 
     /* Init shared mem */
+    struct guppi_status stat;
+    int rv = guppi_status_attach(&stat);
+    if (rv!=GUPPI_OK) {
+        fprintf(stderr, "Error connecting to guppi_status\n");
+        exit(1);
+    }
+
+    /* Fake parameters */
+    struct guppi_params gp;
+    gp.mjd_i = 54535;
+    gp.mjd_f = 0.567;
+    gp.f_ctr = 2000.0;
+    gp.bandwidth = 800.0;
+    gp.band_dir = -1;
+    gp.n_chan = 4096;
+    gp.n_bits = 8;
+    gp.n_pol = 1;
+    gp.dt = 81.92e-6;
+    guppi_status_lock(&stat);
+    guppi_write_params(stat.buf, &gp);
+    guppi_status_unlock(&stat);
 
     /* Launch net thread */
     pthread_t net_thread_id;
-    int rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
+    rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
             (void *)&p);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
