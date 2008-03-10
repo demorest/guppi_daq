@@ -174,6 +174,20 @@ int guppi_databuf_block_status(struct guppi_databuf *d, int block_id) {
     return(semctl(d->semid, block_id, GETVAL));
 }
 
+int guppi_databuf_total_status(struct guppi_databuf *d) {
+
+    /* Get all values at once */
+    union semun arg;
+    arg.array = (unsigned short *)malloc(sizeof(unsigned short)*d->n_block);
+    memset(arg.array, 0, sizeof(unsigned short)*d->n_block);
+    semctl(d->semid, 0, GETALL, arg);
+    int i,tot=0;
+    for (i=0; i<d->n_block; i++) tot+=arg.array[i];
+    free(arg.array);
+    return(tot);
+
+}
+
 int guppi_databuf_wait_free(struct guppi_databuf *d, int block_id) {
     int rv;
     struct sembuf op;

@@ -88,7 +88,7 @@ void guppi_rawdisk_thread(void *args) {
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0;
-    int curblock=0;
+    int curblock=0, total_status=0;
     char *ptr, *hend;
     signal(SIGINT,cc);
     while (run) {
@@ -116,9 +116,12 @@ void guppi_rawdisk_thread(void *args) {
         hgeti4(ptr, "NPKT", &npacket);
         hgeti4(ptr, "NDROP", &ndrop);
 
+        /* See how full databuf is */
+        total_status = guppi_databuf_total_status(db);
+
         /* Write stats to separate file */
-        fprintf(fhdr, "%d %d %d %d\n", packetidx, packetsize, npacket,
-                ndrop);
+        fprintf(fhdr, "%d %d %d %d %d\n", packetidx, packetsize, npacket,
+                ndrop, total_status);
 
         /* Write header to file */
         hend = ksearch(ptr, "END");

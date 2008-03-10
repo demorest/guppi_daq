@@ -56,8 +56,11 @@ void guppi_fitsbuf_clear(char *buf);
 char *guppi_databuf_header(struct guppi_databuf *d, int block_id);
 char *guppi_databuf_data(struct guppi_databuf *d, int block_id);
 
-/* Returns lock status for given block_id */
+/* Returns lock status for given block_id, or total for
+ * whole array.
+ */
 int guppi_databuf_block_status(struct guppi_databuf *d, int block_id);
+int guppi_databuf_total_status(struct guppi_databuf *d);
 
 /* Databuf locking functions.  Each block in the buffer
  * can be marked as free or filled.  The "wait" functions
