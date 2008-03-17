@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
     /* Loop over cmd line to fill in params */
     static struct option long_opts[] = {
         {"key",    1, NULL, 'k'},
+        {"get",    1, NULL, 'g'},
         {"string", 1, NULL, 's'},
         {"float",  1, NULL, 'f'},
         {"double", 1, NULL, 'd'},
@@ -40,10 +41,14 @@ int main(int argc, char *argv[]) {
     double dbltmp;
     int inttmp;
     int quiet=0;
-    while ((opt=getopt_long(argc,argv,"k:s:f:d:i:q",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"k:g:s:f:d:i:q",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'k':
                 key = optarg;
+                break;
+            case 'g':
+                hgetr8(s.buf, optarg, &dbltmp);
+                printf("%g\n", dbltmp);
                 break;
             case 's':
                 if (key) 

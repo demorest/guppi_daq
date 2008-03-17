@@ -2,11 +2,6 @@ SIMPLE  =                    T / file does conform to FITS standard
 BITPIX  =                    8 / number of bits per data pixel
 NAXIS   =                    0 / number of data axes
 EXTEND  =                    T / FITS dataset may contain extensions
-COMMENT   FITS (Flexible Image Transport System) format defined in Astronomy and
-COMMENT   Astrophysics Supplement Series v44/p363, v44/p371, v73/p359, v73/p365.
-COMMENT   Contact the NASA Science Office of Standards and Technology for the
-COMMENT   FITS Definition document #100 and other FITS information.
-COMMENT
 HDRVER  = '3.4             '   / Header version 
 FITSTYPE= 'PSRFITS'            / FITS definition for pulsar data files
 DATE    = '                '   / File creation date (YYYY-MM-DDThh:mm:ss UTC)
@@ -72,7 +67,7 @@ NAXIS1  =                    * / width of table in bytes
 NAXIS2  =                    * / Number of rows in table (NSUBINT)
 PCOUNT  =                    0 / size of special data area
 GCOUNT  =                    1 / one data group (required keyword)
-TFIELDS =                   18 / Number of fields per row
+TFIELDS =                    * / Number of fields per row
 INT_TYPE= 'TIME'               / Time axis (TIME, BINPHSPERI, BINLNGASC, etc)
 INT_UNIT= 'SEC'                / Unit of time axis (SEC, PHS (0-1), DEG) 
 SCALE   = 'FluxDen'            / Intensity units (FluxDen/RefFlux/Jansky)
@@ -89,8 +84,6 @@ CHAN_BW =                    * / [MHz] Channel/sub-band width
 NCHNOFFS= 0                    / Channel/sub-band offset for split files
 NSBLK   =                    * / Samples/row (SEARCH mode, else 1) 
 EXTNAME = SUBINT               / name of this binary table extension
-TTYPE#  = INDEXVAL             / Optionally used if INT_TYPE != TIME
-TFORM#  = 1D                   / Double
 TTYPE#  = TSUBINT              / Length of subintegration
 TFORM#  = 1D                   / Double 
 TUNIT#  = s                    / Units of field
