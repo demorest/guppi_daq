@@ -6,8 +6,7 @@
 // The following is the template file to use to create a PSRFITS file
 #define PSRFITS_TEMPLATE "guppi_PSRFITS_v3.4_template.txt"
 
-struct psrfits_hdrinfo {
-    char filename[200];     // Path to the file that we will write
+struct hdrinfo {
     char telescope[24];     // Telescope used
     char observer[24];      // Observer's name
     char source[24];        // Source name
@@ -49,10 +48,10 @@ struct psrfits_hdrinfo {
     int orig_nchan;         // Number of spectral channels per sample
     int summed_polns;       // Are polarizations summed? (1=Yes, 0=No)
     int rcvr_polns;         // Number of polns provided by the receiver
-    int start_spec;         // Starting spectra number for the file
+    int offset_subint;      // Offset subint number for first row in the file
 };
 
-struct psrfits_subint {
+struct subint {
     double tsubint;         // Length of subintegration (sec)
     double offs;            // Offset from Start of subint centre (sec)
     double lst;             // LST at subint centre (sec)
@@ -65,13 +64,7 @@ struct psrfits_subint {
     double par_ang;         // Parallactic angle at subint centre (deg)
     double tel_az;          // Telescope azimuth at subint centre (deg)
     double tel_zen;         // Telescope zenith angle at subint centre (deg)
-    int rownum;             // Current row number for this file
-    int nbits;              // Number of bits per data sample
-    int nchan;              // Number of channels
-    int npol;               // Number of polarizations
-    int nsblk;              // Number of spectra per row
     int bytes_per_subint;   // Number of bytes for one row of raw data
-    int max_rows;           // Maximum number of rows per PSRFITS file
     int FITS_typecode;      // FITS data typecode as per CFITSIO
     float *dat_freqs;       // Ptr to array of Centre freqs for each channel (MHz)
     float *dat_weights;     // Ptr to array of Weights for each channel
@@ -80,9 +73,20 @@ struct psrfits_subint {
     unsigned char *data;    // Ptr to the raw data itself
 };
 
-int psrfits_create_searchmode(fitsfile **fptr, 
-                              struct psrfits_hdrinfo *pfh, 
-                              int *status);
-int psrfits_write_subint(fitsfile *fptr, 
-                         struct psrfits_subint *pfs, 
-                         int *status);
+struct psrfits {
+    char basefilename[200]; // The base filename from which to build the true filename
+    char filename[200];     // Filename of the current PSRFITs file
+    long long N;            // Current number of spectra written
+    double T;               // Current duration of the observation written
+    int filenum;            // The current number of the file in the scan (1-offset)
+    int rownum;             // The current subint number to be written (1-offset)
+    int tot_rows;           // The total number of subints written so far
+    int rows_per_file;      // The maximum number of rows (subints) per file
+    int status;             // The CFITSIO status value
+    fitsfile *fptr;         // The CFITSIO file structure
+    struct hdrinfo hdr;
+    struct subint sub;
+};
+
+int psrfits_create_searchmode(struct psrfits *pf);
+int psrfits_write_subint(struct psrfits *pf);
