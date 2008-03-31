@@ -1,6 +1,6 @@
 import shm_wrapper as shm
 from GBTStatus import GBTStatus
-import pyfits
+import pyfits, possem
 import psr_utils as psr
 
 def header_from_string(str):
@@ -38,21 +38,21 @@ def cardlist_from_string(str):
     return cardlist
 
 GUPPI_STATUS_KEY = 16783408
+GUPPI_STATUS_SEMID = "/guppi_status"
 
 class guppi_status:
 
     def __init__(self):
         self.stat_buf = shm.SharedMemoryHandle(GUPPI_STATUS_KEY)
+        self.sem = possem.sem_open(GUPPI_STATUS_SEMID, possem.O_CREAT, 00644, 1)
         self.hdr = None
         self.gbtstat = None
 
     def lock(self):
-        # Need to implement with semaphores
-        pass
+        return possem.sem_wait(self.sem)
 
     def unlock(self):
-        # Need to implement with semaphores
-        pass
+        return possem.sem_post(self.sem)
 
     def read(self):
         self.hdr = header_from_string(self.stat_buf.read())
