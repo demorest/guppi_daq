@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     /* Init udp params */
     strcpy(p.sender, argv[optind]);
-    p.packet_size = 8200; /* Expected 8k + 8 byte seq num */
+    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Init shared mem */
     struct guppi_status stat;
