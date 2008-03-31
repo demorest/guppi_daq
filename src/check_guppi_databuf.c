@@ -9,6 +9,7 @@
 
 #include "fitshead.h"
 #include "guppi_error.h"
+#include "guppi_status.h"
 #include "guppi_databuf.h"
 
 void usage() { 
@@ -51,7 +52,7 @@ int main(int argc, char *argv[]) {
     /* Create mem if asked, otherwise attach */
     struct guppi_databuf *db=NULL;
     if (create) { 
-        db = guppi_databuf_create(24, 32*1024*1024, 2880*8, db_id);
+        db = guppi_databuf_create(24, 32*1024*1024, GUPPI_STATUS_SIZE, db_id);
         if (db==NULL) {
             fprintf(stderr, "Error creating databuf %d (may already exist).\n",
                     db_id);

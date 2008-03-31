@@ -55,7 +55,9 @@ class guppi_status:
         return possem.sem_post(self.sem)
 
     def read(self):
+        self.lock()
         self.hdr = header_from_string(self.stat_buf.read())
+        self.unlock()
 
     def write(self):
         if self.hdr is None:

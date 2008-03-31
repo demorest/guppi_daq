@@ -70,9 +70,11 @@ void *guppi_net_thread(void *_up) {
     guppi_status_unlock_safe(&st);
 
     /* Read in general parameters */
+    char status_buf[GUPPI_STATUS_SIZE];
     struct guppi_params gp;
     guppi_status_lock_safe(&st);
     guppi_read_params(st.buf, &gp);
+    memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
     guppi_status_unlock_safe(&st);
 
     /* Attach to databuf shared mem */
@@ -206,19 +208,20 @@ void *guppi_net_thread(void *_up) {
             ndropped_block=0;
             nbogus_block=0;
 
-            /* If new obs started, reset total counters, resync
-             * with current observing params from status shmem.
-             */
+            /* If new obs started, reset total counters */
             if (force_new_block) {
                 npacket_total=0;
                 ndropped_total=0;
                 nbogus_total=0;
-                guppi_status_lock_safe(&st);
-                guppi_read_params(st.buf, &gp);
-                guppi_status_unlock_safe(&st);
             }
 
-            /* Advance to next one */
+            /* Read current status shared mem */
+            guppi_status_lock_safe(&st);
+            guppi_read_params(st.buf, &gp);
+            memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
+            guppi_status_unlock_safe(&st);
+
+            /* Advance to next block when free, update its header */
             curblock = (curblock + 1) % db->n_block;
             curheader = guppi_databuf_header(db, curblock);
             curdata = guppi_databuf_data(db, curblock);
@@ -226,6 +229,7 @@ void *guppi_net_thread(void *_up) {
             curblock_seq_num = seq_num - (seq_num % packets_per_block);
             nextblock_seq_num = curblock_seq_num + packets_per_block;
             guppi_databuf_wait_free(db, curblock);
+            memcpy(curheader, status_buf, GUPPI_STATUS_SIZE);
         }
 
         /* Skip dropped blocks, put packet in right spot */
