@@ -27,11 +27,21 @@ struct guppi_udp_params {
 
 };
 
-/* Basic structure of a packet */
+/* Basic structure of a packet.  This struct, functions should 
+ * be used to get the various components of a data packet.   The
+ * internal packet structure is:
+ *   1. sequence number (64-bit unsigned int)
+ *   2. data bytes (typically 8kB)
+ *   3. status flags (64 bits)
+ */
 struct guppi_udp_packet {
-    unsigned long long seq_num;  /* packet sequence number */
-    char data[GUPPI_MAX_PACKET_SIZE-sizeof(long long)]; /* actual data */
+    size_t packet_size;  /* packet size, bytes */
+    char data[GUPPI_MAX_PACKET_SIZE]; /* packet data */
 };
+unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p);
+char *guppi_udp_packet_data(struct guppi_udp_packet *p);
+size_t guppi_udp_packet_datasize(size_t packet_size);
+unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p);
 
 /* Use sender and port fields in param struct to init
  * the other values, bind socket, etc.

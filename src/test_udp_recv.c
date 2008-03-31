@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     printf("sock=%d\n", p.sock);
 
     int rv2;
-    unsigned long long packet_count=0, max_id=0;
+    unsigned long long packet_count=0, max_id=0, seq_num;
     struct guppi_udp_packet packet;
     int first=1;
     signal(SIGINT, stop_running);
@@ -98,7 +98,8 @@ int main(int argc, char *argv[]) {
                     first=0;
                 } 
                 packet_count++;
-                if (packet.seq_num>max_id) { max_id=packet.seq_num; }
+                seq_num = guppi_udp_packet_seq_num(&packet);
+                if (seq_num>max_id) { max_id=seq_num; }
             }
         } else if (rv==GUPPI_TIMEOUT) {
             if (first==0) { run=0; }

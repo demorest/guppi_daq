@@ -94,7 +94,8 @@ int guppi_udp_wait(struct guppi_udp_params *p) {
 }
 
 int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
-    int rv = recv(p->sock, b, GUPPI_MAX_PACKET_SIZE, 0);
+    int rv = recv(p->sock, b->data, GUPPI_MAX_PACKET_SIZE, 0);
+    b->packet_size = rv;
     if (rv==-1) { return(GUPPI_ERR_SYS); }
     else if (p->packet_size) {
         if (rv!=p->packet_size) { return(GUPPI_ERR_PACKET); }
@@ -103,6 +104,23 @@ int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
         p->packet_size = rv;
         return(GUPPI_OK); 
     }
+}
+
+unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p) {
+    return((unsigned long long)(*(p->data)));
+}
+
+size_t guppi_udp_packet_datasize(size_t packet_size) {
+    return(packet_size - 2*sizeof(unsigned long long));
+}
+
+char *guppi_udp_packet_data(struct guppi_udp_packet *p) {
+    return((char *)(p->data) + sizeof(unsigned long long));
+}
+
+unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p) {
+    return((unsigned long long)*((char *)(p->data) 
+                + p->packet_size - sizeof(unsigned long long)));
 }
 
 int guppi_udp_close(struct guppi_udp_params *p) {

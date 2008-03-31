@@ -98,8 +98,7 @@ void *guppi_net_thread(void *_up) {
      * TODO : Figure out how/if to deal with packet size changing.
      */
     struct guppi_udp_packet p;
-    size_t packet_hdr_size = (char *)p.data - (char *)(&p);
-    size_t packet_data_size = up->packet_size - packet_hdr_size;
+    size_t packet_data_size = guppi_udp_packet_datasize(up->packet_size); 
     unsigned packets_per_block = db->block_size / packet_data_size;
 
     /* Counters */
@@ -107,7 +106,7 @@ void *guppi_net_thread(void *_up) {
     unsigned long long ndropped_total=0, ndropped_block=0;
     unsigned long long nbogus_total=0, nbogus_block=0;
     unsigned long long curblock_seq_num=0, nextblock_seq_num=0;
-    unsigned long long last_seq_num=2048;
+    unsigned long long seq_num, last_seq_num=2048;
     int curblock=-1;
     char *curheader=NULL, *curdata=NULL;
     unsigned block_packet_idx=0, last_block_packet_idx=0;
@@ -166,14 +165,15 @@ void *guppi_net_thread(void *_up) {
         }
 
         /* Check seq num diff */
-        seq_num_diff = p.seq_num - last_seq_num;
+        seq_num = guppi_udp_packet_seq_num(&p);
+        seq_num_diff = seq_num - last_seq_num;
         if (seq_num_diff<0) { 
             if (seq_num_diff<-1024) { force_new_block=1; }
             else  { continue; } /* No going backwards */
         } else { force_new_block=0; }
 
         /* Determine if we go to next block */
-        if ((p.seq_num>=nextblock_seq_num) || force_new_block) {
+        if ((seq_num>=nextblock_seq_num) || force_new_block) {
 
             if (curblock>=0) { 
                 /* Close out current block */
@@ -223,13 +223,13 @@ void *guppi_net_thread(void *_up) {
             curheader = guppi_databuf_header(db, curblock);
             curdata = guppi_databuf_data(db, curblock);
             last_block_packet_idx = 0;
-            curblock_seq_num = p.seq_num - (p.seq_num % packets_per_block);
+            curblock_seq_num = seq_num - (seq_num % packets_per_block);
             nextblock_seq_num = curblock_seq_num + packets_per_block;
             guppi_databuf_wait_free(db, curblock);
         }
 
         /* Skip dropped blocks, put packet in right spot */
-        block_packet_idx = p.seq_num - curblock_seq_num;
+        block_packet_idx = seq_num - curblock_seq_num;
         dataptr = curdata + last_block_packet_idx*packet_data_size;
         for (i=last_block_packet_idx; i<block_packet_idx; i++) {
             memset(dataptr, 0, packet_data_size);
@@ -239,11 +239,11 @@ void *guppi_net_thread(void *_up) {
             npacket_total++;
             npacket_block++;
         }
-        memcpy(dataptr, p.data, packet_data_size);
+        memcpy(dataptr, guppi_udp_packet_data(&p), packet_data_size);
         npacket_total++;
         npacket_block++;
         last_block_packet_idx = block_packet_idx + 1;
-        last_seq_num = p.seq_num;
+        last_seq_num = seq_num;
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();
