@@ -21,6 +21,7 @@
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_udp.h"
+#include "guppi_time.h"
 
 #define STATUS_KEY "NETSTAT"  /* Define before guppi_threads.h */
 #include "guppi_threads.h"
@@ -94,6 +95,10 @@ void *guppi_net_thread(void *_up) {
         pthread_exit(NULL);
     }
     pthread_cleanup_push((void *)guppi_udp_close, up);
+
+    /* Time parameters */
+    int stt_imjd=0, stt_smjd=0;
+    double stt_offs=0.0;
 
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
@@ -208,16 +213,21 @@ void *guppi_net_thread(void *_up) {
             ndropped_block=0;
             nbogus_block=0;
 
-            /* If new obs started, reset total counters */
+            /* If new obs started, reset total counters, get start
+             * time. */
             if (force_new_block) {
                 npacket_total=0;
                 ndropped_total=0;
                 nbogus_total=0;
+                get_current_mjd(&stt_imjd, &stt_smjd, &stt_offs);
             }
 
-            /* Read current status shared mem */
+            /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
             guppi_read_params(st.buf, &gp);
+            hputi4(st.buf, "STT_IMJD", stt_imjd);
+            hputi4(st.buf, "STT_SMJD", stt_smjd);
+            hputr8(st.buf, "STT_OFFS", stt_offs);
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
 
