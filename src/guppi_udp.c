@@ -107,7 +107,7 @@ int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
 }
 
 unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p) {
-    return((unsigned long long)(*(p->data)));
+    return(*(unsigned long long *)(p->data));
 }
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
@@ -119,7 +119,7 @@ char *guppi_udp_packet_data(struct guppi_udp_packet *p) {
 }
 
 unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p) {
-    return((unsigned long long)*((char *)(p->data) 
+    return(*(unsigned long long *)((char *)(p->data) 
                 + p->packet_size - sizeof(unsigned long long)));
 }
 

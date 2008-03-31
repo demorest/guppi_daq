@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     };
     int opt, opti;
     p.port = 5000;
-    p.packet_size=0; /* Initially don't care */
+    p.packet_size=8208; 
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -115,8 +115,8 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Received %lld packets, dropped %lld (%.3e)\n",
-            packet_count, max_id-packet_count, 
-            (double)(max_id-packet_count)/(double)max_id);
+            packet_count, max_id+1-packet_count, 
+            (double)(max_id+1-packet_count)/(double)(max_id+1));
 
 
 
