@@ -73,9 +73,9 @@ int main(int argc, char *argv[]) {
     printf("  shmid=%d\n", db->shmid);
     printf("  semid=%d\n", db->semid);
     printf("  n_block=%d\n", db->n_block);
-    printf("  struct_size=%ld\n", db->struct_size);
-    printf("  block_size=%ld\n", db->block_size);
-    printf("  header_size=%ld\n\n", db->header_size);
+    printf("  struct_size=%zd\n", db->struct_size);
+    printf("  block_size=%zd\n", db->block_size);
+    printf("  header_size=%zd\n\n", db->header_size);
 
     /* loop over blocks */
     int i;
