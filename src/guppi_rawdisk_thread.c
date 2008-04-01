@@ -23,15 +23,15 @@
 #define STATUS_KEY "DISKSTAT"
 #include "guppi_threads.h"
 
-/* Write info from param struct into fits-style buffer */
-extern void guppi_write_params(char *buf, 
-                               struct guppi_params *g,
-                               struct psrfits *p);
+// Read a status buffer all of the key observation paramters
+extern void guppi_read_obs_params(char *buf, 
+                                  struct guppi_params *g, 
+                                  struct psrfits *p);
 
 /* Parse info from buffer into param struct */
-extern void guppi_read_params(char *buf, 
-                              struct guppi_params *g,
-                              struct psrfits *p);
+extern void guppi_read_subint_params(char *buf, 
+                                     struct guppi_params *g,
+                                     struct psrfits *p);
 
 
 void guppi_rawdisk_thread(void *args) {
@@ -73,7 +73,7 @@ void guppi_rawdisk_thread(void *args) {
     struct guppi_params gp;
     struct psrfits pf;
     guppi_status_lock_safe(&st);
-    guppi_read_params(st.buf, &gp, &pf);
+    guppi_read_obs_params(st.buf, &gp, &pf);
     guppi_status_unlock_safe(&st);
 
     /* Attach to databuf shared mem */
@@ -121,7 +121,7 @@ void guppi_rawdisk_thread(void *args) {
 
         /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
-        guppi_read_params(ptr, &gp, &pf);
+        guppi_read_subint_params(ptr, &gp, &pf);
 
         /* Parse packet size, npacket from header */
         hgeti4(ptr, "PKTIDX", &packetidx);

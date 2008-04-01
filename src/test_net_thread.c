@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include "write_psrfits.h"
 #include "guppi_udp.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
@@ -22,11 +21,6 @@
 #include "guppi_params.h"
 
 #include "guppi_thread_main.h"
-
-/* Write info from param struct into fits-style buffer */
-extern void guppi_write_params(char *buf, 
-                               struct guppi_params *g,
-                               struct psrfits *p);
 
 void usage() {
     fprintf(stderr,
@@ -89,20 +83,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     guppi_databuf_clear(dbuf);
-
-    /* Fake parameters */
-    struct guppi_params gp;
-    struct psrfits pf;
-    pf.hdr.MJD_epoch = 54535.567;
-    pf.hdr.fctr = 2000.0;
-    pf.hdr.BW = 800.0;
-    pf.hdr.nchan = 4096;
-    pf.hdr.nbits = 8;
-    pf.hdr.npol = 1;
-    pf.hdr.dt = 81.92e-6;
-    guppi_status_lock(&stat);
-    guppi_write_params(stat.buf, &gp, &pf);
-    guppi_status_unlock(&stat);
 
     run=1;
     signal(SIGINT, cc);

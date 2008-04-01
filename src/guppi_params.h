@@ -10,6 +10,9 @@
 struct guppi_params {
     /* Packet information for the current block */
     long long packetindex;      // Index of first packet in raw data block
+    double drop_frac_avg;       // Running average of the fract of dropped packets
+    double drop_frac_tot;       // Total fraction of dropped packets
+    double drop_frac;           // Fraction of dropped packets in this block
     int packetsize;             // Size in bytes of data portion of each packet
     int n_packets;              // Total number of packets in current block
     int n_dropped;              // Number of packets dropped in current block

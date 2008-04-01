@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
             rv2 = guppi_udp_recv(&p, &packet);
             if (rv2!=GUPPI_OK) {
                 if (rv2==GUPPI_ERR_PACKET) { 
-                    fprintf(stderr, "unexpected packet size (%d)\n",
+                    fprintf(stderr, "unexpected packet size (%zd)\n",
                             packet.packet_size);
                 } else if (rv2==GUPPI_ERR_SYS) {
                     if (errno!=EAGAIN) {

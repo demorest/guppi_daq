@@ -30,6 +30,21 @@ int get_current_mjd(int *stt_imjd, int *stt_smjd, double *stt_offs) {
     return(GUPPI_OK);
 }
 
+int datetime_from_mjd(long double MJD, int *YYYY, int *MM, int *DD, 
+                      int *h, int *m, double *s) {
+    int err;
+    double fracday;
+    
+    slaDjcl(MJD, YYYY, MM, DD, &fracday, &err);
+    if (err == -1) { return(GUPPI_ERR_GEN); }
+    fracday *= 24.0;  // hours
+    *h = (int) (fracday);
+    fracday = (fracday - *h) * 60.0;  // min
+    *m = (int) (fracday);
+    *s = (fracday - *m) * 60.0;  // sec
+    return(GUPPI_OK);
+}
+
 int get_current_lst(double mjd, int *lst_secs) {
     int N = 0;
     double gmst, eqeqx, tt;
