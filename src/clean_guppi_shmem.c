@@ -8,6 +8,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <semaphore.h>
+#include <fcntl.h>
 
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -16,8 +17,9 @@
 int main(int argc, char *argv[]) {
     int rv,ex=0;
 
-    /* Status shared mem */
+    /* Status shared mem, force unlock first */
     struct guppi_status s;
+    sem_unlink(GUPPI_STATUS_SEMID);
     rv = guppi_status_attach(&s);
     if (rv!=GUPPI_OK) {
         fprintf(stderr, "Error connecting to status shared mem.\n");

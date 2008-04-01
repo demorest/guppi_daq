@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     };
     int opt, opti;
     p.port = 5000;
-    p.packet_size=8208; 
+    p.packet_size=8200; 
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -82,7 +82,8 @@ int main(int argc, char *argv[]) {
             rv2 = guppi_udp_recv(&p, &packet);
             if (rv2!=GUPPI_OK) {
                 if (rv2==GUPPI_ERR_PACKET) { 
-                    fprintf(stderr, "unexpected packet size\n");
+                    fprintf(stderr, "unexpected packet size (%d)\n",
+                            packet.packet_size);
                 } else if (rv2==GUPPI_ERR_SYS) {
                     if (errno!=EAGAIN) {
                         printf("sock=%d\n", p.sock);

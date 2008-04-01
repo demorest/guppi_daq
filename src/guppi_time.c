@@ -25,7 +25,7 @@ int get_current_mjd(int *stt_imjd, int *stt_smjd, double *stt_offs) {
     if (stt_imjd!=NULL) { *stt_imjd = (int)mjd; }
     if (stt_smjd!=NULL) { *stt_smjd = gmt.tm_hour*3600 + gmt.tm_min*60 
         + gmt.tm_sec; }
-    if (stt_offs!=NULL) { *stt_offs = tv.tv_usec*1e6; }
+    if (stt_offs!=NULL) { *stt_offs = tv.tv_usec*1e-6; }
 
     return(GUPPI_OK);
 }
