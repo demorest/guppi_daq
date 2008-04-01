@@ -17,7 +17,6 @@
 #include <sys/types.h>
 
 #include "fitshead.h"
-#include "write_psrfits.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -26,16 +25,6 @@
 
 #define STATUS_KEY "NETSTAT"  /* Define before guppi_threads.h */
 #include "guppi_threads.h"
-
-/* Write info from param struct into fits-style buffer */
-extern void guppi_write_params(char *buf, 
-                               struct guppi_params *g,
-                               struct psrfits *p);
-
-/* Parse info from buffer into param struct */
-extern void guppi_read_params(char *buf, 
-                              struct guppi_params *g,
-                              struct psrfits *p);
 
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
@@ -83,10 +72,7 @@ void *guppi_net_thread(void *_up) {
 
     /* Read in general parameters */
     char status_buf[GUPPI_STATUS_SIZE];
-    struct guppi_params gp;
-    struct psrfits pf;
     guppi_status_lock_safe(&st);
-    guppi_read_params(st.buf, &gp, &pf);
     memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
     guppi_status_unlock_safe(&st);
 
@@ -200,7 +186,6 @@ void *guppi_net_thread(void *_up) {
                 hputi4(curheader, "PKTSIZE", packet_data_size);
                 hputi4(curheader, "NPKT", npacket_block);
                 hputi4(curheader, "NDROP", ndropped_block);
-                guppi_write_params(curheader, &gp, &pf);
                 guppi_databuf_set_filled(db, curblock);
             }
 
@@ -210,6 +195,7 @@ void *guppi_net_thread(void *_up) {
             }
 
             /* Put drop stats in general status area */
+            guppi_status_lock_safe(&st);
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
                     npacket_total ? 
@@ -219,6 +205,7 @@ void *guppi_net_thread(void *_up) {
                     npacket_block ? 
                     (double)ndropped_block/(double)npacket_block 
                     : 0.0);
+            guppi_status_unlock_safe(&st);
 
             /* Reset block counters */
             npacket_block=0;
@@ -236,7 +223,6 @@ void *guppi_net_thread(void *_up) {
 
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
-            guppi_read_params(st.buf, &gp, &pf);
             hputi4(st.buf, "STT_IMJD", stt_imjd);
             hputi4(st.buf, "STT_SMJD", stt_smjd);
             hputr8(st.buf, "STT_OFFS", stt_offs);
