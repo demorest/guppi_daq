@@ -102,9 +102,23 @@ void *guppi_net_thread(void *_up) {
      * per block, etc.
      * TODO : Figure out how/if to deal with packet size changing.
      */
+    int block_size;
     struct guppi_udp_packet p;
     size_t packet_data_size = guppi_udp_packet_datasize(up->packet_size); 
-    unsigned packets_per_block = db->block_size / packet_data_size;
+    unsigned packets_per_block; 
+    if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
+            guppi_error("guppi_net_thread", 
+                    "BLOCSIZE not set, default to databuf block_size");
+            block_size = db->block_size;
+            hputi4(status_buf, "BLOCSIZE", block_size);
+    } else {
+        if (block_size > db->block_size) {
+            guppi_error("guppi_net_thread", "BLOCSIZE > databuf block_size");
+            block_size = db->block_size;
+            hputi4(status_buf, "BLOCSIZE", block_size);
+        }
+    }
+    packets_per_block = block_size / packet_data_size;
 
     /* Counters */
     unsigned long long npacket_total=0, npacket_block=0;
@@ -228,6 +242,24 @@ void *guppi_net_thread(void *_up) {
             hputr8(st.buf, "STT_OFFS", stt_offs);
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
+
+            /* block size possibly changed on new obs */
+            if (force_new_block) {
+                if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
+                        guppi_error("guppi_net_thread", 
+                                "BLOCSIZE not set, "
+                                "default to databuf block_size");
+                        block_size = db->block_size;
+                } else {
+                    if (block_size > db->block_size) {
+                        guppi_error("guppi_net_thread", 
+                                "BLOCSIZE > databuf block_size");
+                        block_size = db->block_size;
+                    }
+                }
+                packets_per_block = block_size / packet_data_size;
+            }
+            hputi4(status_buf, "BLOCSIZE", block_size);
 
             /* Advance to next block when free, update its header */
             curblock = (curblock + 1) % db->n_block;
