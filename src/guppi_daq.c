@@ -24,7 +24,7 @@
 
 void usage() {
     fprintf(stderr,
-            "Usage: test_net_thread [options] sender_hostname\n"
+            "Usage: guppi_daq [options] sender_hostname\n"
             "Options:\n"
             "  -p n, --port=n    Port number\n"
             "  -h, --help        This message\n"
@@ -33,7 +33,7 @@ void usage() {
 
 /* Thread declarations */
 void *guppi_net_thread(void *_up);
-void *guppi_rawdisk_thread(void *args);
+void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
@@ -84,22 +84,6 @@ int main(int argc, char *argv[]) {
     }
     guppi_databuf_clear(dbuf);
 
-    /* Fake parameters */
-    struct guppi_params gp;
-    gp.mjd_i = 54535;
-    gp.mjd_f = 0.567;
-    gp.f_ctr = 2000.0;
-    gp.bandwidth = 800.0;
-    gp.band_dir = -1;
-    gp.n_chan = 4096;
-    gp.n_bits = 8;
-    gp.n_pol = 1;
-    gp.dt = 81.92e-6;
-    guppi_status_lock(&stat);
-    guppi_write_params(stat.buf, &gp);
-    guppi_status_unlock(&stat);
-
-    run=1;
     signal(SIGINT, cc);
 
     /* Launch net thread */
@@ -112,17 +96,20 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Launch raw disk thread */
+    /* Launch PSRFITS disk thread */
     pthread_t disk_thread_id;
-    rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, NULL);
+    rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread, NULL);
     if (rv) { 
-        fprintf(stderr, "Error creating net thread.\n");
+        fprintf(stderr, "Error creating PSRFITS thread.\n");
         perror("pthread_create");
         exit(1);
     }
 
     /* Wait for end */
-    while (run) { sleep(1); }
+    run=1;
+    while (run) { 
+        sleep(1); 
+    }
     pthread_cancel(disk_thread_id);
     pthread_cancel(net_thread_id);
     pthread_kill(disk_thread_id,SIGINT);

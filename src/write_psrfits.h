@@ -90,3 +90,4 @@ struct psrfits {
 
 int psrfits_create_searchmode(struct psrfits *pf);
 int psrfits_write_subint(struct psrfits *pf);
+int psrfits_close(struct psrfits *pf);

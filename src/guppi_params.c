@@ -156,6 +156,8 @@ void guppi_read_obs_params(char *buf,
     get_str("PROJID", p->hdr.project_id, 24, "Unknown");
     get_str("FD_POLN", p->hdr.poln_type, 8, "Unknown");
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
+    get_int("SCANNUM", p->hdr.scan_number, 1);
+    get_str("BASENAME", p->basefilename, 200, "guppi");
     if (strcmp("POL_TYPE", "AA+BB")==0 ||
         strcmp("POL_TYPE", "INTEN")==0)
         p->hdr.summed_polns = 1;
