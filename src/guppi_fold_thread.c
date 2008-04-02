@@ -95,6 +95,7 @@ void guppi_fold_thread(void *args) {
     long long *cntbuf=NULL;
 
     /* Loop */
+    char errmsg[256];
     int nbin=2048;
     int curblock=0;
     char *ptr;
@@ -132,6 +133,7 @@ void guppi_fold_thread(void *args) {
         imjd = pf.hdr.start_day;
         fmjd = pf.hdr.start_sec 
             + pf.hdr.dt*gp.packetindex*gp.packetsize/pf.hdr.nchan/pf.hdr.npol;
+        fmjd /= 86400.0;
         polyco_file = fopen("polyco.dat", "r");
         if (polyco_file==NULL) { 
             guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
@@ -139,14 +141,15 @@ void guppi_fold_thread(void *args) {
         }
         rv = read_pc(polyco_file, &pc, pf.hdr.source, imjd, fmjd);
         if (rv!=0) { 
-            guppi_error("guppi_fold_thread", "No matching polycos.");
+            sprintf(errmsg, "No matching polycos (src=%s, imjd=%d fmjd=%f)",
+                    pf.hdr.source, imjd, fmjd);
+            guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
-
-        /* Get data ptr */
-        ptr = guppi_databuf_data(db, curblock);
+        fclose(polyco_file);
 
         /* fold */
+        ptr = guppi_databuf_data(db, curblock);
         fold_8bit_power(&pc, npc, imjd, fmjd, ptr,
                 pf.hdr.nsblk, pf.hdr.nchan, pf.hdr.npol, 
                 pf.hdr.dt, foldbuf, cntbuf, nbin);
