@@ -72,9 +72,6 @@ void guppi_rawdisk_thread(void *args) {
     /* Read in general parameters */
     struct guppi_params gp;
     struct psrfits pf;
-    guppi_status_lock_safe(&st);
-    guppi_read_obs_params(st.buf, &gp, &pf);
-    guppi_status_unlock_safe(&st);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;

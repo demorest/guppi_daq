@@ -8,6 +8,8 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
 
@@ -34,7 +36,9 @@ int guppi_status_attach(struct guppi_status *s) {
     /* Get the locking semaphore.
      * Final arg (1) means create in unlocked state (0=locked).
      */
-    s->lock = sem_open(GUPPI_STATUS_SEMID, O_CREAT, 00666, 1);
+    mode_t old_umask = umask(0);
+    s->lock = sem_open(GUPPI_STATUS_SEMID, O_CREAT, 0666, 1);
+    umask(old_umask);
     if (s->lock==SEM_FAILED) {
         guppi_error("guppi_status_attach", "sem_open");
         return(GUPPI_ERR_SYS);
