@@ -1,7 +1,12 @@
 import shm_wrapper as shm
 from GBTStatus import GBTStatus
-import pyfits, possem
+import time, pyfits, possem
 import psr_utils as psr
+import astro_utils as astro
+import slalib as s
+
+DEGTORAD = 0.017453292519943295769236907684
+RADTODEG = 57.29577951308232087679815481410
 
 def header_from_string(str):
     """
@@ -37,8 +42,10 @@ def cardlist_from_string(str):
             cardlist.append(card_from_string(str_part))
     return cardlist
 
+
 GUPPI_STATUS_KEY = 16783408
 GUPPI_STATUS_SEMID = "/guppi_status"
+
 
 class guppi_status:
 
@@ -47,6 +54,11 @@ class guppi_status:
         self.sem = possem.sem_open(GUPPI_STATUS_SEMID, possem.O_CREAT, 00644, 1)
         self.hdr = None
         self.gbtstat = None
+
+    def __getitem__(self, key):
+        if self.hdr is None:
+            self.read()
+        return self.hdr[key]
 
     def lock(self):
         return possem.sem_wait(self.sem)
@@ -118,6 +130,20 @@ class guppi_status:
         self.update("BMAJ", beam_deg)
         self.update("BMIN", beam_deg)
 
+    def update_azza(self):
+        """
+        update_posn():
+            Update the AZ and ZA based on the current time with the guppi_status instance.
+        """
+        (iptr, ang, stat) = s.sla_dafin(self['RA_STR'].replace(':', ' '), 1)
+        self.update("RA", ang*15.0*RADTODEG)
+        (iptr, ang, stat) = s.sla_dafin(self['DEC_STR'].replace(':', ' '), 1)
+        self.update("DEC", ang*RADTODEG)
+        MJD = astro.current_MJD()
+        az, za = astro.radec_to_altaz(self['RA'], self['DEC'], MJD, scope='GBVA140')
+        self.update("AZ", az)
+        self.update("ZA", za)
+        
 if __name__=="__main__":
     g = guppi_status()
     g.read()
