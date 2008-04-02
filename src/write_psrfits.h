@@ -4,7 +4,7 @@
 #define PSRFITS_MAXFILELEN 10 
 
 // The following is the template file to use to create a PSRFITS file
-#define PSRFITS_TEMPLATE "guppi_PSRFITS_v3.4_template.txt"
+#define PSRFITS_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_template.txt"
 
 struct hdrinfo {
     char telescope[24];     // Telescope used

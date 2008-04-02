@@ -168,7 +168,7 @@ void guppi_read_obs_params(char *buf,
     get_str("DEC_STR", p->hdr.dec_str, 16, "Unknown");
     // Should set other cal values if CAL_MODE is on
     get_str("CAL_MODE", p->hdr.cal_mode, 8, "Unknown");
-    if (!(strcmp("CAL_MODE", "OFF")==0)) {  // Cals not off
+    if (!(strcmp(p->hdr.cal_mode, "OFF")==0)) {  // Cals not off
         get_dbl("CAL_FREQ", p->hdr.cal_freq, 25.0);
         get_dbl("CAL_DCYC", p->hdr.cal_dcyc, 0.5);
         get_dbl("CAL_PHS", p->hdr.cal_phs, 0.0);
@@ -190,7 +190,7 @@ void guppi_read_obs_params(char *buf,
         int YYYY, MM, DD, h, m;
         double s;
         datetime_from_mjd(p->hdr.MJD_epoch, &YYYY, &MM, &DD, &h, &m, &s);
-        sprintf(p->hdr.date_obs, "%4d-%2d-%2dT%2d:%2d:%6.3f", 
+        sprintf(p->hdr.date_obs, "%04d-%02d-%02dT%02d:%02d:%06.3f", 
                 YYYY, MM, DD, h, m, s);
     }
     

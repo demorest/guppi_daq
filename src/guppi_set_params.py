@@ -1,5 +1,5 @@
 from guppi_utils import *
-
+from astro_utils import current_MJD
 g = guppi_status()
 
 g.update("SRC_NAME", "net test")
@@ -15,8 +15,9 @@ g.update("OBSERVER", "GUPPI Crew")
 g.update("FRONTEND", "None")
 g.update("BACKEND", "GUPPI")
 g.update("PROJID", "first light tests")
+g.update("SRC_NAME", "bitpatterns")
 g.update("FD_POLN", "LIN")
-g.update("POL_TYPE", "IIQQUUVV")
+g.update("POL_TYPE", "IQUV")
 
 g.update("OBSFREQ", 1600.0)
 g.update("OBSBW", 800.0)
@@ -30,13 +31,25 @@ g.update("NRCVR", 2)
 g.update("TRK_MODE", "TRACK")
 g.update("CAL_MODE", "OFF")
 #g.update("BLOCSIZE", )
+g.update("OFFSET0", 0.0)
+g.update("SCALE0", 1.0)
 g.update("OFFSET1", 0.0)
 g.update("SCALE1", 1.0)
 g.update("OFFSET2", 0.0)
 g.update("SCALE2", 1.0)
 g.update("OFFSET3", 0.0)
 g.update("SCALE3", 1.0)
-g.update("OFFSET4", 0.0)
-g.update("SCALE4", 1.0)
+
+if (1):  # in case we don't get a real start time
+    MJD = current_MJD()
+    MJDd = int(MJD)
+    MJDf = MJD - MJDd
+    MJDs = int(MJDf * 86400 + 1e-6)
+    offs = (MJD - MJDd - MJDs/86400.0) * 86400.0
+    g.update("STT_IMJD", MJDd)
+    g.update("STT_SMJD", MJDs)
+    if offs < 2e-6: offs = 0.0
+    g.update("STT_OFFS", offs)
+
 g.update_azza()
 g.write()

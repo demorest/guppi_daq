@@ -126,8 +126,11 @@ void guppi_psrfits_thread(void *args) {
             (pf.T > pf.hdr.scanlen)) run = 0;
         
         /* For debugging... */
-        printf("%d %.3g %d\n", pf.tot_rows, gp.drop_frac, total_status);
-        
+        if (gp.drop_frac > 0.0) {
+           printf("Block %d dropped %.3g%% of the packets\n", 
+                  pf.tot_rows, gp.drop_frac*100.0);
+        }
+
         /* Mark as free */
         guppi_databuf_set_free(db, curblock);
         
@@ -141,9 +144,6 @@ void guppi_psrfits_thread(void *args) {
     
     /* Cleanup */
     
-    printf("Done.  Wrote %d subints (%f sec) in %d files.  status = %d\n",
-           pf.tot_rows, pf.T, pf.filenum, pf.status);
-
     free(pf.sub.dat_freqs);
     free(pf.sub.dat_weights);
     free(pf.sub.dat_offsets);
