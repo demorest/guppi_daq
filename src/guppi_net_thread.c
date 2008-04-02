@@ -107,8 +107,6 @@ void *guppi_net_thread(void *_up) {
     size_t packet_data_size = guppi_udp_packet_datasize(up->packet_size); 
     unsigned packets_per_block; 
     if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
-            guppi_error("guppi_net_thread", 
-                    "BLOCSIZE not set, default to databuf block_size");
             block_size = db->block_size;
             hputi4(status_buf, "BLOCSIZE", block_size);
     } else {
@@ -248,9 +246,6 @@ void *guppi_net_thread(void *_up) {
             /* block size possibly changed on new obs */
             if (force_new_block) {
                 if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
-                        guppi_error("guppi_net_thread", 
-                                "BLOCSIZE not set, "
-                                "default to databuf block_size");
                         block_size = db->block_size;
                 } else {
                     if (block_size > db->block_size) {

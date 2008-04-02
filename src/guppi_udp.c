@@ -75,7 +75,7 @@ int guppi_udp_init(struct guppi_udp_params *p) {
         perror("setsockopt");
     } 
     rv = getsockopt(p->sock, SOL_SOCKET, SO_RCVBUF, &bufsize, &ss); 
-    if (rv==0) { 
+    if (0 && rv==0) { 
         printf("guppi_udp_init: SO_RCVBUF=%d\n", bufsize);
     }
 
