@@ -106,8 +106,18 @@ int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
     }
 }
 
+unsigned long long change_endian64(unsigned long long *d) {
+    unsigned long long tmp;
+    char *in=(char *)d, *out=(char *)&tmp;
+    int i;
+    for (i=0; i<8; i++) {
+        out[i] = in[7-i];
+    }
+    return(tmp);
+}
+
 unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p) {
-    return(*(unsigned long long *)(p->data));
+    return(change_endian64((unsigned long long *)(p->data)));
 }
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
