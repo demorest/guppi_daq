@@ -45,7 +45,7 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
 
     /* Get shared memory block, error if it already exists */
     int shmid;
-    shmid = shmget(shm_key, databuf_size, 0644 | IPC_CREAT | IPC_EXCL);
+    shmid = shmget(shm_key, databuf_size, 0666 | IPC_CREAT | IPC_EXCL);
     if (shmid==-1) {
         guppi_error("guppi_databuf_create", "shmget error");
         return(NULL);
@@ -87,7 +87,7 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Get semaphores set up */
-    d->semid = semget(shm_key, n_block, 0644 | IPC_CREAT);
+    d->semid = semget(shm_key, n_block, 0666 | IPC_CREAT);
     if (d->semid==-1) { 
         guppi_error("guppi_databuf_create", "semget error");
         return(NULL);
@@ -151,7 +151,7 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
 
     /* Get shmid */
     int shmid;
-    shmid = shmget(shm_key, 0, 0644);
+    shmid = shmget(shm_key, 0, 0666);
     if (shmid==-1) {
         // Doesn't exist, exit quietly
         //guppi_error("guppi_databuf_create", "shmget error");

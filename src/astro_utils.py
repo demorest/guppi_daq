@@ -38,6 +38,7 @@ def radec_to_altaz(ra, dec, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, 
     app_rarad, app_decrad = s.sla_map(ra*DEGTORAD,dec*DEGTORAD,0.0,0.0,0.0,0.0,2000.0,MJD)
     az, za, hob, rob, dob  = s.sla_aop(app_rarad,app_decrad,MJD,
                                        0.0,-lon,lat,hgt,0.0,0.0,temp,atm,humid,microns,0.0065)
+    az = s.sla_dranrm(az)
     return az*RADTODEG, za*RADTODEG
 
 if __name__ == "__main__":

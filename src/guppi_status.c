@@ -17,7 +17,7 @@
 int guppi_status_attach(struct guppi_status *s) {
 
     /* Get shared mem id (creating it if necessary) */
-    s->shmid = shmget(GUPPI_STATUS_KEY, GUPPI_STATUS_SIZE, 0644 | IPC_CREAT);
+    s->shmid = shmget(GUPPI_STATUS_KEY, GUPPI_STATUS_SIZE, 0666 | IPC_CREAT);
     if (s->shmid==-1) { 
         guppi_error("guppi_status_attach", "shmget error");
         return(GUPPI_ERR_SYS);
@@ -34,7 +34,7 @@ int guppi_status_attach(struct guppi_status *s) {
     /* Get the locking semaphore.
      * Final arg (1) means create in unlocked state (0=locked).
      */
-    s->lock = sem_open(GUPPI_STATUS_SEMID, O_CREAT, 00644, 1);
+    s->lock = sem_open(GUPPI_STATUS_SEMID, O_CREAT, 00666, 1);
     if (s->lock==SEM_FAILED) {
         guppi_error("guppi_status_attach", "sem_open");
         return(GUPPI_ERR_SYS);
