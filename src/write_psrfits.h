@@ -1,7 +1,7 @@
 #include "fitsio.h"
 
 // The following is the max file length in GB
-#define PSRFITS_MAXFILELEN 10 
+#define PSRFITS_MAXFILELEN 10L
 
 // The following is the template file to use to create a PSRFITS file
 #define PSRFITS_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_template.txt"

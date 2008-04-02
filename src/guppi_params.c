@@ -93,10 +93,11 @@ void guppi_read_subint_params(char *buf,
     get_int("NDROP", g->n_dropped, 0);
     get_dbl("DROPAVG", g->drop_frac_avg, 0.0);
     get_dbl("DROPTOT", g->drop_frac_tot, 0.0);
-    get_dbl("DROPBLK", g->drop_frac, 0.0);
+    g->drop_frac = (double) g->n_dropped / (double) g->n_packets;
 
     // Observation params
     get_dbl("AZ", p->sub.tel_az, 0.0);
+    if (p->sub.tel_az < 0.0) p->sub.tel_az += 360.0;
     get_dbl("ZA", p->sub.tel_zen, 0.0);
     get_dbl("RA", p->sub.ra, 0.0);
     get_dbl("DEC", p->sub.dec, 0.0);

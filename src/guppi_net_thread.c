@@ -237,9 +237,11 @@ void *guppi_net_thread(void *_up) {
 
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
-            hputi4(st.buf, "STT_IMJD", stt_imjd);
-            hputi4(st.buf, "STT_SMJD", stt_smjd);
-            hputr8(st.buf, "STT_OFFS", stt_offs);
+            if (stt_imjd!=0) {
+                hputi4(st.buf, "STT_IMJD", stt_imjd);
+                hputi4(st.buf, "STT_SMJD", stt_smjd);
+                hputr8(st.buf, "STT_OFFS", stt_offs);
+            }
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
 

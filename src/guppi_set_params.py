@@ -6,7 +6,7 @@ g.update("SRC_NAME", "net test")
 g.update("RA_STR", "10:00:00.000")
 g.update("DEC_STR", "+20:00:00.0000")
 
-g.update("SCANLEN", 100.0)
+g.update("SCANLEN", 5.0)
 g.update("SCANNUM", 1)
 g.update("BASENAME", "guppi_nettests")
 
@@ -40,7 +40,7 @@ g.update("SCALE2", 1.0)
 g.update("OFFSET3", 0.0)
 g.update("SCALE3", 1.0)
 
-if (1):  # in case we don't get a real start time
+if (0):  # in case we don't get a real start time
     MJD = current_MJD()
     MJDd = int(MJD)
     MJDf = MJD - MJDd
