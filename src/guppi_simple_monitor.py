@@ -25,17 +25,22 @@ spec_size = npoln * nchan
 print struct_size, block_size, header_size, shmid, semid, n_block, offset
 
 p.ion()  # turn unteractive mode on
-#x = p.arange(nchan)/float(nchan)*BW + (fctr-0.5*BW)
-x = n.arange(nchan * npoln)
+x = p.arange(nchan)/float(nchan)*BW + (fctr-0.5*BW)
+#x = n.arange(nchan * npoln)
 
+poln = 0
 data = n.fromstring(data_buf.read(spec_size*nspec, offset), dtype=n.uint8)
 data.shape = (nspec, spec_size)
-avg_spec = data.mean(0)
+avg_spec = data[:,nchan*poln:nchan*(poln+1)].mean(0)
+
+print len(x), len(avg_spec)
+
 line, = p.plot(x, avg_spec)
+
 while (1):
     print "updating..."
     data = n.fromstring(data_buf.read(spec_size*nspec, offset), dtype=n.uint8)
     data.shape = (nspec, spec_size)
-    avg_spec = data.mean(0)
+    avg_spec = data[:,nchan*poln:nchan*(poln+1)].mean(0)
     line.set_ydata(avg_spec)
     p.draw()
