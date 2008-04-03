@@ -34,6 +34,7 @@ void usage() {
 /* Thread declarations */
 void *guppi_net_thread(void *_up);
 void *guppi_rawdisk_thread(void *args);
+void *guppi_null_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
@@ -99,9 +100,9 @@ int main(int argc, char *argv[]) {
 
     /* Launch raw disk thread */
     pthread_t disk_thread_id;
-    rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, NULL);
+    rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, NULL);
     if (rv) { 
-        fprintf(stderr, "Error creating net thread.\n");
+        fprintf(stderr, "Error creating null thread.\n");
         perror("pthread_create");
         exit(1);
     }

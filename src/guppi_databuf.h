@@ -11,13 +11,13 @@
 #include <sys/sem.h>
 
 struct guppi_databuf {
-    int shmid;          /* ID of this shared mem segment */
-    int semid;          /* ID of locking semaphore set */
-    int n_block;        /* Number of data blocks in buffer */
+    char data_type[64]; /* Type of data in buffer */
     size_t struct_size; /* Size alloced for this struct (bytes) */
     size_t block_size;  /* Size of each data block (bytes) */
     size_t header_size; /* Size of each block header (bytes) */
-    char data_type[40]; /* Type of data in buffer */
+    int shmid;          /* ID of this shared mem segment */
+    int semid;          /* ID of locking semaphore set */
+    int n_block;        /* Number of data blocks in buffer */
 };
 
 #define GUPPI_DATABUF_KEY 12987498
