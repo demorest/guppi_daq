@@ -150,12 +150,16 @@ void guppi_fold_thread(void *args) {
 
         /* fold */
         ptr = guppi_databuf_data(db, curblock);
-        fold_8bit_power(&pc, npc, imjd, fmjd, ptr,
+        rv = fold_8bit_power(&pc, npc, imjd, fmjd, ptr,
                 pf.hdr.nsblk, pf.hdr.nchan, pf.hdr.npol, 
                 pf.hdr.dt, foldbuf, cntbuf, nbin);
+        if (rv!=0) {
+            guppi_error("guppi_fold_thread", "fold error");
+        }
 
         /* Write output */
         normalize_folds(foldbuf, cntbuf, nbin, pf.hdr.nchan, pf.hdr.npol);
+#if 0 
         rv = fwrite(foldbuf, sizeof(double), nbin*pf.hdr.nchan*pf.hdr.npol, 
                 fraw);
         if (rv != nbin*pf.hdr.nchan*pf.hdr.npol) { 
@@ -165,6 +169,7 @@ void guppi_fold_thread(void *args) {
 
         /* flush output */
         fflush(fraw);
+#endif
 
         /* Mark as free */
         guppi_databuf_set_free(db, curblock);

@@ -20,7 +20,7 @@ struct guppi_databuf {
     char data_type[40]; /* Type of data in buffer */
 };
 
-#define GUPPI_DATABUF_KEYFILE "/tmp/guppi_databuf_key"
+#define GUPPI_DATABUF_KEY 12987498
 
 /* union for semaphore ops.  Is this really needed? */
 union semun {

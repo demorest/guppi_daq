@@ -17,27 +17,6 @@
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
         size_t header_size, int databuf_id) {
 
-    /* Create keyfile if it doesn't exist */
-    FILE *key_file=NULL;
-    key_file = fopen(GUPPI_DATABUF_KEYFILE, "r");
-    if (key_file==NULL) {
-        key_file = fopen(GUPPI_DATABUF_KEYFILE, "w");
-        if (key_file==NULL) {
-            /* Couldn't create keyfile */
-            guppi_error("guppi_databuf_attach", 
-                    "Couldn't read or create shmem keyfile.");
-            return(NULL);
-        }
-        fclose(key_file);
-    }
-
-    /* Create shmem key */
-    key_t shm_key = ftok(GUPPI_DATABUF_KEYFILE, databuf_id);
-    if (shm_key==-1) {
-        guppi_error("guppi_databuf_create", "ftok error");
-        return(NULL);
-    }
-
     /* Calc databuf size */
     size_t struct_size = sizeof(struct guppi_databuf);
     struct_size = 8192 * (1 + struct_size/8192); /* round up */
@@ -45,7 +24,8 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
 
     /* Get shared memory block, error if it already exists */
     int shmid;
-    shmid = shmget(shm_key, databuf_size, 0666 | IPC_CREAT | IPC_EXCL);
+    shmid = shmget(GUPPI_DATABUF_KEY + databuf_id - 1, 
+            databuf_size, 0666 | IPC_CREAT | IPC_EXCL);
     if (shmid==-1) {
         guppi_error("guppi_databuf_create", "shmget error");
         return(NULL);
@@ -87,7 +67,8 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     }
 
     /* Get semaphores set up */
-    d->semid = semget(shm_key, n_block, 0666 | IPC_CREAT);
+    d->semid = semget(GUPPI_DATABUF_KEY + databuf_id - 1, 
+            n_block, 0666 | IPC_CREAT);
     if (d->semid==-1) { 
         guppi_error("guppi_databuf_create", "semget error");
         return(NULL);
@@ -141,17 +122,9 @@ char *guppi_databuf_data(struct guppi_databuf *d, int block_id) {
 
 struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
 
-    /* Get key */
-    key_t shm_key = ftok(GUPPI_DATABUF_KEYFILE, databuf_id);
-    if (shm_key==-1) {
-        // Doesn't exist, exit quietly
-        //guppi_error("guppi_databuf_attach", "ftok error");
-        return(NULL);
-    }
-
     /* Get shmid */
     int shmid;
-    shmid = shmget(shm_key, 0, 0666);
+    shmid = shmget(GUPPI_DATABUF_KEY + databuf_id - 1, 0, 0666);
     if (shmid==-1) {
         // Doesn't exist, exit quietly
         //guppi_error("guppi_databuf_create", "shmget error");

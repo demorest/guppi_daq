@@ -134,10 +134,10 @@ void guppi_rawdisk_thread(void *args) {
                 ndrop, total_status);
 
         /* Write header to file */
-        hend = ksearch(ptr, "END");
-        for (ptr=ptr; ptr<hend; ptr+=80) {
-            fwrite(ptr, 80, 1, fraw);
-        }
+        //hend = ksearch(ptr, "END");
+        //for (ptr=ptr; ptr<hend; ptr+=80) {
+        //    fwrite(ptr, 80, 1, fraw);
+        //}
 
         /* Write data */
         ptr = guppi_databuf_data(db, curblock);
