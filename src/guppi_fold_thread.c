@@ -66,19 +66,25 @@ void guppi_fold_thread(void *args) {
     struct psrfits pf;
 
     /* Attach to databuf shared mem */
-    struct guppi_databuf *db;
-    db = guppi_databuf_attach(1);
-    if (db==NULL) {
+    struct guppi_databuf *db_in, *db_out;
+    db_in = guppi_databuf_attach(1);
+    if (db_in==NULL) {
         guppi_error("guppi_fold_thread",
-                "Error attaching to databuf shared memory.");
+                "Error attaching to databuf(1) shared memory.");
+        pthread_exit(NULL);
+    }
+    db_out = guppi_databuf_attach(2);
+    if (db_out==NULL) {
+        guppi_error("guppi_fold_thread",
+                "Error attaching to databuf(2) shared memory.");
         pthread_exit(NULL);
     }
 
     /* Load polycos */
     int imjd;
     double fmjd;
-    int npc=1;
-    struct polyco pc;
+    int npc=0, ipc;
+    struct polyco *pc=NULL;
     FILE *polyco_file=NULL;
 
     /* Open output file */
@@ -91,13 +97,12 @@ void guppi_fold_thread(void *args) {
     pthread_cleanup_push((void *)fclose, fraw);
 
     /* Buffers */
-    double *foldbuf=NULL;
-    long long *cntbuf=NULL;
+    struct foldbuf fb;
 
     /* Loop */
     char errmsg[256];
-    int nbin=2048;
-    int curblock=0;
+    int curblock_in=0, curblock_out=0;
+    int refresh_polycos=1;
     char *ptr;
     signal(SIGINT,cc);
     while (run) {
@@ -108,74 +113,93 @@ void guppi_fold_thread(void *args) {
         guppi_status_unlock_safe(&st);
 
         /* Wait for buf to have data */
-        guppi_databuf_wait_filled(db, curblock);
+        guppi_databuf_wait_filled(db_in, curblock_in);
 
         /* Note waiting status */
         guppi_status_lock_safe(&st);
-        hputs(st.buf, STATUS_KEY, "writing");
+        hputs(st.buf, STATUS_KEY, "folding");
         guppi_status_unlock_safe(&st);
 
         /* Read param struct for this block */
-        ptr = guppi_databuf_header(db, curblock);
+        ptr = guppi_databuf_header(db_in, curblock_in);
         guppi_read_obs_params(ptr, &gp, &pf); // XXX first time only??
         guppi_read_subint_params(ptr, &gp, &pf);
 
         /* Set up, clear out buffers */
-        // TODO integrate for longer than one block
-        foldbuf = (double *)realloc(foldbuf, 
-                sizeof(double)*nbin*pf.hdr.nchan*pf.hdr.npol);
-        cntbuf = (long long *)realloc(cntbuf, sizeof(long long)*nbin);
-        memset(foldbuf, 0, sizeof(double)*nbin*pf.hdr.nchan*pf.hdr.npol);
-        memset(cntbuf, 0, sizeof(long long)*nbin);
+        fb.nbin = 2048;
+        fb.nchan = pf.hdr.nchan;
+        fb.npol = pf.hdr.npol;
+        malloc_foldbuf(&fb);
+        clear_foldbuf(&fb);
 
         /* Check src, get correct polycos */
-        // XXX Do this better!
         imjd = pf.hdr.start_day;
         fmjd = pf.hdr.start_sec 
             + pf.hdr.dt*gp.packetindex*gp.packetsize/pf.hdr.nchan/pf.hdr.npol;
         fmjd /= 86400.0;
-        polyco_file = fopen("polyco.dat", "r");
-        if (polyco_file==NULL) { 
-            guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
-            pthread_exit(NULL);
+        if (refresh_polycos) { 
+            polyco_file = fopen("polyco.dat", "r");
+            if (polyco_file==NULL) { 
+                guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
+                pthread_exit(NULL);
+            }
+            npc=0;
+            do { 
+                pc = (struct polyco *)realloc(pc, 
+                        sizeof(struct polyco) * (npc+1));
+                rv = read_one_pc(polyco_file, &pc[npc]);
+                npc++;
+            } while (rv==0);
+            if (npc==1) { 
+                guppi_error("guppi_fold_thread", "Error parsing polyco file.");
+                pthread_exit(NULL);
+            }
+            fclose(polyco_file);
+            refresh_polycos=0;
         }
-        rv = read_pc(polyco_file, &pc, pf.hdr.source, imjd, fmjd);
-        if (rv!=0) { 
-            sprintf(errmsg, "No matching polycos (src=%s, imjd=%d fmjd=%f)",
+
+        /* Select polyco set */
+        ipc = select_pc(pc, npc, pf.hdr.source, imjd, fmjd);
+        if (ipc<0) { 
+            sprintf(errmsg, "No matching polycos (src=%s, imjd=%d, fmjd=%f)",
                     pf.hdr.source, imjd, fmjd);
             guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
-        fclose(polyco_file);
 
         /* fold */
-        ptr = guppi_databuf_data(db, curblock);
-        rv = fold_8bit_power(&pc, npc, imjd, fmjd, ptr,
-                pf.hdr.nsblk, pf.hdr.nchan, pf.hdr.npol, 
-                pf.hdr.dt, foldbuf, cntbuf, nbin);
+        ptr = guppi_databuf_data(db_in, curblock_in);
+        rv = fold_8bit_power(&pc[ipc], imjd, fmjd, ptr,
+                pf.hdr.nsblk, pf.hdr.dt, &fb);
         if (rv!=0) {
             guppi_error("guppi_fold_thread", "fold error");
         }
 
-        /* Write output */
-        normalize_folds(foldbuf, cntbuf, nbin, pf.hdr.nchan, pf.hdr.npol);
-#if 0 
-        rv = fwrite(foldbuf, sizeof(double), nbin*pf.hdr.nchan*pf.hdr.npol, 
-                fraw);
-        if (rv != nbin*pf.hdr.nchan*pf.hdr.npol) { 
-            guppi_error("guppi_fold_thread", 
-                    "Error writing data.");
-        }
+        /* Wait for output buffer to be free */
+        guppi_databuf_wait_free(db_out, curblock_out);
 
-        /* flush output */
-        fflush(fraw);
-#endif
+        /* Copy header to output buffer */
+        memcpy(guppi_databuf_header(db_out, curblock_out),
+                guppi_databuf_header(db_in, curblock_in),
+                GUPPI_STATUS_SIZE);
 
-        /* Mark as free */
-        guppi_databuf_set_free(db, curblock);
+        /* TODO : add any additional params to output header */
+        // Fold timestamps, nbins, etc
 
-        /* Go to next block */
-        curblock = (curblock + 1) % db->n_block;
+        /* Put output in out buffer */
+        ptr = guppi_databuf_data(db_out, curblock_out);
+        memcpy(ptr, fb.data, sizeof(float) * fb.nbin * fb.nchan * fb.npol);
+        ptr += sizeof(float) * fb.nbin * fb.nchan * fb.npol;
+        memcpy(ptr, fb.count, sizeof(unsigned) * fb.nbin);
+        free_foldbuf(&fb);
+
+        /* Mark in as free, out as full */
+        guppi_databuf_set_free(db_in, curblock_in);
+        guppi_databuf_set_filled(db_out, curblock_out);
+
+        /* Go to next blocks */
+        curblock_in = (curblock_in + 1) % db_in->n_block;
+        curblock_out = (curblock_out + 1) % db_out->n_block;
 
         /* Check for cancel */
         pthread_testcancel();
