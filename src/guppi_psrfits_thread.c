@@ -86,7 +86,7 @@ void guppi_psrfits_thread(void *args) {
     }
     
     /* Loop */
-    int curblock=0, total_status=0, firsttime=1, run=1;
+    int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;;
     char *ptr;
     signal(SIGINT, cc);
     do {
@@ -97,12 +97,7 @@ void guppi_psrfits_thread(void *args) {
         
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
-        
-        /* Note waiting status */
-        guppi_status_lock_safe(&st);
-        hputs(st.buf, STATUS_KEY, "writing");
-        guppi_status_unlock_safe(&st);
-        
+
         /* See how full databuf is */
         total_status = guppi_databuf_total_status(db);
         
@@ -114,21 +109,39 @@ void guppi_psrfits_thread(void *args) {
         } else {
             guppi_read_subint_params(ptr, &gp, &pf);
         }
-        
-        /* Get the pointer to the current data */
-        pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
-        
-        /* Write the data */
-        psrfits_write_subint(&pf);
+
+        /* Check if we got packet 0.  If so, flag writing to 
+         * start, and update obs_params as well.
+         */
+        if (got_packet_0==0 && gp.packetindex==0) {
+            got_packet_0 = 1;
+            guppi_read_obs_params(ptr, &gp, &pf);
+        }
+
+        /* If actual observation has started, write the data */
+        if (got_packet_0) { 
+
+            /* Note waiting status */
+            guppi_status_lock_safe(&st);
+            hputs(st.buf, STATUS_KEY, "writing");
+            guppi_status_unlock_safe(&st);
             
-        /* Is the scan complete? */
-        if ((pf.hdr.scanlen > 0.0) && 
-            (pf.T > pf.hdr.scanlen)) run = 0;
-        
-        /* For debugging... */
-        if (gp.drop_frac > 0.0) {
-           printf("Block %d dropped %.3g%% of the packets\n", 
-                  pf.tot_rows, gp.drop_frac*100.0);
+            /* Get the pointer to the current data */
+            pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
+            
+            /* Write the data */
+            psrfits_write_subint(&pf);
+                
+            /* Is the scan complete? */
+            if ((pf.hdr.scanlen > 0.0) && 
+                (pf.T > pf.hdr.scanlen)) run = 0;
+            
+            /* For debugging... */
+            if (gp.drop_frac > 0.0) {
+               printf("Block %d dropped %.3g%% of the packets\n", 
+                      pf.tot_rows, gp.drop_frac*100.0);
+            }
+
         }
 
         /* Mark as free */
