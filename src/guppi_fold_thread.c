@@ -108,6 +108,7 @@ void guppi_fold_thread(void *args) {
     char errmsg[256];
     int curblock_in=0, curblock_out=-1;
     int refresh_polycos=1, next_integration=1;
+    int nblock_int=0, npacket=0, ndrop=0;
     char *ptr;
     signal(SIGINT,cc);
     while (run) {
@@ -148,11 +149,16 @@ void guppi_fold_thread(void *args) {
             memcpy(guppi_databuf_header(db_out, curblock_out),
                     guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
+            hputi4(guppi_databuf_header(db_out, curblock_out),
+                    "NBIN", fb.nbin);
 
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb.count = (unsigned *)(fb.data + fb.nbin * fb.nchan * fb.npol);
-
             clear_foldbuf(&fb);
+
+            nblock_int=0;
+            npacket=0;
+            ndrop=0;
             next_integration = 0;
         }
 
@@ -199,8 +205,17 @@ void guppi_fold_thread(void *args) {
             guppi_error("guppi_fold_thread", "fold error");
         }
 
+        nblock_int++;
+        npacket += gp.n_packets;
+        ndrop += gp.n_dropped;
+        hputi4(guppi_databuf_header(db_out, curblock_out),
+                "NBLOCK", nblock_int);
+        hputi4(guppi_databuf_header(db_out, curblock_out),
+                "NPKT", npacket);
+        hputi4(guppi_databuf_header(db_out, curblock_out),
+                "NDROP", ndrop);
 
-        /* Mark in as free, out as full */
+        /* Mark in as free */
         guppi_databuf_set_free(db_in, curblock_in);
 
         /* Go to next blocks */

@@ -13,7 +13,16 @@
 #include "guppi_databuf.h"
 
 void usage() { 
-    fprintf(stderr, "check_guppi_databuf\n");
+    fprintf(stderr, 
+            "Usage: check_guppi_databuf [options]\n"
+            "Options:\n"
+            "  -h, --help\n"
+            "  -q, --quiet\n"
+            "  -c, --create\n"
+            "  -i n, --id=n  (1)\n"
+            "  -s n, --size=n (32M)\n"
+            "  -n n, --nblock=n (24)\n"
+            );
 }
 
 int main(int argc, char *argv[]) {
