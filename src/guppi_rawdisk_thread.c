@@ -100,7 +100,8 @@ void guppi_rawdisk_thread(void *args) {
     int packetidx=0, npacket=0, ndrop=0, packetsize=0;
     int curblock=0, total_status=0;
     int got_packet_0=0;
-    char *ptr, *hend;
+    char *ptr;
+    //char *hend;
     signal(SIGINT,cc);
     while (run) {
 

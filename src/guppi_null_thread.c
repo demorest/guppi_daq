@@ -23,17 +23,6 @@
 #define STATUS_KEY "NULLSTAT"
 #include "guppi_threads.h"
 
-// Read a status buffer all of the key observation paramters
-extern void guppi_read_obs_params(char *buf, 
-                                  struct guppi_params *g, 
-                                  struct psrfits *p);
-
-/* Parse info from buffer into param struct */
-extern void guppi_read_subint_params(char *buf, 
-                                     struct guppi_params *g,
-                                     struct psrfits *p);
-
-
 void guppi_null_thread(void *args) {
 
     /* Set cpu affinity */
@@ -69,10 +58,6 @@ void guppi_null_thread(void *args) {
     hputs(st.buf, STATUS_KEY, "init");
     guppi_status_unlock_safe(&st);
 
-    /* Read in general parameters */
-    struct guppi_params gp;
-    struct psrfits pf;
-
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
     db = guppi_databuf_attach(1);
@@ -83,8 +68,7 @@ void guppi_null_thread(void *args) {
     }
 
     /* Loop */
-    int curblock=0, total_status=0;
-    char *ptr, *hend;
+    int curblock=0;
     signal(SIGINT,cc);
     while (run) {
 
