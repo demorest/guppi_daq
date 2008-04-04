@@ -24,11 +24,12 @@
 
 void usage() {
     fprintf(stderr,
-            "Usage: test_net_thread [options] sender_hostname\n"
+            "Usage: test_net_thread [options] [sender_hostname]\n"
+            "Default hostname: bee2_10\n"
             "Options:\n"
             "  -h, --help        This message\n"
-            "  -p n, --port=n    Port number\n"
-            "  -d, --disk        Write raw data to disk\n"
+            "  -p n, --port=n    Port number (default 50000)\n"
+            "  -d, --disk        Write raw data to disk (default no)\n"
            );
 }
 

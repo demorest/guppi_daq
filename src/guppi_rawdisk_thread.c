@@ -99,6 +99,7 @@ void guppi_rawdisk_thread(void *args) {
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0;
     int curblock=0, total_status=0;
+    int got_packet_0=0;
     char *ptr, *hend;
     signal(SIGINT,cc);
     while (run) {
@@ -111,11 +112,6 @@ void guppi_rawdisk_thread(void *args) {
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
 
-        /* Note waiting status */
-        guppi_status_lock_safe(&st);
-        hputs(st.buf, STATUS_KEY, "writing");
-        guppi_status_unlock_safe(&st);
-
         /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
         guppi_read_subint_params(ptr, &gp, &pf);
@@ -126,30 +122,42 @@ void guppi_rawdisk_thread(void *args) {
         hgeti4(ptr, "NPKT", &npacket);
         hgeti4(ptr, "NDROP", &ndrop);
 
+        /* Wait for packet 0 before starting write */
+        if (got_packet_0==0 && packetidx==0) got_packet_0=1;
+
         /* See how full databuf is */
         total_status = guppi_databuf_total_status(db);
 
-        /* Write stats to separate file */
-        fprintf(fhdr, "%d %d %d %d %d\n", packetidx, packetsize, npacket,
-                ndrop, total_status);
+        /* If we got packet 0, write data to disk */
+        if (got_packet_0) { 
 
-        /* Write header to file */
-        //hend = ksearch(ptr, "END");
-        //for (ptr=ptr; ptr<hend; ptr+=80) {
-        //    fwrite(ptr, 80, 1, fraw);
-        //}
+            /* Note waiting status */
+            guppi_status_lock_safe(&st);
+            hputs(st.buf, STATUS_KEY, "writing");
+            guppi_status_unlock_safe(&st);
 
-        /* Write data */
-        ptr = guppi_databuf_data(db, curblock);
-        rv = fwrite(ptr, packetsize, npacket, fraw);
-        if (rv != npacket) { 
-            guppi_error("guppi_rawdisk_thread", 
-                    "Error writing data.");
+            /* Write stats to separate file */
+            fprintf(fhdr, "%d %d %d %d %d\n", packetidx, packetsize, npacket,
+                    ndrop, total_status);
+
+            /* Write header to file */
+            //hend = ksearch(ptr, "END");
+            //for (ptr=ptr; ptr<hend; ptr+=80) {
+            //    fwrite(ptr, 80, 1, fraw);
+            //}
+
+            /* Write data */
+            ptr = guppi_databuf_data(db, curblock);
+            rv = fwrite(ptr, packetsize, npacket, fraw);
+            if (rv != npacket) { 
+                guppi_error("guppi_rawdisk_thread", 
+                        "Error writing data.");
+            }
+
+            /* flush output */
+            fflush(fraw);
+            fflush(fhdr);
         }
-
-        /* flush output */
-        fflush(fraw);
-        fflush(fhdr);
 
         /* Mark as free */
         guppi_databuf_set_free(db, curblock);
