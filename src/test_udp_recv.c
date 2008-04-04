@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         {0,0,0,0}
     };
     int opt, opti;
-    p.port = 5000;
+    p.port = 50000;
     p.packet_size=8200; 
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
@@ -54,14 +54,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Need sender hostname */
+    /* Default to bee2 if no hostname given */
     if (optind==argc) {
-        usage();
-        exit(1);
+        strcpy(p.sender, "bee2_10");
+    } else {
+        strcpy(p.sender, argv[optind]);
     }
 
     /* Init udp params */
-    strcpy(p.sender, argv[optind]);
     rv = guppi_udp_init(&p);
     if (rv!=GUPPI_OK) { 
         fprintf(stderr, "Error setting up networking\n");

@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         {0,0,0,0}
     };
     int opt, opti;
-    p.port = 5000;
+    p.port = 50000;
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -59,14 +59,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Need sender hostname */
+    /* Default to bee2 if no hostname given */
     if (optind==argc) {
-        usage();
-        exit(1);
+        strcpy(p.sender, "bee2_10");
+    } else {
+        strcpy(p.sender, argv[optind]);
     }
 
     /* Init udp params */
-    strcpy(p.sender, argv[optind]);
     p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Init shared mem */
