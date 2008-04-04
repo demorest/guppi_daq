@@ -41,21 +41,24 @@ int main(int argc, char *argv[]) {
 
     /* Databuf shared mem */
     struct guppi_databuf *d=NULL;
-    d = guppi_databuf_attach(1); // Repeat for however many needed ..
-    if (d==NULL) exit(ex);
-    if (d->semid) { 
-        rv = semctl(d->semid, 0, IPC_RMID); 
+    int i = 0;
+    for (i=1; i<=2; i++) {
+        d = guppi_databuf_attach(i); // Repeat for however many needed ..
+        if (d==NULL) continue;
+        if (d->semid) { 
+            rv = semctl(d->semid, 0, IPC_RMID); 
+            if (rv==-1) {
+                fprintf(stderr, "Error removing databuf semaphore\n");
+                perror("semctl");
+                ex=1;
+            }
+        }
+        rv = shmctl(d->shmid, IPC_RMID, NULL);
         if (rv==-1) {
-            fprintf(stderr, "Error removing databuf semaphore\n");
-            perror("semctl");
+            fprintf(stderr, "Error deleting databuf segment.\n");
+            perror("shmctl");
             ex=1;
         }
-    }
-    rv = shmctl(d->shmid, IPC_RMID, NULL);
-    if (rv==-1) {
-        fprintf(stderr, "Error deleting databuf segment.\n");
-        perror("shmctl");
-        ex=1;
     }
 
     exit(ex);
