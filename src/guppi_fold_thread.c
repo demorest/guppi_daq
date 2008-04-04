@@ -98,11 +98,16 @@ void guppi_fold_thread(void *args) {
 
     /* Buffers */
     struct foldbuf fb;
+    fb.nbin = 2048;
+    fb.nchan = 0;
+    fb.npol = 0;
+    fb.data = NULL;
+    fb.count = NULL;
 
     /* Loop */
     char errmsg[256];
-    int curblock_in=0, curblock_out=0;
-    int refresh_polycos=1;
+    int curblock_in=0, curblock_out=-1;
+    int refresh_polycos=1, next_integration=1;
     char *ptr;
     signal(SIGINT,cc);
     while (run) {
@@ -126,11 +131,30 @@ void guppi_fold_thread(void *args) {
         guppi_read_subint_params(ptr, &gp, &pf);
 
         /* Set up, clear out buffers */
-        fb.nbin = 2048;
-        fb.nchan = pf.hdr.nchan;
-        fb.npol = pf.hdr.npol;
-        malloc_foldbuf(&fb);
-        clear_foldbuf(&fb);
+        if (next_integration) {
+
+            /* Close out last integ */
+            if (curblock_out>0) { 
+                guppi_databuf_set_filled(db_out, curblock_out);
+            }
+
+            fb.nbin = 2048;
+            fb.nchan = pf.hdr.nchan;
+            fb.npol = pf.hdr.npol;
+
+            /* Wait for next output buf */
+            curblock_out = (curblock_out + 1) % db_out->n_block;
+            guppi_databuf_wait_free(db_out, curblock_out);
+            memcpy(guppi_databuf_header(db_out, curblock_out),
+                    guppi_databuf_header(db_in, curblock_in),
+                    GUPPI_STATUS_SIZE);
+
+            fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
+            fb.count = (unsigned *)(fb.data + fb.nbin * fb.nchan * fb.npol);
+
+            clear_foldbuf(&fb);
+            next_integration = 0;
+        }
 
         /* Check src, get correct polycos */
         imjd = pf.hdr.start_day;
@@ -175,31 +199,12 @@ void guppi_fold_thread(void *args) {
             guppi_error("guppi_fold_thread", "fold error");
         }
 
-        /* Wait for output buffer to be free */
-        guppi_databuf_wait_free(db_out, curblock_out);
-
-        /* Copy header to output buffer */
-        memcpy(guppi_databuf_header(db_out, curblock_out),
-                guppi_databuf_header(db_in, curblock_in),
-                GUPPI_STATUS_SIZE);
-
-        /* TODO : add any additional params to output header */
-        // Fold timestamps, nbins, etc
-
-        /* Put output in out buffer */
-        ptr = guppi_databuf_data(db_out, curblock_out);
-        memcpy(ptr, fb.data, sizeof(float) * fb.nbin * fb.nchan * fb.npol);
-        ptr += sizeof(float) * fb.nbin * fb.nchan * fb.npol;
-        memcpy(ptr, fb.count, sizeof(unsigned) * fb.nbin);
-        free_foldbuf(&fb);
 
         /* Mark in as free, out as full */
         guppi_databuf_set_free(db_in, curblock_in);
-        guppi_databuf_set_filled(db_out, curblock_out);
 
         /* Go to next blocks */
         curblock_in = (curblock_in + 1) % db_in->n_block;
-        curblock_out = (curblock_out + 1) % db_out->n_block;
 
         /* Check for cancel */
         pthread_testcancel();

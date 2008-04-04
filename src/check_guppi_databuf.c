@@ -24,13 +24,17 @@ int main(int argc, char *argv[]) {
         {"quiet",  0, NULL, 'q'},
         {"create", 0, NULL, 'c'},
         {"id",     1, NULL, 'i'},
+        {"size",   1, NULL, 's'},
+        {"nblock", 1, NULL, 'n'},
         {0,0,0,0}
     };
     int opt,opti;
     int quiet=0;
     int create=0;
     int db_id=1;
-    while ((opt=getopt_long(argc,argv,"hqci",long_opts,&opti))!=-1) {
+    int blocksize = 32;
+    int nblock = 24;
+    while ((opt=getopt_long(argc,argv,"hqci:s:n:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'c':
                 create=1;
@@ -40,6 +44,12 @@ int main(int argc, char *argv[]) {
                 break;
             case 'i':
                 db_id = atoi(optarg);
+                break;
+            case 's':
+                blocksize = atoi(optarg);
+                break;
+            case 'n':
+                nblock = atoi(optarg);
                 break;
             case 'h':
             default:
@@ -52,7 +62,8 @@ int main(int argc, char *argv[]) {
     /* Create mem if asked, otherwise attach */
     struct guppi_databuf *db=NULL;
     if (create) { 
-        db = guppi_databuf_create(24, 32*1024*1024, GUPPI_STATUS_SIZE, db_id);
+        db = guppi_databuf_create(nblock, blocksize*1024*1024, 
+                GUPPI_STATUS_SIZE, db_id);
         if (db==NULL) {
             fprintf(stderr, "Error creating databuf %d (may already exist).\n",
                     db_id);
