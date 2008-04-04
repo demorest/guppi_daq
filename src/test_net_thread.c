@@ -26,8 +26,9 @@ void usage() {
     fprintf(stderr,
             "Usage: test_net_thread [options] sender_hostname\n"
             "Options:\n"
-            "  -p n, --port=n    Port number\n"
             "  -h, --help        This message\n"
+            "  -p n, --port=n    Port number\n"
+            "  -d, --disk        Write raw data to disk\n"
            );
 }
 
@@ -43,14 +44,19 @@ int main(int argc, char *argv[]) {
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
         {"port",   1, NULL, 'p'},
+        {"disk",   0, NULL, 'd'},
         {0,0,0,0}
     };
     int opt, opti;
-    p.port = 5000;
-    while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
+    int disk=0;
+    p.port = 50000;
+    while ((opt=getopt_long(argc,argv,"hp:d",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
                 p.port = atoi(optarg);
+                break;
+            case 'd':
+                disk=1;
                 break;
             default:
             case 'h':
@@ -98,9 +104,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Launch raw disk thread */
+    /* Launch raw disk (or null) thread */
     pthread_t disk_thread_id;
-    rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, NULL);
+    if (disk)
+        rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, NULL);
+    else
+        rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, NULL);
     if (rv) { 
         fprintf(stderr, "Error creating null thread.\n");
         perror("pthread_create");
