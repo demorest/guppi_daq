@@ -71,8 +71,7 @@ int main(int argc, char *argv[]) {
     /* Create mem if asked, otherwise attach */
     struct guppi_databuf *db=NULL;
     if (create) { 
-        db = guppi_databuf_create(nblock, blocksize*1024*1024, 
-                GUPPI_STATUS_SIZE, db_id);
+        db = guppi_databuf_create(nblock, blocksize*1024*1024, db_id);
         if (db==NULL) {
             fprintf(stderr, "Error creating databuf %d (may already exist).\n",
                     db_id);

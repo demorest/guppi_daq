@@ -78,6 +78,9 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     dbuf = guppi_databuf_attach(1);
+    /* If attach fails, first try to create the databuf */
+    if (dbuf==NULL) dbuf = guppi_databuf_create(24, 32*1024*1024, 1);
+    /* If that also fails, exit */
     if (dbuf==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
         exit(1);

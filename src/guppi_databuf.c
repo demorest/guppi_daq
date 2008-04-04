@@ -9,15 +9,18 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
+#include <errno.h>
 
 #include "fitshead.h"
+#include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_error.h"
 
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
-        size_t header_size, int databuf_id) {
+        int databuf_id) {
 
     /* Calc databuf size */
+    const size_t header_size = GUPPI_STATUS_SIZE;
     size_t struct_size = sizeof(struct guppi_databuf);
     struct_size = 8192 * (1 + struct_size/8192); /* round up */
     size_t databuf_size = (block_size+header_size) * n_block + struct_size;
@@ -126,8 +129,9 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
     int shmid;
     shmid = shmget(GUPPI_DATABUF_KEY + databuf_id - 1, 0, 0666);
     if (shmid==-1) {
-        // Doesn't exist, exit quietly
-        //guppi_error("guppi_databuf_create", "shmget error");
+        // Doesn't exist, exit quietly otherwise complain
+        if (errno!=ENOENT)
+            guppi_error("guppi_databuf_attach", "shmget error");
         return(NULL);
     }
 
@@ -135,7 +139,7 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
     struct guppi_databuf *d;
     d = shmat(shmid, NULL, 0);
     if (d==(void *)-1) {
-        guppi_error("guppi_databuf_create", "shmat error");
+        guppi_error("guppi_databuf_attach", "shmat error");
         return(NULL);
     }
 

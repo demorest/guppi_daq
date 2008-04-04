@@ -36,7 +36,7 @@ union semun {
  * if other errors occured trying to allocate it).
  */
 struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
-        size_t header_size, int databuf_id);
+        int databuf_id);
 
 /* Return a pointer to a existing shmem segment with given id.
  * Returns error if segment does not exist 
