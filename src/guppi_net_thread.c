@@ -225,12 +225,23 @@ void *guppi_net_thread(void *_up) {
             nbogus_block=0;
 
             /* If new obs started, reset total counters, get start
-             * time. */
+             * time.  Start time is rounded to nearest integer
+             * second, with warning if we're off that by more
+             * than 100ms. */
             if (force_new_block) {
                 npacket_total=0;
                 ndropped_total=0;
                 nbogus_total=0;
                 get_current_mjd(&stt_imjd, &stt_smjd, &stt_offs);
+                if (stt_offs>0.5) { stt_smjd+=1; stt_offs-=1.0; }
+                if (fabs(stt_offs)>0.1) { 
+                    char msg[256];
+                    sprintf(msg, 
+                            "Second fraction = %3.1f ms > +/-100 ms",
+                            stt_offs*1e3);
+                    guppi_warn("guppi_net_thread", msg);
+                }
+                stt_offs = 0.0;
             }
 
             /* Read/update current status shared mem */

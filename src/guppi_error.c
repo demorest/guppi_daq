@@ -11,3 +11,7 @@
 void guppi_error(const char *name, const char *msg) {
     fprintf(stderr, "Error (%s): %s\n", name, msg);
 }
+
+void guppi_warn(const char *name, const char *msg) {
+    fprintf(stderr, "Warning (%s): %s\n", name, msg);
+}
