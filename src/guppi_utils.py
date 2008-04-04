@@ -54,10 +54,9 @@ class guppi_status:
         self.sem = possem.sem_open(GUPPI_STATUS_SEMID, possem.O_CREAT, 00644, 1)
         self.hdr = None
         self.gbtstat = None
+        self.read()
 
     def __getitem__(self, key):
-        if self.hdr is None:
-            self.read()
         return self.hdr[key]
 
     def lock(self):
@@ -72,25 +71,17 @@ class guppi_status:
         self.unlock()
 
     def write(self):
-        if self.hdr is None:
-            self.read()
         self.lock()
         self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
         self.unlock()
 
     def update(self, key, value, comment=None):
-        if self.hdr is None:
-            self.read()
-        else:
-            self.hdr.update(key, value, comment)
+        self.hdr.update(key, value, comment)
 
     def show(self):
-        if self.hdr is None:
-            self.read()
-        else:
-            for k, v in self.hdr.items():
-                print "'%8s' :"%k, v
-            print ""
+        for k, v in self.hdr.items():
+            print "'%8s' :"%k, v
+        print ""
 
     def update_with_gbtstatus(self):
         if self.gbtstat is None:
@@ -146,7 +137,6 @@ class guppi_status:
         
 if __name__=="__main__":
     g = guppi_status()
-    g.read()
     g.show()
 
     g.update("UPDATE", 3.12343545)

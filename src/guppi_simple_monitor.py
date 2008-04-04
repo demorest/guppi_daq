@@ -9,9 +9,10 @@ g = guppi_status()
 g.read()
 nchan = g["OBSNCHAN"]
 npoln = g["NPOL"]
-fctr = g["OBSBW"]
-BW = g["OBSFREQ"]
-nspec = 100  # number of spectra to read and average
+BW = g["OBSBW"]
+fctr = g["OBSFREQ"]
+fctr = BW/2.0
+nspec = 1000  # number of spectra to read and average
 
 # Connect to the GUPPI data buffer
 data_buf = shm.SharedMemoryHandle(12987498)
@@ -43,4 +44,5 @@ while (1):
     data.shape = (nspec, spec_size)
     avg_spec = data[:,nchan*poln:nchan*(poln+1)].mean(0)
     line.set_ydata(avg_spec)
+    print "Max chan =", avg_spec.argmax(), "freq =", x[avg_spec.argmax()], " MHz"
     p.draw()

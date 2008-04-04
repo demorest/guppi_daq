@@ -2,30 +2,38 @@ from guppi_utils import *
 from astro_utils import current_MJD
 g = guppi_status()
 
-g.update("SRC_NAME", "net test")
-g.update("RA_STR", "10:00:00.000")
-g.update("DEC_STR", "+20:00:00.0000")
+g.update("SCANNUM", 4)
+g.update("SRC_NAME", "B0329+54")
+#g.update("SRC_NAME", "B1937+21")
+#g.update("SRC_NAME", "test_tone")
+#g.update("RA_STR", "19:39:38.560")
+#g.update("DEC_STR", "21:34:59.143")
+g.update("RA_STR", "03:32:59.36")
+g.update("DEC_STR", "+54:34:43.6")
 
-g.update("SCANLEN", 5.0)
-g.update("SCANNUM", 1)
-g.update("BASENAME", "guppi_nettests")
+g.update("SCANLEN", 600.0)
+g.update("BASENAME", "guppi_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
 
 g.update("TELESCOP", "GB43m")
 g.update("OBSERVER", "GUPPI Crew")
 g.update("FRONTEND", "None")
 g.update("BACKEND", "GUPPI")
 g.update("PROJID", "first light tests")
-g.update("SRC_NAME", "bitpatterns")
 g.update("FD_POLN", "LIN")
 g.update("POL_TYPE", "IQUV")
 
-g.update("OBSFREQ", 200.0)
+g.update("OBSFREQ", 960.0)
 g.update("OBSBW", 400.0)
 g.update("OBSNCHAN", 2048)
 g.update("NPOL", 4)
 g.update("NBITS", 8)
-g.update("TBIN", 0.000050)
+accum_len = 16
+g.update("TBIN", 16.0*g['OBSNCHAN']/g['OBSBW']*1e-6)
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
+
+# Correct for 4-bin offset problem
+#g.update("OBSFREQ", g['OBSFREQ']+4*g['CHAN_BW'])
+
 g.update("NRCVR", 2)
 
 g.update("TRK_MODE", "TRACK")
