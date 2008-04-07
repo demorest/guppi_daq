@@ -21,7 +21,8 @@ struct_size, block_size, header_size = \
              n.fromstring(packed[0:24], dtype=n.int64)
 shmid, semid, n_block = \
              n.fromstring(packed[24:36], dtype=n.int32)
-offset = struct_size + n_block*header_size + block_size
+data_offset = struct_size + n_block*header_size
+offset = data_offset
 spec_size = npoln * nchan
 print struct_size, block_size, header_size, shmid, semid, n_block, offset
 
@@ -38,11 +39,25 @@ print len(x), len(avg_spec)
 
 line, = p.plot(x, avg_spec)
 
-while (1):
-    print "updating..."
-    data = n.fromstring(data_buf.read(spec_size*nspec, offset), dtype=n.uint8)
-    data.shape = (nspec, spec_size)
-    avg_spec = data[:,nchan*poln:nchan*(poln+1)].mean(0)
-    line.set_ydata(avg_spec)
-    print "Max chan =", avg_spec.argmax(), "freq =", x[avg_spec.argmax()], " MHz"
-    p.draw()
+run=1
+while (run):
+    try:
+        print "updating..."
+        g.read()
+        try:
+            curblock = g["CURBLOCK"]
+        except KeyError:
+            curblock = 1
+        offset = data_offset + block_size*curblock
+        data = n.fromstring(data_buf.read(spec_size*nspec, offset), dtype=n.uint8)
+        data.shape = (nspec, spec_size)
+        avg_spec = data[:,nchan*poln:nchan*(poln+1)].mean(0)
+        line.set_ydata(avg_spec)
+        print "Max chan=%d freq=%.3fMHz value=%.3f" %\
+                (avg_spec.argmax(), x[avg_spec.argmax()], avg_spec.max())
+        p.draw()
+    except KeyboardInterrupt:
+        print "Exiting.."
+        run = 0
+    except:
+        raise

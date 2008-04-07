@@ -80,9 +80,10 @@ void guppi_null_thread(void *args) {
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
 
-        /* Note waiting status */
+        /* Note waiting status, current block */
         guppi_status_lock_safe(&st);
         hputs(st.buf, STATUS_KEY, "blanking");
+        hputi4(st.buf, "CURBLOCK", curblock);
         guppi_status_unlock_safe(&st);
 
         /* Mark as free */
