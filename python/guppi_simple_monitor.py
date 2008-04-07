@@ -23,6 +23,7 @@ shmid, semid, n_block = \
              n.fromstring(packed[24:36], dtype=n.int32)
 data_offset = struct_size + n_block*header_size
 offset = data_offset
+curblock = 0
 spec_size = npoln * nchan
 print struct_size, block_size, header_size, shmid, semid, n_block, offset
 
@@ -59,5 +60,3 @@ while (run):
     except KeyboardInterrupt:
         print "Exiting.."
         run = 0
-    except:
-        raise
