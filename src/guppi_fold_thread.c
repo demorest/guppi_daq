@@ -135,7 +135,7 @@ void guppi_fold_thread(void *args) {
         if (next_integration) {
 
             /* Close out last integ */
-            if (curblock_out>0) { 
+            if (curblock_out>=0) { 
                 guppi_databuf_set_filled(db_out, curblock_out);
             }
 
