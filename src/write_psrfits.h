@@ -4,9 +4,11 @@
 #define PSRFITS_MAXFILELEN 10L
 
 // The following is the template file to use to create a PSRFITS file
-#define PSRFITS_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_template.txt"
+#define PSRFITS_SEARCH_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_search_template.txt"
+#define PSRFITS_FOLD_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_fold_template.txt"
 
 struct hdrinfo {
+    char obs_mode[8];       // Observing mode (SEARCH, PSR, CAL)
     char telescope[24];     // Telescope used
     char observer[24];      // Observer's name
     char source[24];        // Source name
@@ -41,7 +43,8 @@ struct hdrinfo {
     double start_sec;       // Start time (sec past UTC 00h) 
     int start_day;          // Start MJD (UTC days) (J - long integer)
     int scan_number;        // Number of scan
-    int nbits;              // Number of bits per data sample
+    int nbits;              // Number of bits per data sample 
+    int nbin;               // Number of bins per period in fold mode
     int nchan;              // Number of channels
     int npol;               // Number of polarizations to be stored (1 for summed)
     int nsblk;              // Number of spectra per row
@@ -88,6 +91,6 @@ struct psrfits {
     struct subint sub;
 };
 
-int psrfits_create_searchmode(struct psrfits *pf);
+int psrfits_create(struct psrfits *pf);
 int psrfits_write_subint(struct psrfits *pf);
 int psrfits_close(struct psrfits *pf);

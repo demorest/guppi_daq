@@ -174,6 +174,16 @@ void guppi_read_obs_params(char *buf,
         get_dbl("CAL_DCYC", p->hdr.cal_dcyc, 0.5);
         get_dbl("CAL_PHS", p->hdr.cal_phs, 0.0);
     }
+    get_str("OBS_MODE", p->hdr.obs_mode, 8, "Unknown");
+
+    // Fold mode specific stuff
+    int fold=0;
+    if (strcmp("FOLD", p->hdr.obs_mode)==0) { fold=1; }
+    if (fold) {
+        get_int("NBIN", p->hdr.nbin, 1024);
+    } else {
+        p->hdr.nbin = 1;
+    }
     
     { // Start time, MJD
         int mjd_d, mjd_s;
@@ -215,6 +225,14 @@ void guppi_read_obs_params(char *buf,
         p->hdr.nsblk = p->sub.bytes_per_subint / bytes_per_dt;
         p->sub.FITS_typecode = TBYTE;
         p->sub.tsubint = p->hdr.nsblk * p->hdr.dt;
+        if (fold) { 
+            // TODO fix this up
+            p->hdr.nsblk = 1;
+            p->sub.FITS_typecode = TFLOAT;
+            p->sub.tsubint *= 128;
+            p->sub.bytes_per_subint = sizeof(float) * p->hdr.nbin *
+                p->hdr.nchan * p->hdr.npol;
+        }
         max_bytes_per_file = PSRFITS_MAXFILELEN * 1073741824L;
         // Will probably want to tweak this so that it is a nice round number
         p->rows_per_file = max_bytes_per_file / p->sub.bytes_per_subint;
