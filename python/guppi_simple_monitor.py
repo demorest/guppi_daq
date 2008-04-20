@@ -57,6 +57,7 @@ while (run):
         print "Max chan=%d freq=%.3fMHz value=%.3f" %\
                 (avg_spec.argmax(), x[avg_spec.argmax()], avg_spec.max())
         p.draw()
+        time.sleep(1)
     except KeyboardInterrupt:
         print "Exiting.."
         run = 0

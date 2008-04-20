@@ -102,6 +102,12 @@ void guppi_read_subint_params(char *buf,
     get_dbl("RA", p->sub.ra, 0.0);
     get_dbl("DEC", p->sub.dec, 0.0);
 
+    // Midtime of this block (relative to obs start)
+    int bytes_per_dt = p->hdr.nchan * p->hdr.npol * p->hdr.nbits / 8;
+    p->sub.offs = p->hdr.dt * 
+        (double)(g->packetindex * g->packetsize / bytes_per_dt)
+        + 0.5 * p->sub.tsubint;
+
     { // MJD and LST calcs
         int imjd, smjd, lst_secs;
         double offs, mjd;
