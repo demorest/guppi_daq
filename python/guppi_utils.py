@@ -155,8 +155,23 @@ class guppi_databuf:
         self.hdr = []
         for i in range(self.n_block):
             self.hdr.append(header_from_string(self.buf.read(self.header_size,\
-                self.header_offset)))
+                self.header_offset + i*self.header_size)))
 
+    def data(self,block):
+        if (block<0 or block>=self.n_block):
+            raise IndexError, "block %d out of range (n_block=%d)" \
+                    % (block, self.n_block)
+        raw = n.fromstring(self.buf.read(self.block_size, \
+                self.data_offset + block*self.block_size), \
+                dtype=n.uint8)
+        try:
+            npol = self.hdr[block]["NPOL"]
+            nchan = self.hdr[block]["OBSNCHAN"]
+            nspec = self.block_size / (npol*nchan)
+            raw.shape = (nspec, npol, nchan)
+        except KeyError:
+            pass
+        return raw
         
 if __name__=="__main__":
     g = guppi_status()
