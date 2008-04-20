@@ -1,6 +1,7 @@
 import shm_wrapper as shm
 from GBTStatus import GBTStatus
 import time, pyfits, possem
+import numpy as n
 import psr_utils as psr
 import astro_utils as astro
 import slalib as s
@@ -45,7 +46,6 @@ def cardlist_from_string(str):
 
 GUPPI_STATUS_KEY = 16783408
 GUPPI_STATUS_SEMID = "/guppi_status"
-
 
 class guppi_status:
 
@@ -134,6 +134,29 @@ class guppi_status:
         az, za = astro.radec_to_altaz(self['RA'], self['DEC'], MJD, scope='GBVA140')
         self.update("AZ", az)
         self.update("ZA", za)
+
+GUPPI_DATABUF_KEY = 12987498
+
+class guppi_databuf:
+
+    def __init__(self):
+        self.buf = shm.SharedMemoryHandle(GUPPI_DATABUF_KEY)
+        self.data_type = self.buf.read(NumberOfBytes=64, offset=0)
+        packed = self.buf.read(NumberOfBytes=3*8+3*4, offset=64)
+        self.struct_size, self.block_size, self.header_size = \
+                n.fromstring(packed[0:24], dtype=n.int64)
+        self.shmid, self.semid, self.n_block= \
+                n.fromstring(packed[24:36], dtype=n.int32)
+        self.header_offset = self.struct_size 
+        self.data_offset = self.struct_size + self.n_block*self.header_size
+        self.read()
+
+    def read(self):
+        self.hdr = []
+        for i in range(self.n_block):
+            self.hdr.append(header_from_string(self.buf.read(self.header_size,\
+                self.header_offset)))
+
         
 if __name__=="__main__":
     g = guppi_status()
