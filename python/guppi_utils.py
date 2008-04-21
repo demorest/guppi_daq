@@ -149,9 +149,16 @@ class guppi_databuf:
                 n.fromstring(packed[24:36], dtype=n.int32)
         self.header_offset = self.struct_size 
         self.data_offset = self.struct_size + self.n_block*self.header_size
-        self.read()
+        self.read_all_hdr()
 
-    def read(self):
+    def read_hdr(self,block):
+        if (block<0 or block>=self.n_block):
+            raise IndexError, "block %d out of range (n_block=%d)" \
+                    % (block, self.n_block)
+        self.hdr[block] = header_from_string(self.buf.read(self.header_size,\
+                self.header_offset + block*self.header_size))
+
+    def read_all_hdr(self):
         self.hdr = []
         for i in range(self.n_block):
             self.hdr.append(header_from_string(self.buf.read(self.header_size,\
@@ -161,6 +168,7 @@ class guppi_databuf:
         if (block<0 or block>=self.n_block):
             raise IndexError, "block %d out of range (n_block=%d)" \
                     % (block, self.n_block)
+        self.read_hdr(block) 
         raw = n.fromstring(self.buf.read(self.block_size, \
                 self.data_offset + block*self.block_size), \
                 dtype=n.uint8)
