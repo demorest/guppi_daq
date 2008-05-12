@@ -57,6 +57,7 @@ if (1): # Use for parkes spectrometer
     g.update("POL_TYPE", "AABB");
     g.update("ACC_LEN", 13)
     g.update("TBIN", g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6)
+    g.update("BASENAME", "parspec_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
 
 if (1):  # in case we don't get a real start time
     MJD = current_MJD()

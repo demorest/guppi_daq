@@ -131,6 +131,7 @@ void *guppi_net_thread(void *_up) {
             guppi_error("guppi_net_thread", msg);
             pthread_exit(NULL);
         }
+        /* TODO : check packet_size, npol, chan for consistency? */
     }
 
     /* Figure out size of data in each packet, number of packets
@@ -218,9 +219,7 @@ void *guppi_net_thread(void *_up) {
             waiting=0;
         }
 
-        /* Convert packet format if needed.  Here acc_len, nchan and npol
-         * are hard-coded for now.
-         */
+        /* Convert packet format if needed */
         if (use_parkes_packets) 
             parkes_to_guppi(&p, acclen, npol, nchan);
 
