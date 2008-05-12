@@ -18,10 +18,10 @@ g.update("TELESCOP", "GB43m")
 g.update("OBSERVER", "GUPPI Crew")
 g.update("FRONTEND", "None")
 g.update("BACKEND", "GUPPI")
+g.update("PKTFMT", "GUPPI")
 g.update("PROJID", "first light tests")
 g.update("FD_POLN", "LIN")
 g.update("POL_TYPE", "IQUV")
-
 
 g.update("OBSFREQ", 960.0)
 g.update("OBSBW", 400.0)
@@ -50,7 +50,8 @@ g.update("OFFSET3", 0.0)
 g.update("SCALE3", 1.0)
 
 if (1): # Use for parkes spectrometer
-    g.update("BACKEND", "Parspec");
+    g.update("BACKEND", "ParSpec");
+    g.update("PKTFMT", "PARKES");
     g.update("OBSNCHAN", 1024);
     g.update("NPOL", 2);
     g.update("POL_TYPE", "AABB");
