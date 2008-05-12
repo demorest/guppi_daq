@@ -117,7 +117,12 @@ void *guppi_net_thread(void *_up) {
         printf("guppi_net_thread: Using Parkes UDP packet format.\n");
         nchan = pf.hdr.nchan;
         npol = pf.hdr.npol;
-        acclen = 13; /* TODO get this into status shmem */
+        acclen = gp.decimation_factor;
+        if (acclen==0) { 
+            guppi_error("guppi_net_thread", 
+                    "ACC_LEN must be set to use Parkes format");
+            pthread_exit(NULL);
+        }
         if (npol!=2) {
             char msg[256];
             sprintf(msg, 

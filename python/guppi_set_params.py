@@ -22,13 +22,14 @@ g.update("PROJID", "first light tests")
 g.update("FD_POLN", "LIN")
 g.update("POL_TYPE", "IQUV")
 
+
 g.update("OBSFREQ", 960.0)
 g.update("OBSBW", 400.0)
 g.update("OBSNCHAN", 2048)
 g.update("NPOL", 4)
 g.update("NBITS", 8)
-accum_len = 16
-g.update("TBIN", 16.0*g['OBSNCHAN']/g['OBSBW']*1e-6)
+g.update("ACC_LEN", 16)
+g.update("TBIN", g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6)
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
 
 # Correct for 4-bin offset problem
@@ -53,6 +54,8 @@ if (1): # Use for parkes spectrometer
     g.update("OBSNCHAN", 1024);
     g.update("NPOL", 2);
     g.update("POL_TYPE", "AABB");
+    g.update("ACC_LEN", 13)
+    g.update("TBIN", g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6)
 
 if (1):  # in case we don't get a real start time
     MJD = current_MJD()

@@ -103,6 +103,11 @@ void guppi_read_subint_params(char *buf,
     get_dbl("RA", p->sub.ra, 0.0);
     get_dbl("DEC", p->sub.dec, 0.0);
 
+    // Backend HW parameters
+    get_int("ACC_LEN", g->decimation_factor, 0);
+    get_int("NBITSADC", g->n_bits_adc, 8);
+    get_int("PFB_OVER", g->pfb_overlap, 4);
+
     // Midtime of this block (relative to obs start)
     int bytes_per_dt = p->hdr.nchan * p->hdr.npol * p->hdr.nbits / 8;
     p->sub.offs = p->hdr.dt * 
