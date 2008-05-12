@@ -247,7 +247,8 @@ void guppi_read_obs_params(char *buf,
         }
         max_bytes_per_file = PSRFITS_MAXFILELEN * 1073741824L;
         // Will probably want to tweak this so that it is a nice round number
-        p->rows_per_file = max_bytes_per_file / p->sub.bytes_per_subint;
+        if (p->sub.bytes_per_subint!=0)
+            p->rows_per_file = max_bytes_per_file / p->sub.bytes_per_subint;
 
         // Free the old ones in case we've changed the params
         if (p->sub.dat_freqs) free(p->sub.dat_freqs);

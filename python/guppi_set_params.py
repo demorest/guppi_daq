@@ -10,6 +10,7 @@ g.update("SRC_NAME", "B0329+54")
 #g.update("DEC_STR", "21:34:59.143")
 g.update("RA_STR", "03:32:59.36")
 g.update("DEC_STR", "+54:34:43.6")
+g.update("OBS_MODE", "SEARCH")
 
 g.update("SCANLEN", 600.0)
 g.update("BASENAME", "guppi_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
