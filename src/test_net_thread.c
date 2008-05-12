@@ -30,6 +30,7 @@ void usage() {
             "  -h, --help        This message\n"
             "  -p n, --port=n    Port number (default 50000)\n"
             "  -d, --disk        Write raw data to disk (default no)\n"
+            "  -s n, --size=n    Set packet size in bytes (8208)\n"
            );
 }
 
@@ -46,18 +47,23 @@ int main(int argc, char *argv[]) {
         {"help",   0, NULL, 'h'},
         {"port",   1, NULL, 'p'},
         {"disk",   0, NULL, 'd'},
+        {"size",   1, NULL, 's'},
         {0,0,0,0}
     };
     int opt, opti;
     int disk=0;
     p.port = 50000;
-    while ((opt=getopt_long(argc,argv,"hp:d",long_opts,&opti))!=-1) {
+    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
+    while ((opt=getopt_long(argc,argv,"hp:ds:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
                 p.port = atoi(optarg);
                 break;
             case 'd':
                 disk=1;
+                break;
+            case 's':
+                p.packet_size = atoi(optarg);
                 break;
             default:
             case 'h':
@@ -73,9 +79,6 @@ int main(int argc, char *argv[]) {
     } else {
         strcpy(p.sender, argv[optind]);
     }
-
-    /* Init udp params */
-    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Init shared mem */
     struct guppi_status stat;

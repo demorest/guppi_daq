@@ -41,6 +41,7 @@ struct guppi_udp_packet {
 unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p);
 char *guppi_udp_packet_data(struct guppi_udp_packet *p);
 size_t guppi_udp_packet_datasize(size_t packet_size);
+size_t parkes_udp_packet_datasize(size_t packet_size);
 unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p);
 
 /* Use sender and port fields in param struct to init
@@ -53,6 +54,10 @@ int guppi_udp_wait(struct guppi_udp_params *p);
 
 /* Read a packet */
 int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b);
+
+/* Convert a Parkes-style packet to a GUPPI-style packet */
+void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len, 
+        const int npol, const int nchan);
 
 /* Close out socket, etc */
 int guppi_udp_close(struct guppi_udp_params *p);

@@ -133,6 +133,45 @@ unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p) {
                 + p->packet_size - sizeof(unsigned long long)));
 }
 
+size_t parkes_udp_packet_datasize(size_t packet_size) {
+    return(packet_size - sizeof(unsigned long long));
+}
+
+void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len, 
+        const int npol, const int nchan) {
+
+    /* Convert IBOB clock count to packet count.
+     * This assumes 2 samples per IBOB clock, and that
+     * acc_len is the actual accumulation length (=reg_acclen+1).
+     */
+    const int counts_per_packet = (nchan/2) * acc_len;
+    unsigned long long *packet_idx = (unsigned long long *)b->data;
+    (*packet_idx) = change_endian64(packet_idx);
+    (*packet_idx) /= counts_per_packet;
+    (*packet_idx) = change_endian64(packet_idx);
+
+    /* Reorder from the goofy Parkes ordering */
+    /* Note:  This will not work correctly for 4-pol case, since
+     * I haven't seen the documentation for that yet.  Also
+     * 8-bit data is assumed.
+     */
+    int i;
+    char tmp[GUPPI_MAX_PACKET_SIZE];
+    char *pol0, *pol1, *in;
+    in = b->data + sizeof(long long);
+    pol0 = &tmp[0];
+    pol1 = &tmp[nchan];
+    for (i=0; i<nchan/2; i++) {
+        /* Each loop handles 2 values from each pol */
+        memcpy(pol0, in, 2*sizeof(char));
+        memcpy(pol1, &in[2], 2*sizeof(char));
+        pol0 += 2;
+        pol1 += 2;
+        in += 4;
+    }
+    memcpy(b->data + sizeof(long long), tmp, sizeof(char) * 2 * nchan);
+}
+
 int guppi_udp_close(struct guppi_udp_params *p) {
     close(p->sock);
     return(GUPPI_OK);

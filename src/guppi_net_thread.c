@@ -7,6 +7,7 @@
 #define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
@@ -17,6 +18,8 @@
 #include <sys/types.h>
 
 #include "fitshead.h"
+#include "guppi_params.h"
+#include "write_psrfits.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -25,6 +28,11 @@
 
 #define STATUS_KEY "NETSTAT"  /* Define before guppi_threads.h */
 #include "guppi_threads.h"
+
+// Read a status buffer all of the key observation paramters
+extern void guppi_read_obs_params(char *buf, 
+                                  struct guppi_params *g, 
+                                  struct psrfits *p);
 
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
@@ -65,16 +73,19 @@ void *guppi_net_thread(void *_up) {
     }
     pthread_cleanup_push((void *)set_exit_status, &st);
 
-    /* Init status */
+    /* Init status, read info */
     guppi_status_lock_safe(&st);
     hputs(st.buf, STATUS_KEY, "init");
     guppi_status_unlock_safe(&st);
 
     /* Read in general parameters */
+    struct guppi_params gp;
+    struct psrfits pf;
     char status_buf[GUPPI_STATUS_SIZE];
     guppi_status_lock_safe(&st);
     memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
     guppi_status_unlock_safe(&st);
+    guppi_read_obs_params(status_buf, &gp, &pf);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -98,6 +109,25 @@ void *guppi_net_thread(void *_up) {
     int stt_imjd=0, stt_smjd=0;
     double stt_offs=0.0;
 
+    /* See which packet format to use */
+    int use_parkes_packets=0;
+    int nchan=0, npol=0, acclen=0;
+    if (strncmp(gp.packet_format, "PARKES", 6)==0) { use_parkes_packets=1; }
+    if (use_parkes_packets) {
+        printf("guppi_net_thread: Using Parkes UDP packet format.\n");
+        nchan = pf.hdr.nchan;
+        npol = pf.hdr.npol;
+        acclen = 13; /* TODO get this into status shmem */
+        if (npol!=2) {
+            char msg[256];
+            sprintf(msg, 
+                    "Parkes packet format not implemented for npol=%d", 
+                    npol);
+            guppi_error("guppi_net_thread", msg);
+            pthread_exit(NULL);
+        }
+    }
+
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
      * TODO : Figure out how/if to deal with packet size changing.
@@ -105,6 +135,8 @@ void *guppi_net_thread(void *_up) {
     int block_size;
     struct guppi_udp_packet p;
     size_t packet_data_size = guppi_udp_packet_datasize(up->packet_size); 
+    if (use_parkes_packets) 
+        packet_data_size = parkes_udp_packet_datasize(up->packet_size);
     unsigned packets_per_block; 
     if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
             block_size = db->block_size;
@@ -180,6 +212,12 @@ void *guppi_net_thread(void *_up) {
             guppi_status_unlock_safe(&st);
             waiting=0;
         }
+
+        /* Convert packet format if needed.  Here acc_len, nchan and npol
+         * are hard-coded for now.
+         */
+        if (use_parkes_packets) 
+            parkes_to_guppi(&p, acclen, npol, nchan);
 
         /* Check seq num diff */
         seq_num = guppi_udp_packet_seq_num(&p);

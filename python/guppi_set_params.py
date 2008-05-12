@@ -48,6 +48,12 @@ g.update("SCALE2", 1.0)
 g.update("OFFSET3", 0.0)
 g.update("SCALE3", 1.0)
 
+if (1): # Use for parkes spectrometer
+    g.update("BACKEND", "Parspec");
+    g.update("OBSNCHAN", 1024);
+    g.update("NPOL", 2);
+    g.update("POL_TYPE", "AABB");
+
 if (1):  # in case we don't get a real start time
     MJD = current_MJD()
     MJDd = int(MJD)
