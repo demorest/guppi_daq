@@ -165,7 +165,7 @@ void guppi_read_obs_params(char *buf,
     get_str("OBSERVER", p->hdr.observer, 24, "Unknown");
     get_str("SRC_NAME", p->hdr.source, 24, "Unknown");
     get_str("FRONTEND", p->hdr.frontend, 24, "Unknown");
-    get_str("BACKEND", p->hdr.frontend, 24, "GUPPI");
+    get_str("BACKEND", p->hdr.backend, 24, "GUPPI");
     get_str("PROJID", p->hdr.project_id, 24, "Unknown");
     get_str("FD_POLN", p->hdr.poln_type, 8, "Unknown");
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");

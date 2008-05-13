@@ -33,7 +33,7 @@ x = p.arange(nchan)/float(nchan)*BW + (fctr-0.5*BW)
 
 do_log = 0
 
-poln = 0
+poln = 1
 data = d.data(0)
 avg_spec = data[:,poln,:].mean(0)
 min_spec = data[:,poln,:].min(0)
