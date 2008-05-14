@@ -2,7 +2,7 @@ import shm_wrapper as shm
 from GBTStatus import GBTStatus
 import time, pyfits, possem
 import numpy as n
-import psr_utils as psr
+#import psr_utils as psr
 import astro_utils as astro
 import slalib as s
 
@@ -113,11 +113,11 @@ class guppi_status:
             self.update("DEC_STR", self.dec_str)
             self.update("DEC", self.dec)
         h, m, s = g['lst'].split(":")
-        lst = int(round(psr.hms_to_rad(int(h),int(m),float(s))*86400.0/psr.TWOPI))
+        lst = int(round(astro.hms_to_rad(int(h),int(m),float(s))*86400.0/astro.TWOPI))
         self.update("LST", lst)
         self.update("AZ", float(g['az_actual']))
         self.update("ZA", 90.0-float(g['el_actual']))
-        beam_deg = 2.0*psr.beam_halfwidth(freq, 100.0)/60.0
+        beam_deg = 2.0*astro.beam_halfwidth(freq, 100.0)/60.0
         self.update("BMAJ", beam_deg)
         self.update("BMIN", beam_deg)
 

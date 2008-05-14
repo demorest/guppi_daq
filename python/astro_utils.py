@@ -3,6 +3,7 @@ import slalib as s
 
 DEGTORAD = 0.017453292519943295769236907684
 RADTODEG = 57.29577951308232087679815481410
+TWOPI    = float('6.2831853071795864769252867665590057683943387987502')
 
 def current_MJD():
     """
@@ -40,6 +41,26 @@ def radec_to_altaz(ra, dec, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, 
                                        0.0,-lon,lat,hgt,0.0,0.0,temp,atm,humid,microns,0.0065)
     az = s.sla_dranrm(az)
     return az*RADTODEG, za*RADTODEG
+
+def hms_to_rad(hour, min, sec):
+    """
+    hms_to_rad(hour, min, sec):
+    Convert hours, minutes, and seconds of arc to radians
+    """
+    if (hour < 0.0): sign = -1
+    else: sign = 1
+    return sign * SECTORAD * \
+           (60.0 * (60.0 * Num.fabs(hour) +
+                    Num.fabs(min)) + Num.fabs(sec))
+
+def beam_halfwidth(obs_freq, dish_diam):
+    """
+    beam_halfwidth(obs_freq, dish_diam):
+    Return the telescope beam halfwidth in arcmin
+    'obs_freq' = the observing frqeuency in MHz
+    'dish_diam' = the telescope diameter in m
+    """
+    return 1.2*SOL/(obs_freq*10.0**6)/dish_diam*RADTODEG*60/2
 
 if __name__ == "__main__":
     MJD = 54556.290613425925 # Ter5 Coords

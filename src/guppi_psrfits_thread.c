@@ -98,6 +98,11 @@ void guppi_psrfits_thread(void *args) {
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db, curblock);
 
+        /* Note current block */
+        guppi_status_lock_safe(&st);
+        hputi4(st.buf, "CURBLOCK", curblock);
+        guppi_status_unlock_safe(&st);
+
         /* See how full databuf is */
         total_status = guppi_databuf_total_status(db);
         

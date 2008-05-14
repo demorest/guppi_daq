@@ -29,33 +29,34 @@ def db(x,min=-80.0):
     return y
 
 p.ion()  # turn interactive mode on
+p.figure(1)
 x = p.arange(nchan)/float(nchan)*BW + (fctr-0.5*BW)
 
 do_log = 0
 
-poln = 1
 data = d.data(0)
-avg_spec = data[:,poln,:].mean(0)
-min_spec = data[:,poln,:].min(0)
-max_spec = data[:,poln,:].max(0)
 
-if do_log:
-    avg_spec = db(avg_spec)
-    min_spec = db(min_spec)
-    max_spec = db(max_spec)
+line=[]
+hi_line=[]
+lo_line=[]
 
-print len(x), len(avg_spec)
+nspec_sum = 1024
 
-p.xlabel("Frequency (MHz)")
-p.ylabel("Power")
-line, = p.plot(x, avg_spec)
-hi_line, = p.plot(x, max_spec, 'b:')
-lo_line, = p.plot(x, min_spec, 'b:')
+for pol in range(npoln):
+    avg_spec = data[0:nspec_sum,pol,:].mean(0)
+    min_spec = data[0:nspec_sum,pol,:].min(0)
+    max_spec = data[0:nspec_sum,pol,:].max(0)
+    p.subplot(npoln,1,pol+1)
+    if pol==npoln-1: 
+        p.xlabel("Frequency (MHz)")
+    p.ylabel("Power")
+    p.title("Pol %d" % (pol))
+    line.append(p.plot(x, avg_spec)[0])
+    hi_line.append(p.plot(x, max_spec, 'b:')[0])
+    lo_line.append(p.plot(x, min_spec, 'b:')[0])
+    p.axis([x.min(),x.max(),0,256])
+    #p.axis('auto')
 
-if do_log:
-    p.axis([x.min(),x.max(),-30.0,0.0])
-else:
-    p.axis('auto')
 
 run=1
 while (run):
@@ -66,18 +67,19 @@ while (run):
             curblock = g["CURBLOCK"]
         except KeyError:
             curblock = 1
+
         data = d.data(curblock)
-        avg_spec = data[:,poln,:].mean(0)
-        min_spec = data[:,poln,:].min(0)
-        max_spec = data[:,poln,:].max(0)
-        if do_log:
-            avg_spec = db(avg_spec)
-            min_spec = db(min_spec)
-            max_spec = db(max_spec)
-        line.set_ydata(avg_spec)
-        hi_line.set_ydata(max_spec)
-        lo_line.set_ydata(min_spec)
-        p.axis('auto')
+
+        for pol in range(npoln):
+            avg_spec = data[0:nspec_sum,pol,:].mean(0)
+            min_spec = data[0:nspec_sum,pol,:].min(0)
+            max_spec = data[0:nspec_sum,pol,:].max(0)
+            p.subplot(npoln,1,pol+1)
+            #p.axis('auto')
+            line[pol].set_ydata(avg_spec)
+            hi_line[pol].set_ydata(max_spec)
+            lo_line[pol].set_ydata(min_spec)
+
         print "Block %2d: Max chan=%d freq=%.3fMHz value=%.3f" %\
                 (curblock, avg_spec.argmax(), x[avg_spec.argmax()],\
                 avg_spec.max())
