@@ -123,6 +123,7 @@ void *guppi_net_thread(void *_up) {
                     "ACC_LEN must be set to use Parkes format");
             pthread_exit(NULL);
         }
+#if 0 
         if (npol!=2) {
             char msg[256];
             sprintf(msg, 
@@ -131,6 +132,7 @@ void *guppi_net_thread(void *_up) {
             guppi_error("guppi_net_thread", msg);
             pthread_exit(NULL);
         }
+#endif
         /* TODO : check packet_size, npol, chan for consistency? */
     }
 

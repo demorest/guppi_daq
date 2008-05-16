@@ -2,7 +2,7 @@ from guppi_utils import *
 from astro_utils import current_MJD
 g = guppi_status()
 
-g.update("SCANNUM", 3)
+g.update("SCANNUM", 4)
 
 #g.update("SRC_NAME", "B0329+54")
 #g.update("RA_STR", "03:32:59.36")
@@ -15,7 +15,7 @@ g.update("DEC_STR", "21:34:59.143")
 #g.update("DEC_STR", "+07:55:35.75")
 
 g.update("OBS_MODE", "SEARCH")
-g.update("SCANLEN", 1800.0)
+g.update("SCANLEN", 600.0)
 
 g.update("TELESCOP", "GB43m")
 g.update("OBSERVER", "GUPPI Crew")
@@ -45,9 +45,17 @@ g.update("NBITS", 8)
 g.update("PFB_OVER", 2)
 g.update("NBITSADC", 8)
 g.update("OBSBW", -400.0)
-g.update("OBSNCHAN", 1024);
-g.update("NPOL", 2);
-g.update("POL_TYPE", "AABB");
+
+npol = 2
+if npol==2:
+    g.update("NPOL", 2);
+    g.update("OBSNCHAN", 1024);
+    g.update("POL_TYPE", "AABB");
+if npol==4:
+    g.update("NPOL", 4);
+    g.update("OBSNCHAN", 512);
+    g.update("POL_TYPE", "IQUV");
+
 g.update("ACC_LEN", 13)
 g.update("BASENAME", "parspec_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
 

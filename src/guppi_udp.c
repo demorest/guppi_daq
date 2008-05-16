@@ -144,32 +144,43 @@ void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len,
      * This assumes 2 samples per IBOB clock, and that
      * acc_len is the actual accumulation length (=reg_acclen+1).
      */
+    //const int counts_per_packet = (nchan/2) * acc_len;
     const int counts_per_packet = (nchan/2) * acc_len;
     unsigned long long *packet_idx = (unsigned long long *)b->data;
     (*packet_idx) = change_endian64(packet_idx);
     (*packet_idx) /= counts_per_packet;
     (*packet_idx) = change_endian64(packet_idx);
 
-    /* Reorder from the goofy Parkes ordering */
-    /* Note:  This will not work correctly for 4-pol case, since
-     * I haven't seen the documentation for that yet.  Also
-     * 8-bit data is assumed.
-     */
+    /* Reorder from the 2-pol Parkes ordering */
     int i;
     char tmp[GUPPI_MAX_PACKET_SIZE];
-    char *pol0, *pol1, *in;
+    char *pol0, *pol1, *pol2, *pol3, *in;
     in = b->data + sizeof(long long);
-    pol0 = &tmp[0];
-    pol1 = &tmp[nchan];
-    for (i=0; i<nchan/2; i++) {
-        /* Each loop handles 2 values from each pol */
-        memcpy(pol0, in, 2*sizeof(char));
-        memcpy(pol1, &in[2], 2*sizeof(char));
-        pol0 += 2;
-        pol1 += 2;
-        in += 4;
+    if (npol==2) {
+        pol0 = &tmp[0];
+        pol1 = &tmp[nchan];
+        for (i=0; i<nchan/2; i++) {
+            /* Each loop handles 2 values from each pol */
+            memcpy(pol0, in, 2*sizeof(char));
+            memcpy(pol1, &in[2], 2*sizeof(char));
+            pol0 += 2;
+            pol1 += 2;
+            in += 4;
+        }
+    } else if (npol==4) {
+        pol0 = &tmp[0];
+        pol1 = &tmp[nchan];
+        pol2 = &tmp[2*nchan];
+        pol3 = &tmp[3*nchan];
+        for (i=0; i<nchan; i++) {
+            /* Each loop handles one sample */
+            *pol0 = *in; in++; pol0++;
+            *pol1 = *in; in++; pol1++;
+            *pol2 = *in; in++; pol2++;
+            *pol3 = *in; in++; pol3++;
+        }
     }
-    memcpy(b->data + sizeof(long long), tmp, sizeof(char) * 2 * nchan);
+    memcpy(b->data + sizeof(long long), tmp, sizeof(char) * npol * nchan);
 }
 
 int guppi_udp_close(struct guppi_udp_params *p) {
