@@ -144,8 +144,7 @@ void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len,
      * This assumes 2 samples per IBOB clock, and that
      * acc_len is the actual accumulation length (=reg_acclen+1).
      */
-    //const int counts_per_packet = (nchan/2) * acc_len;
-    const int counts_per_packet = (nchan/2) * acc_len;
+    const unsigned int counts_per_packet = (nchan/2) * acc_len;
     unsigned long long *packet_idx = (unsigned long long *)b->data;
     (*packet_idx) = change_endian64(packet_idx);
     (*packet_idx) /= counts_per_packet;

@@ -16,6 +16,8 @@ fctr = BW/2.0
 
 # Connect to the GUPPI data buffer
 d = guppi_databuf()
+if npoln==2:
+    d.dtype = n.uint8
 
 # Define "convert to dB" function that can 
 # deal with zeros in the data.
@@ -54,8 +56,11 @@ for pol in range(npoln):
     line.append(p.plot(x, avg_spec)[0])
     hi_line.append(p.plot(x, max_spec, 'b:')[0])
     lo_line.append(p.plot(x, min_spec, 'b:')[0])
-    p.axis([x.min(),x.max(),0,256])
-    #p.axis('auto')
+    #if (pol==0 or npoln==2):
+    #    p.axis([x.min(),x.max(),0,256])
+    #else:
+    #    p.axis([x.min(),x.max(),-128,128])
+    p.axis('auto')
 
 
 run=1

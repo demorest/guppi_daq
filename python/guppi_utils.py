@@ -149,6 +149,7 @@ class guppi_databuf:
                 n.fromstring(packed[24:36], dtype=n.int32)
         self.header_offset = self.struct_size 
         self.data_offset = self.struct_size + self.n_block*self.header_size
+        self.dtype = n.int8
         self.read_all_hdr()
 
     def read_hdr(self,block):
@@ -171,7 +172,7 @@ class guppi_databuf:
         self.read_hdr(block) 
         raw = n.fromstring(self.buf.read(self.block_size, \
                 self.data_offset + block*self.block_size), \
-                dtype=n.uint8)
+                dtype=self.dtype)
         try:
             npol = self.hdr[block]["NPOL"]
             nchan = self.hdr[block]["OBSNCHAN"]
