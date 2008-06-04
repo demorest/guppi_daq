@@ -1,11 +1,15 @@
+/* psrfits.h */
+#ifndef _PSRFITS_H
+#define _PSRFITS_H
 #include "fitsio.h"
+#include "polyco.h"
 
 // The following is the max file length in GB
 #define PSRFITS_MAXFILELEN 10L
 
 // The following is the template file to use to create a PSRFITS file
-#define PSRFITS_SEARCH_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_search_template.txt"
-#define PSRFITS_FOLD_TEMPLATE "/data1/sransom/src/guppi_daq/src/guppi_PSRFITS_v3.4_fold_template.txt"
+#define PSRFITS_SEARCH_TEMPLATE "/data1/demorest/guppi_daq/src/guppi_PSRFITS_v3.4_search_template.txt"
+#define PSRFITS_FOLD_TEMPLATE "/data1/demorest/guppi_daq/src/guppi_PSRFITS_v3.4_fold_template.txt"
 
 struct hdrinfo {
     char obs_mode[8];       // Observing mode (SEARCH, PSR, CAL)
@@ -91,6 +95,17 @@ struct psrfits {
     struct subint sub;
 };
 
+// In write_psrfits.c
 int psrfits_create(struct psrfits *pf);
 int psrfits_write_subint(struct psrfits *pf);
+int psrfits_write_polycos(struct psrfits *pf, struct polyco *pc, int npc);
 int psrfits_close(struct psrfits *pf);
+#define SEARCH_MODE 1
+#define FOLD_MODE 2
+int psrfits_obs_mode(const char *obs_mode);
+
+// In read_psrfits.c
+int psrfits_open(struct psrfits *pf);
+int psrfits_read_subint(struct psrfits *pf);
+
+#endif
