@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include "fitshead.h"
-#include "write_psrfits.h"
+#include "psrfits.h"
 #include "guppi_params.h"
 #include "guppi_time.h"
 #include "guppi_error.h"
