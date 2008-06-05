@@ -200,7 +200,7 @@ void guppi_fold_thread(void *args) {
         /* fold */
         ptr = guppi_databuf_data(db_in, curblock_in);
         rv = fold_8bit_power(&pc[ipc], imjd, fmjd, ptr,
-                pf.hdr.nsblk, pf.hdr.dt, &fb);
+                pf.hdr.nsblk, pf.hdr.dt, 1, &fb);
         if (rv!=0) {
             guppi_error("guppi_fold_thread", "fold error");
         }
