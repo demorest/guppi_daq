@@ -150,6 +150,7 @@ class guppi_databuf:
         self.header_offset = self.struct_size 
         self.data_offset = self.struct_size + self.n_block*self.header_size
         self.dtype = n.int8
+        self.read_size = self.block_size
         self.read_all_hdr()
 
     def read_hdr(self,block):
