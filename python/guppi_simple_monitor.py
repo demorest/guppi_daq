@@ -63,6 +63,7 @@ for pol in range(npoln):
     p.axis('auto')
 
 
+p.ioff() # don't need to always update
 run=1
 while (run):
     try:
