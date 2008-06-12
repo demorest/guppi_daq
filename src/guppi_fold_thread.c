@@ -82,33 +82,43 @@ void guppi_fold_thread(void *args) {
 
     /* Load polycos */
     int imjd;
-    double fmjd;
+    double fmjd, fmjd0, fmjd_next=0.0;
+    double tfold=60.0;
     int npc=0, ipc;
     struct polyco *pc=NULL;
     FILE *polyco_file=NULL;
 
-    /* Open output file */
-    FILE *fraw = fopen("guppi_raw.dat", "w");
-    if (fraw==NULL) { 
-        guppi_error("guppi_fold_thread",
-                "Error opening output file.");
-        pthread_exit(NULL);
-    }
-    pthread_cleanup_push((void *)fclose, fraw);
-
-    /* Buffers */
+    /* Total foldbuf */
     struct foldbuf fb;
-    fb.nbin = 2048;
+    fb.nbin = 256;
     fb.nchan = 0;
     fb.npol = 0;
     fb.data = NULL;
     fb.count = NULL;
 
+    /* Sub-thread management */
+    const int nthread = 6;
+    pthread_t thread_id[nthread];
+    struct fold_args fargs[nthread];
+    int i;
+    for (i=0; i<nthread; i++) {
+        thread_id[i] = 0;
+        fargs[i].data = NULL;
+        fargs[i].fb = (struct foldbuf *)malloc(sizeof(struct foldbuf));
+        fargs[i].fb->nbin = fb.nbin;
+        fargs[i].fb->nchan = 0;
+        fargs[i].fb->npol = 0;
+        fargs[i].nsamp = 0;
+        fargs[i].tsamp = 0.0;
+        fargs[i].raw_signed = 1;
+    }
+
     /* Loop */
     char errmsg[256];
-    int curblock_in=0, curblock_out=-1;
-    int refresh_polycos=1, next_integration=1;
+    int curblock_in=0, curblock_out=0;
+    int refresh_polycos=1, next_integration=0, first=1;
     int nblock_int=0, npacket=0, ndrop=0;
+    int cur_thread=0;
     char *ptr;
     signal(SIGINT,cc);
     while (run) {
@@ -131,15 +141,75 @@ void guppi_fold_thread(void *args) {
         guppi_read_obs_params(ptr, &gp, &pf); // XXX first time only??
         guppi_read_subint_params(ptr, &gp, &pf);
 
-        /* Set up, clear out buffers */
-        if (next_integration) {
+        /* Figure out what time it is */
+        imjd = pf.hdr.start_day;
+        fmjd = pf.hdr.start_sec 
+            + pf.hdr.dt*gp.packetindex*gp.packetsize/pf.hdr.nchan/pf.hdr.npol;
+        fmjd /= 86400.0;
 
-            /* Close out last integ */
-            if (curblock_out>=0) { 
-                guppi_databuf_set_filled(db_out, curblock_out);
+        /* Do any first time stuff */
+        if (first) {
+
+            /* Set mjds */
+            fmjd0 = fmjd;
+            fmjd_next = fmjd0 + tfold/86400.0;
+
+            /* Set out fold params */
+            fb.nchan = pf.hdr.nchan;
+            fb.npol = pf.hdr.npol;
+
+            /* Allocate per-thread foldbufs */
+            for (i=0; i<nthread; i++) {
+                fargs[i].fb->nbin = fb.nbin;
+                fargs[i].fb->nchan = pf.hdr.nchan;
+                fargs[i].fb->npol = pf.hdr.npol;
+                malloc_foldbuf(fargs[i].fb);
+                clear_foldbuf(fargs[i].fb);
             }
 
-            fb.nbin = 2048;
+            first=0;
+        }
+
+        /* Check if we need to move to next subint */
+        /* TODO: also check if params have changed, new source, etc? */
+        if (fmjd>fmjd_next) { next_integration=1; }
+
+        /* Combine thread results if needed */
+        if (cur_thread==nthread || next_integration) {
+
+            /* Loop over active threads */
+            for (i=0; i<cur_thread; i++) {
+
+                /* Wait for thread */
+                rv = pthread_join(thread_id[i], NULL);
+                if (rv) {
+                    guppi_error("guppi_fold_thread", "Error joining subthread");
+                    continue;
+                }
+
+                /* Combine result into total int */
+                accumulate_folds(&fb, fargs[i].fb);
+
+                /* Reset thread info */
+                clear_foldbuf(fargs[i].fb);
+                thread_id[i] = 0;
+            }
+
+            /* Reset thread count */
+            cur_thread = 0;
+        }
+
+        /* Finalize this output block if needed, move to next */
+        if (next_integration) {
+
+            /* TODO: add any extra info to current output header */
+
+            /* Close out current integration */
+            guppi_databuf_set_filled(db_out, curblock_out);
+
+            /* Set up params for next int */
+            fmjd0 = fmjd;
+            fmjd_next = fmjd0 + tfold/86400.0;
             fb.nchan = pf.hdr.nchan;
             fb.npol = pf.hdr.npol;
 
@@ -162,11 +232,8 @@ void guppi_fold_thread(void *args) {
             next_integration = 0;
         }
 
+
         /* Check src, get correct polycos */
-        imjd = pf.hdr.start_day;
-        fmjd = pf.hdr.start_sec 
-            + pf.hdr.dt*gp.packetindex*gp.packetsize/pf.hdr.nchan/pf.hdr.npol;
-        fmjd /= 86400.0;
         if (refresh_polycos) { 
             polyco_file = fopen("polyco.dat", "r");
             if (polyco_file==NULL) { 
@@ -180,7 +247,8 @@ void guppi_fold_thread(void *args) {
                 rv = read_one_pc(polyco_file, &pc[npc]);
                 npc++;
             } while (rv==0);
-            if (npc==1) { 
+            npc--;
+            if (npc==0) { 
                 guppi_error("guppi_fold_thread", "Error parsing polyco file.");
                 pthread_exit(NULL);
             }
@@ -189,7 +257,7 @@ void guppi_fold_thread(void *args) {
         }
 
         /* Select polyco set */
-        ipc = select_pc(pc, npc, pf.hdr.source, imjd, fmjd);
+        ipc = select_pc(pc, npc, NULL, imjd, fmjd);
         if (ipc<0) { 
             sprintf(errmsg, "No matching polycos (src=%s, imjd=%d, fmjd=%f)",
                     pf.hdr.source, imjd, fmjd);
@@ -197,13 +265,24 @@ void guppi_fold_thread(void *args) {
             pthread_exit(NULL);
         }
 
-        /* fold */
+        /* Launch fold thread */
         ptr = guppi_databuf_data(db_in, curblock_in);
-        rv = fold_8bit_power(&pc[ipc], imjd, fmjd, ptr,
-                pf.hdr.nsblk, pf.hdr.dt, 1, &fb);
-        if (rv!=0) {
-            guppi_error("guppi_fold_thread", "fold error");
-        }
+        fargs[cur_thread].pc = &pc[ipc];
+        fargs[cur_thread].imjd = imjd;
+        fargs[cur_thread].fmjd = fmjd;
+        fargs[cur_thread].fb->nbin = pf.hdr.nbin;
+        fargs[cur_thread].fb->nchan = pf.hdr.nchan;
+        fargs[cur_thread].fb->npol = pf.hdr.npol;
+        fargs[cur_thread].nsamp = gp.n_packets*gp.packetsize 
+            / pf.hdr.nchan / pf.hdr.npol;
+        fargs[cur_thread].tsamp = pf.hdr.dt;
+        fargs[cur_thread].raw_signed = 1;
+        rv = pthread_create(&thread_id[cur_thread], NULL, 
+                fold_8bit_power_thread, &fargs[cur_thread]);
+        if (rv!=0) 
+            guppi_error("guppi_fold_thread", "error launching fold subthread");
+        else  
+            cur_thread++;
 
         nblock_int++;
         npacket += gp.n_packets;
@@ -228,7 +307,6 @@ void guppi_fold_thread(void *args) {
 
     pthread_exit(NULL);
 
-    pthread_cleanup_pop(0); /* Closes push(fclose) */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
 
 }
