@@ -1,6 +1,6 @@
-/* guppi_rawdisk_thread.c
+/* guppi_null_thread.c
  *
- * Write databuf blocks out to disk.
+ * Marks databufs empty as soon as they're full
  */
 
 #define _GNU_SOURCE 1
@@ -25,16 +25,19 @@
 
 void guppi_null_thread(void *args) {
 
+    int rv;
+#if 0 
     /* Set cpu affinity */
     cpu_set_t cpuset, cpuset_orig;
     sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
     CPU_ZERO(&cpuset);
     CPU_SET(1, &cpuset);
-    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
     if (rv<0) { 
         guppi_error("guppi_null_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
+#endif
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, 0);

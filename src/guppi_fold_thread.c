@@ -121,7 +121,7 @@ void guppi_fold_thread(void *args) {
     int refresh_polycos=1, next_integration=0, first=1;
     int nblock_int=0, npacket=0, ndrop=0;
     int cur_thread=0;
-    char *ptr;
+    char *hdr_in, *hdr_out;
     signal(SIGINT,cc);
     while (run) {
 
@@ -132,7 +132,6 @@ void guppi_fold_thread(void *args) {
 
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db_in, curblock_in);
-        //printf("Read block %d\n", curblock_in); fflush(stdout); // DEBUG
 
         /* Note waiting status */
         guppi_status_lock_safe(&st);
@@ -140,9 +139,17 @@ void guppi_fold_thread(void *args) {
         guppi_status_unlock_safe(&st);
 
         /* Read param struct for this block */
-        ptr = guppi_databuf_header(db_in, curblock_in);
-        guppi_read_obs_params(ptr, &gp, &pf); // XXX first time only??
-        guppi_read_subint_params(ptr, &gp, &pf);
+        hdr_in = guppi_databuf_header(db_in, curblock_in);
+        if (first) 
+            guppi_read_obs_params(hdr_in, &gp, &pf);
+        else
+            guppi_read_subint_params(hdr_in, &gp, &pf);
+
+        /* Refresh params, dump any previous subint on a 0 packet */
+        if (gp.packetindex==0)  {
+            guppi_read_obs_params(hdr_in, &gp, &pf);
+            if (!first) next_integration=1; 
+        }
 
         /* Figure out what time it is */
         imjd = pf.hdr.start_day;
@@ -152,8 +159,6 @@ void guppi_fold_thread(void *args) {
 
         /* Do any first time stuff */
         if (first) {
-
-            //printf("First time init\n"); fflush(stdout); // DEBUG
 
             /* Set mjds */
             fmjd0 = fmjd;
@@ -171,26 +176,22 @@ void guppi_fold_thread(void *args) {
                 malloc_foldbuf(fargs[i].fb);
                 clear_foldbuf(fargs[i].fb);
             }
-            //printf("nbin=%d nchan=%d npol=%d\n", fb.nbin, pf.hdr.nchan, pf.hdr.npol); fflush(stdout); // DEBUG
 
             /* Set up first output header */
-            memcpy(guppi_databuf_header(db_out, curblock_out),
-                    guppi_databuf_header(db_in, curblock_in),
+            hdr_out = guppi_databuf_header(db_out, curblock_out);
+            memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
-            hputi4(guppi_databuf_header(db_out, curblock_out),
-                    "NBIN", fb.nbin);
+            hputi4(hdr_out, "NBIN", fb.nbin);
+                    
 
             first=0;
         }
 
         /* Check if we need to move to next subint */
-        /* TODO: also check if params have changed, new source, etc? */
         if (fmjd>fmjd_next) { next_integration=1; }
 
         /* Combine thread results if needed */
         if (cur_thread==nthread || next_integration) {
-
-            //printf("Combing thread results\n"); fflush(stdout); // DEBUG
 
             /* Loop over active threads */
             for (i=0; i<cur_thread; i++) {
@@ -238,11 +239,12 @@ void guppi_fold_thread(void *args) {
             /* Wait for next output buf */
             curblock_out = (curblock_out + 1) % db_out->n_block;
             guppi_databuf_wait_free(db_out, curblock_out);
-            memcpy(guppi_databuf_header(db_out, curblock_out),
-                    guppi_databuf_header(db_in, curblock_in),
+            hdr_out = guppi_databuf_header(db_out, curblock_out);
+            memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
-            hputi4(guppi_databuf_header(db_out, curblock_out),
-                    "NBIN", fb.nbin);
+            hputs(hdr_out, "OBS_MODE", "PSR");
+            hputi4(hdr_out, "NBIN", fb.nbin);
+            hputi4(hdr_out, "PKTIDX", gp.packetindex);
 
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb.count = (unsigned *)(fb.data + fb.nbin * fb.nchan * fb.npol);
@@ -257,7 +259,6 @@ void guppi_fold_thread(void *args) {
 
         /* Check src, get correct polycos */
         if (refresh_polycos) { 
-            //printf("Reading polycos\n"); fflush(stdout); // DEBUG
             polyco_file = fopen("polyco.dat", "r");
             if (polyco_file==NULL) { 
                 guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
@@ -287,13 +288,10 @@ void guppi_fold_thread(void *args) {
             guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
-        //printf("Selected polyco %d/%d\n", ipc, npc); fflush(stdout); // DEBUG
 
         /* Launch fold thread */
-        //printf("Starting fold thread %d\n", cur_thread); fflush(stdout); // DEBUG
-        ptr = guppi_databuf_data(db_in, curblock_in);
         input_block_list[cur_thread] = curblock_in;
-        fargs[cur_thread].data = ptr;
+        fargs[cur_thread].data = guppi_databuf_data(db_in, curblock_in);
         fargs[cur_thread].pc = &pc[ipc];
         fargs[cur_thread].imjd = imjd;
         fargs[cur_thread].fmjd = fmjd;
@@ -314,12 +312,9 @@ void guppi_fold_thread(void *args) {
         nblock_int++;
         npacket += gp.n_packets;
         ndrop += gp.n_dropped;
-        hputi4(guppi_databuf_header(db_out, curblock_out),
-                "NBLOCK", nblock_int);
-        hputi4(guppi_databuf_header(db_out, curblock_out),
-                "NPKT", npacket);
-        hputi4(guppi_databuf_header(db_out, curblock_out),
-                "NDROP", ndrop);
+        hputi4(hdr_out, "NBLOCK", nblock_int);
+        hputi4(hdr_out, "NPKT", npacket);
+        hputi4(hdr_out, "NDROP", ndrop);
 
         /* Mark in as free.. not yet! */
         //guppi_databuf_set_free(db_in, curblock_in);
