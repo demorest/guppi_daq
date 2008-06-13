@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         {0,0,0,0}
     };
     int opt, opti;
-    p.port = 5000;
+    p.port = 50000;
     while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'p':
@@ -71,18 +71,27 @@ int main(int argc, char *argv[]) {
 
     /* Init shared mem */
     struct guppi_status stat;
-    struct guppi_databuf *dbuf=NULL;
+    struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;
     int rv = guppi_status_attach(&stat);
     if (rv!=GUPPI_OK) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
-    dbuf = guppi_databuf_attach(1);
-    if (dbuf==NULL) {
+
+    dbuf_net = guppi_databuf_attach(1);
+    if (dbuf_net==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
         exit(1);
     }
-    guppi_databuf_clear(dbuf);
+    guppi_databuf_clear(dbuf_net);
+
+    dbuf_fold = guppi_databuf_attach(2);
+    if (dbuf_fold==NULL) {
+        fprintf(stderr, "Error connecting to guppi_databuf\n");
+        exit(1);
+    }
+    guppi_databuf_clear(dbuf_fold);
+
 
     run=1;
     signal(SIGINT, cc);

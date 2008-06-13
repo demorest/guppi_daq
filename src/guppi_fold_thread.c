@@ -97,12 +97,14 @@ void guppi_fold_thread(void *args) {
     fb.count = NULL;
 
     /* Sub-thread management */
-    const int nthread = 6;
+    const int nthread = 4;
     pthread_t thread_id[nthread];
+    int input_block_list[nthread];
     struct fold_args fargs[nthread];
     int i;
     for (i=0; i<nthread; i++) {
         thread_id[i] = 0;
+        input_block_list[i] = -1;
         fargs[i].data = NULL;
         fargs[i].fb = (struct foldbuf *)malloc(sizeof(struct foldbuf));
         fargs[i].fb->nbin = fb.nbin;
@@ -130,6 +132,7 @@ void guppi_fold_thread(void *args) {
 
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db_in, curblock_in);
+        //printf("Read block %d\n", curblock_in); fflush(stdout); // DEBUG
 
         /* Note waiting status */
         guppi_status_lock_safe(&st);
@@ -150,6 +153,8 @@ void guppi_fold_thread(void *args) {
         /* Do any first time stuff */
         if (first) {
 
+            //printf("First time init\n"); fflush(stdout); // DEBUG
+
             /* Set mjds */
             fmjd0 = fmjd;
             fmjd_next = fmjd0 + tfold/86400.0;
@@ -166,6 +171,14 @@ void guppi_fold_thread(void *args) {
                 malloc_foldbuf(fargs[i].fb);
                 clear_foldbuf(fargs[i].fb);
             }
+            //printf("nbin=%d nchan=%d npol=%d\n", fb.nbin, pf.hdr.nchan, pf.hdr.npol); fflush(stdout); // DEBUG
+
+            /* Set up first output header */
+            memcpy(guppi_databuf_header(db_out, curblock_out),
+                    guppi_databuf_header(db_in, curblock_in),
+                    GUPPI_STATUS_SIZE);
+            hputi4(guppi_databuf_header(db_out, curblock_out),
+                    "NBIN", fb.nbin);
 
             first=0;
         }
@@ -177,6 +190,8 @@ void guppi_fold_thread(void *args) {
         /* Combine thread results if needed */
         if (cur_thread==nthread || next_integration) {
 
+            //printf("Combing thread results\n"); fflush(stdout); // DEBUG
+
             /* Loop over active threads */
             for (i=0; i<cur_thread; i++) {
 
@@ -187,12 +202,17 @@ void guppi_fold_thread(void *args) {
                     continue;
                 }
 
+                /* Mark input block as free */
+                if (input_block_list[i]>=0) 
+                    guppi_databuf_set_free(db_in, input_block_list[i]);
+                
                 /* Combine result into total int */
                 accumulate_folds(&fb, fargs[i].fb);
 
                 /* Reset thread info */
                 clear_foldbuf(fargs[i].fb);
                 thread_id[i] = 0;
+                input_block_list[i] = -1;
             }
 
             /* Reset thread count */
@@ -201,6 +221,8 @@ void guppi_fold_thread(void *args) {
 
         /* Finalize this output block if needed, move to next */
         if (next_integration) {
+
+            printf("Finalizing integration\n"); fflush(stdout); // DEBUG
 
             /* TODO: add any extra info to current output header */
 
@@ -235,6 +257,7 @@ void guppi_fold_thread(void *args) {
 
         /* Check src, get correct polycos */
         if (refresh_polycos) { 
+            //printf("Reading polycos\n"); fflush(stdout); // DEBUG
             polyco_file = fopen("polyco.dat", "r");
             if (polyco_file==NULL) { 
                 guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
@@ -264,9 +287,13 @@ void guppi_fold_thread(void *args) {
             guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
+        //printf("Selected polyco %d/%d\n", ipc, npc); fflush(stdout); // DEBUG
 
         /* Launch fold thread */
+        //printf("Starting fold thread %d\n", cur_thread); fflush(stdout); // DEBUG
         ptr = guppi_databuf_data(db_in, curblock_in);
+        input_block_list[cur_thread] = curblock_in;
+        fargs[cur_thread].data = ptr;
         fargs[cur_thread].pc = &pc[ipc];
         fargs[cur_thread].imjd = imjd;
         fargs[cur_thread].fmjd = fmjd;
@@ -294,10 +321,10 @@ void guppi_fold_thread(void *args) {
         hputi4(guppi_databuf_header(db_out, curblock_out),
                 "NDROP", ndrop);
 
-        /* Mark in as free */
-        guppi_databuf_set_free(db_in, curblock_in);
+        /* Mark in as free.. not yet! */
+        //guppi_databuf_set_free(db_in, curblock_in);
 
-        /* Go to next blocks */
+        /* Go to next input block */
         curblock_in = (curblock_in + 1) % db_in->n_block;
 
         /* Check for cancel */

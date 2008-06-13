@@ -196,6 +196,7 @@ int guppi_databuf_wait_filled(struct guppi_databuf *d, int block_id) {
     rv = semop(d->semid, op, 2);
     if (rv==-1) { 
         guppi_error("guppi_databuf_wait_filled", "semop error");
+        perror("semop");
         return(GUPPI_ERR_SYS);
     }
     return(0);
