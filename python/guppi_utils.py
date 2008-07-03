@@ -59,6 +59,15 @@ class guppi_status:
     def __getitem__(self, key):
         return self.hdr[key]
 
+    def keys(self):
+        return [k for k, v in self.hdr.items()]
+
+    def values(self):
+        return [v for k, v in self.hdr.items()]
+
+    def items(self):
+        return self.hdr.items()
+
     def lock(self):
         return possem.sem_wait(self.sem)
 
@@ -190,6 +199,14 @@ if __name__=="__main__":
     g.update("UPDATE", 3.12343545)
     g.write()
     g.show()
+
+    print 
+    print 'keys:', g.keys()
+    print 
+    print 'values:', g.values()
+    print 
+    print 'items:', g.items()
+    print 
 
     g.update_with_gbtstatus()
     g.write()
