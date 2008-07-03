@@ -253,7 +253,7 @@ void guppi_fold_thread(void *args) {
             nblock_int=0;
             npacket=0;
             ndrop=0;
-            next_integration = 0;
+            next_integration=0;
         }
 
 

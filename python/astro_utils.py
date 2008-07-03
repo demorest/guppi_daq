@@ -1,9 +1,7 @@
 import time
 import slalib as s
-
-DEGTORAD = 0.017453292519943295769236907684
-RADTODEG = 57.29577951308232087679815481410
-TWOPI    = float('6.2831853071795864769252867665590057683943387987502')
+import numpy as Num
+from psr_constants import *
 
 def current_MJD():
     """

@@ -85,10 +85,10 @@ while (run):
             line[pol].set_ydata(avg_spec)
             hi_line[pol].set_ydata(max_spec)
             lo_line[pol].set_ydata(min_spec)
+            idx = abs(avg_spec).argmax()
+            print "Block %2d, pol %1d: Max chan=%d freq=%.3fMHz value=%.3f" %\
+                    (curblock, pol, idx, x[idx], avg_spec[idx]) 
 
-        print "Block %2d: Max chan=%d freq=%.3fMHz value=%.3f" %\
-                (curblock, avg_spec.argmax(), x[avg_spec.argmax()],\
-                avg_spec.max())
         p.draw()
         time.sleep(1)
     except KeyboardInterrupt:
