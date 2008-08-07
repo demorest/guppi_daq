@@ -18,9 +18,3 @@ $python $guppi_python_dir/guppi_set_params.py
 
 # Start data flow
 $guppi_bin_dir/test_net_thread &
-
-# Start monitor
-$python $guppi_python_dir/guppi_simple_monitor.py $@
-
-# When that exits, kill data flow
-pkill -INT test_net_thread

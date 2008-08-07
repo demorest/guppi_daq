@@ -11,4 +11,4 @@ export PYTHONPATH=/opt/64bit/lib/python:/opt/64bit/lib/python/site-packages:/opt
 export LD_LIBRARY_PATH=/opt/64bit/lib:/opt/64bit/pgplot:/opt/64bit/presto/lib
 
 # Start monitor
-$python $guppi_python_dir/guppi_simple_monitor.py
+$python $guppi_python_dir/guppi_simple_monitor.py $@
