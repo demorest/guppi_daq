@@ -28,7 +28,7 @@ g.update("FD_POLN", "LIN")
 g.update("POL_TYPE", "IQUV")
 
 g.update("OBSFREQ", 2600.0)
-g.update("OBSBW", 400.0)
+g.update("OBSBW", 800.0)
 g.update("OBSNCHAN", 2048)
 g.update("NPOL", 4)
 g.update("NBITS", 8)
