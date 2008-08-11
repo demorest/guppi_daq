@@ -62,7 +62,7 @@ def display_status(stdscr,stat,data):
             stdscr.addstr("%s" % pktidx, valcol)
 
         stdscr.addstr(ymax-2,col,"Last update: " + time.asctime() \
-                + "  -  Press 'q' or Ctrl-C to quit")
+                + "  -  Press 'q' to quit")
 
         # Redraw screen
         stdscr.refresh()
