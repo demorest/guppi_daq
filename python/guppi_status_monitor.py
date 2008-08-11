@@ -7,6 +7,14 @@ def display_status(stdscr,stat,data):
     stdscr.nodelay(1)
     run = 1
 
+    # Look like gbtstatus (why not?)
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_RED)
+    keycol = curses.color_pair(1)
+    valcol = curses.color_pair(2)
+    errcol = curses.color_pair(3)
+
     # Loop 
     while (run):
         # Refresh status info
@@ -30,26 +38,28 @@ def display_status(stdscr,stat,data):
         # Display main status info
         col = 2
         curline = 0
-        stdscr.addstr(curline,col,"Current GUPPI status info:");
-        curline += 1
+        stdscr.addstr(curline,col,"Current GUPPI status:", keycol);
+        curline += 2
         for k,v in stat.hdr.items():
             if (curline < ymax-3):
-                stdscr.addstr(curline,col,"%8s : %s"%(k,v))
+                stdscr.addstr(curline,col,"%8s : "%k, keycol)
+                stdscr.addstr("%s" % v, valcol)
             else:
-                stdscr.addstr(ymax-3,col, "-- Increase window size --");
+                stdscr.addstr(ymax-3,col, "-- Increase window size --", errcol);
             curline += 1
 
         # Display current packet index, etc
         if (curblock>=0 and curline < ymax-4):
             curline += 1
-            stdscr.addstr(curline,col,"Current data block info:")
+            stdscr.addstr(curline,col,"Current data block info:",keycol)
             curline += 1
             data.read_hdr(curblock)
             try:
                 pktidx = data.hdr[curblock]["PKTIDX"]
             except KeyError:
                 pktidx = "Unknown"
-            stdscr.addstr(curline,col,"%8s : %s" % ("PKTIDX", pktidx))
+            stdscr.addstr(curline,col,"%8s : " % "PKTIDX", keycol)
+            stdscr.addstr("%s" % pktidx, valcol)
 
         stdscr.addstr(ymax-2,col,"Last update: " + time.asctime() \
                 + "  -  Press 'q' or Ctrl-C to quit")
