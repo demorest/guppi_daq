@@ -140,7 +140,7 @@ class guppi_status:
         (iptr, ang, stat) = s.sla_dafin(self['DEC_STR'].replace(':', ' '), 1)
         self.update("DEC", ang*RADTODEG)
         MJD = astro.current_MJD()
-        az, za = astro.radec_to_altaz(self['RA'], self['DEC'], MJD, scope='GBVA140')
+        az, za = astro.radec_to_azza(self['RA'], self['DEC'], MJD, scope='GBVA140')
         self.update("AZ", az)
         self.update("ZA", za)
 

@@ -13,9 +13,9 @@ def current_MJD():
     mjd_i, J = s.sla_cldj(YY, MM, DD)
     return  mjd_i + mjd_f
     
-def altaz_to_radec(az, za, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'):
+def azza_to_radec(az, za, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'):
     """
-    AZZA_to_RADEC(az, za, MJD):
+    azza_to_radec(az, za, MJD):
         Return RA and DEC (J2000 in deg) from AZ and ZA (in deg) at MJD.  Keyword params
            are fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'.
     """
@@ -26,9 +26,9 @@ def altaz_to_radec(az, za, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, s
     ra2000, dec2000 = s.sla_amp(app_rarad, app_decrad, MJD, 2000.0)
     return ra2000*RADTODEG, dec2000*RADTODEG
                                 
-def radec_to_altaz(ra, dec, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'):
+def radec_to_azza(ra, dec, MJD, fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'):
     """
-    RADEC_to_AZZA(ra, dec, MJD):
+    redec_to_azza(ra, dec, MJD):
         Return AZ and ZA (in deg) from RA and DEC (J2000 in deg) at MJD.  Keyword params
            are fctr=350.0, atm=1010.0, temp=283.0, humid=0.5, scope='GBT'.
     """
@@ -63,7 +63,7 @@ def beam_halfwidth(obs_freq, dish_diam):
 if __name__ == "__main__":
     MJD = 54556.290613425925 # Ter5 Coords
     ra, dec = 267.02070, -24.77920
-    az, za = radec_to_altaz(ra, dec, MJD)
+    az, za = radec_to_azza(ra, dec, MJD)
     print ra, dec, az, za, 132.388, 80.578 # These are from a Ter5 obs
-    ra, dec = altaz_to_radec(az, za, MJD)
+    ra, dec = azza_to_radec(az, za, MJD)
     print ra, dec, az, za, 132.388, 80.578  
