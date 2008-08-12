@@ -36,16 +36,27 @@ def display_status(stdscr,stat,data):
         (ymax,xmax) = stdscr.getmaxyx()
 
         # Display main status info
+        onecol = False # Set True for one-column format
         col = 2
         curline = 0
         stdscr.addstr(curline,col,"Current GUPPI status:", keycol);
         curline += 2
+        flip=0
         for k,v in stat.hdr.items():
             if (curline < ymax-3):
                 stdscr.addstr(curline,col,"%8s : "%k, keycol)
                 stdscr.addstr("%s" % v, valcol)
             else:
                 stdscr.addstr(ymax-3,col, "-- Increase window size --", errcol);
+            if (flip or onecol):
+                curline += 1
+                col = 2
+                flip = 0
+            else:
+                col = 40
+                flip = 1
+        col = 2
+        if (flip and not onecol):
             curline += 1
 
         # Display current packet index, etc
