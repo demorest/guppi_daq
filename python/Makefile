@@ -1,5 +1,12 @@
-CFLAGS = -g -O3 -Wall -I/users/sransom/64bit/include
-PY_INCLUDE = /users/sransom/64bit/include/python2.5
+OPT64 = /users/sransom/64bit
+ifeq ($(shell hostname),beef) 
+    OPT64 = /opt/64bit
+endif
+ifeq ($(shell hostname),tofu) 
+    OPT64 = /opt/64bit
+endif
+CFLAGS = -g -O3 -Wall -I$(OPT64)/include
+PY_INCLUDE = $(OPT64)/include/python2.5
 all:  _possem.so
 clean:
 	rm -f *~ *.o test_psrfits_0*.fits _possem.so
