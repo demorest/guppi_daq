@@ -259,7 +259,7 @@ void guppi_read_obs_params(char *buf,
         // Allocate the subband arrays
         p->sub.dat_freqs = (float *)malloc(sizeof(float) *  p->hdr.nchan);
         p->sub.dat_weights = (float *)malloc(sizeof(float) *  p->hdr.nchan);
-        dtmp = p->hdr.fctr - 0.5 * p->hdr.BW + 0.5 * p->hdr.df;
+        dtmp = p->hdr.fctr - 0.5 * p->hdr.BW;
         for (ii = 0 ; ii < p->hdr.nchan ; ii++) {
             p->sub.dat_freqs[ii] = dtmp + ii * p->hdr.df;
             p->sub.dat_weights[ii] = 1.0;
