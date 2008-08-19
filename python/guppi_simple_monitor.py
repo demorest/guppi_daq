@@ -140,8 +140,8 @@ def update_lines(*args):
         max_line.set_ydata(max_spec)
         min_line.set_ydata(min_spec)
     idx = abs(main_spec).argmax()
-    print "Block %2d, poln '%s': Max chan=%d freq=%.3fMHz value=%.3f" %\
-          (curblock, polns[poln], idx, freqs[idx], main_spec[idx]) 
+    #print "Block %2d, poln '%s': Max chan=%d freq=%.3fMHz value=%.3f" %\
+    #      (curblock, polns[poln], idx, freqs[idx], main_spec[idx]) 
     fig.canvas.restore_region(background)
     ax.draw_artist(main_line)
     ax.draw_artist(max_line)
