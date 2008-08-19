@@ -23,7 +23,7 @@
 #define STATUS_KEY "NULLSTAT"
 #include "guppi_threads.h"
 
-void guppi_null_thread(void *args) {
+void guppi_null_thread(void *_args) {
 
     int rv;
 #if 0 
@@ -46,6 +46,9 @@ void guppi_null_thread(void *args) {
         perror("set_priority");
     }
 
+    /* Get args */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+
     /* Attach to status shared mem area */
     struct guppi_status st;
     rv = guppi_status_attach(&st);
@@ -63,7 +66,7 @@ void guppi_null_thread(void *args) {
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
-    db = guppi_databuf_attach(1);
+    db = guppi_databuf_attach(args->input_buffer);
     if (db==NULL) {
         guppi_error("guppi_null_thread",
                 "Error attaching to databuf shared memory.");

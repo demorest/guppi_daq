@@ -72,6 +72,9 @@ int main(int argc, char *argv[]) {
         strcpy(p.sender, argv[optind]);
     }
 
+    /* Set first (network) databuf id */
+    p.output_buffer = 1;
+
     /* Init shared mem */
     struct guppi_status stat;
     struct guppi_databuf *dbuf=NULL;
@@ -80,9 +83,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
-    dbuf = guppi_databuf_attach(1);
+    dbuf = guppi_databuf_attach(p.output_buffer);
     /* If attach fails, first try to create the databuf */
-    if (dbuf==NULL) dbuf = guppi_databuf_create(24, 32*1024*1024, 1);
+    if (dbuf==NULL) 
+        dbuf = guppi_databuf_create(24, 32*1024*1024, p.output_buffer);
     /* If that also fails, exit */
     if (dbuf==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
@@ -103,8 +107,11 @@ int main(int argc, char *argv[]) {
     }
 
     /* Launch PSRFITS disk thread */
+    struct guppi_thread_args disk_args;
+    disk_args.input_buffer = p.output_buffer;
     pthread_t disk_thread_id;
-    rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread, NULL);
+    rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread, 
+            (void *)&disk_args);
     if (rv) { 
         fprintf(stderr, "Error creating PSRFITS thread.\n");
         perror("pthread_create");

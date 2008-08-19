@@ -90,7 +90,7 @@ void *guppi_net_thread(void *_up) {
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
-    db = guppi_databuf_attach(1); // TODO don't hardcode this 1
+    db = guppi_databuf_attach(up->output_buffer); 
     if (db==NULL) {
         guppi_error("guppi_net_thread",
                 "Error attaching to databuf shared memory.");

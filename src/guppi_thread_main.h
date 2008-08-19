@@ -6,6 +6,8 @@
 #ifndef _GUPPI_THREAD_MAIN_H
 #define _GUPPI_THREAD_MAIN_H
 
+#include "guppi_thread_args.h"
+
 /* Control-C handler */
 int run=1;
 void cc(int sig) { run=0; }

@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
         strcpy(p.sender, argv[optind]);
     }
 
+    /* Set the databuf destination id */
+    p.output_buffer = 1;
+
     /* Init shared mem */
     struct guppi_status stat;
     struct guppi_databuf *dbuf=NULL;
@@ -88,9 +91,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
-    dbuf = guppi_databuf_attach(1);
+    dbuf = guppi_databuf_attach(p.output_buffer);
     /* If attach fails, first try to create the databuf */
-    if (dbuf==NULL) dbuf = guppi_databuf_create(24, 32*1024*1024, 1);
+    if (dbuf==NULL) 
+        dbuf = guppi_databuf_create(24, 32*1024*1024, p.output_buffer);
     /* If that also fails, exit */
     if (dbuf==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
@@ -112,11 +116,15 @@ int main(int argc, char *argv[]) {
     }
 
     /* Launch raw disk (or null) thread */
+    struct guppi_thread_args null_args;
+    null_args.input_buffer = p.output_buffer;
     pthread_t disk_thread_id;
     if (disk)
-        rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, NULL);
+        rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, 
+                (void *)&null_args);
     else
-        rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, NULL);
+        rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, 
+                (void *)&null_args);
     if (rv) { 
         fprintf(stderr, "Error creating null thread.\n");
         perror("pthread_create");

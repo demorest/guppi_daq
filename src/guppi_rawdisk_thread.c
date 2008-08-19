@@ -34,7 +34,7 @@ extern void guppi_read_subint_params(char *buf,
                                      struct psrfits *p);
 
 
-void guppi_rawdisk_thread(void *args) {
+void guppi_rawdisk_thread(void *_args) {
 
     /* Set cpu affinity */
     cpu_set_t cpuset, cpuset_orig;
@@ -46,6 +46,9 @@ void guppi_rawdisk_thread(void *args) {
         guppi_error("guppi_rawdisk_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
+
+    /* Get args */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, 0);
@@ -75,7 +78,7 @@ void guppi_rawdisk_thread(void *args) {
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
-    db = guppi_databuf_attach(1);
+    db = guppi_databuf_attach(args->input_buffer);
     if (db==NULL) {
         guppi_error("guppi_rawdisk_thread",
                 "Error attaching to databuf shared memory.");

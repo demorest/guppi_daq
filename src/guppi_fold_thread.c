@@ -36,7 +36,7 @@ extern void guppi_read_subint_params(char *buf,
                                      struct psrfits *p);
 
 
-void guppi_fold_thread(void *args) {
+void guppi_fold_thread(void *_args) {
 
     /* Set priority */
     int rv;
@@ -45,6 +45,9 @@ void guppi_fold_thread(void *args) {
         guppi_error("guppi_fold_thread", "Error setting priority level.");
         perror("set_priority");
     }
+
+    /* Get arguments */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Attach to status shared mem area */
     struct guppi_status st;
@@ -67,16 +70,21 @@ void guppi_fold_thread(void *args) {
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db_in, *db_out;
-    db_in = guppi_databuf_attach(1);
+    db_in = guppi_databuf_attach(args->input_buffer);
+    char errmsg[256];
     if (db_in==NULL) {
-        guppi_error("guppi_fold_thread",
-                "Error attaching to databuf(1) shared memory.");
+        sprintf(errmsg,
+                "Error attaching to input databuf(%d) shared memory.", 
+                args->input_buffer);
+        guppi_error("guppi_fold_thread", errmsg);
         pthread_exit(NULL);
     }
-    db_out = guppi_databuf_attach(2);
+    db_out = guppi_databuf_attach(args->output_buffer);
     if (db_out==NULL) {
-        guppi_error("guppi_fold_thread",
-                "Error attaching to databuf(2) shared memory.");
+        sprintf(errmsg,
+                "Error attaching to output databuf(%d) shared memory.", 
+                args->output_buffer);
+        guppi_error("guppi_fold_thread", errmsg);
         pthread_exit(NULL);
     }
 
@@ -116,7 +124,6 @@ void guppi_fold_thread(void *args) {
     }
 
     /* Loop */
-    char errmsg[256];
     int curblock_in=0, curblock_out=0;
     int refresh_polycos=1, next_integration=0, first=1;
     int nblock_int=0, npacket=0, ndrop=0;

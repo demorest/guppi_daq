@@ -6,6 +6,8 @@
 #ifndef _GUPPI_THREADS_H
 #define _GUPPI_THREADS_H
 
+#include "guppi_thread_args.h"
+
 /* SIGINT handling capability */
 extern int run;
 extern void cc(int sig);

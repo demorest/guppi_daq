@@ -69,6 +69,12 @@ int main(int argc, char *argv[]) {
     strcpy(p.sender, argv[optind]);
     p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
+    /* Data buffer ids */
+    struct guppi_thread_args fold_args;
+    p.output_buffer = 1;
+    fold_args.input_buffer = p.output_buffer;
+    fold_args.output_buffer = 2;
+
     /* Init shared mem */
     struct guppi_status stat;
     struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;
@@ -78,14 +84,14 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    dbuf_net = guppi_databuf_attach(1);
+    dbuf_net = guppi_databuf_attach(p.output_buffer);
     if (dbuf_net==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
         exit(1);
     }
     guppi_databuf_clear(dbuf_net);
 
-    dbuf_fold = guppi_databuf_attach(2);
+    dbuf_fold = guppi_databuf_attach(fold_args.output_buffer);
     if (dbuf_fold==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
         exit(1);
@@ -108,7 +114,8 @@ int main(int argc, char *argv[]) {
 
     /* Launch raw fold thread */
     pthread_t fold_thread_id;
-    rv = pthread_create(&fold_thread_id, NULL, guppi_fold_thread, NULL);
+    rv = pthread_create(&fold_thread_id, NULL, guppi_fold_thread, 
+            (void *)&fold_args);
     if (rv) { 
         fprintf(stderr, "Error creating fold thread.\n");
         perror("pthread_create");
