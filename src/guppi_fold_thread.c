@@ -91,7 +91,7 @@ void guppi_fold_thread(void *_args) {
     /* Load polycos */
     int imjd;
     double fmjd, fmjd0, fmjd_next=0.0;
-    double tfold=60.0;
+    double tfold=15.0;
     int npc=0, ipc;
     struct polyco *pc=NULL;
     FILE *polyco_file=NULL;
@@ -125,7 +125,7 @@ void guppi_fold_thread(void *_args) {
 
     /* Loop */
     int curblock_in=0, curblock_out=0;
-    int refresh_polycos=1, next_integration=0, first=1;
+    int refresh_polycos=1, next_integration=0, first=1, reset_foldbufs=1;
     int nblock_int=0, npacket=0, ndrop=0;
     int cur_thread=0;
     char *hdr_in, *hdr_out;
@@ -139,6 +139,12 @@ void guppi_fold_thread(void *_args) {
 
         /* Wait for buf to have data */
         guppi_databuf_wait_filled(db_in, curblock_in);
+
+        /* Note current block(s) */
+        guppi_status_lock_safe(&st);
+        hputi4(st.buf, "CURBLOCK", curblock_in);
+        hputi4(st.buf, "CURFOLD", curblock_out);
+        guppi_status_unlock_safe(&st);
 
         /* Note waiting status */
         guppi_status_lock_safe(&st);
@@ -156,6 +162,8 @@ void guppi_fold_thread(void *_args) {
         if (gp.packetindex==0)  {
             guppi_read_obs_params(hdr_in, &gp, &pf);
             if (!first) next_integration=1; 
+            refresh_polycos=1;
+            reset_foldbufs=1;
         }
 
         /* Figure out what time it is */
@@ -171,25 +179,11 @@ void guppi_fold_thread(void *_args) {
             fmjd0 = fmjd;
             fmjd_next = fmjd0 + tfold/86400.0;
 
-            /* Set out fold params */
-            fb.nchan = pf.hdr.nchan;
-            fb.npol = pf.hdr.npol;
-
-            /* Allocate per-thread foldbufs */
-            for (i=0; i<nthread; i++) {
-                fargs[i].fb->nbin = fb.nbin;
-                fargs[i].fb->nchan = pf.hdr.nchan;
-                fargs[i].fb->npol = pf.hdr.npol;
-                malloc_foldbuf(fargs[i].fb);
-                clear_foldbuf(fargs[i].fb);
-            }
-
             /* Set up first output header */
             hdr_out = guppi_databuf_header(db_out, curblock_out);
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
             hputi4(hdr_out, "NBIN", fb.nbin);
-                    
 
             first=0;
         }
@@ -225,6 +219,26 @@ void guppi_fold_thread(void *_args) {
 
             /* Reset thread count */
             cur_thread = 0;
+        }
+
+        /* Reset / reallocate per-thread fold buffer memory */
+        if (reset_foldbufs) {
+
+            /* Set output fold params */
+            fb.nchan = pf.hdr.nchan;
+            fb.npol = pf.hdr.npol;
+
+            /* Loop over thread foldbufs */
+            for (i=0; i<nthread; i++) {
+                fargs[i].fb->nbin = fb.nbin;
+                fargs[i].fb->nchan = pf.hdr.nchan;
+                fargs[i].fb->npol = pf.hdr.npol;
+                if (fargs[i].data==NULL) free_foldbuf(fargs[i].fb);
+                malloc_foldbuf(fargs[i].fb);
+                clear_foldbuf(fargs[i].fb);
+            }
+
+            reset_foldbufs=0;
         }
 
         /* Finalize this output block if needed, move to next */

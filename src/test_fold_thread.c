@@ -59,14 +59,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* Need sender hostname */
+    /* Default to bee2 if no hostname given */
     if (optind==argc) {
-        usage();
-        exit(1);
+        strcpy(p.sender, "bee2_10");
+    } else {
+        strcpy(p.sender, argv[optind]);
     }
 
     /* Init udp params */
-    strcpy(p.sender, argv[optind]);
     p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Data buffer ids */
