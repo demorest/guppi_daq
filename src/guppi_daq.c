@@ -19,58 +19,24 @@
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_params.h"
-
 #include "guppi_thread_main.h"
-
-void usage() {
-    fprintf(stderr,
-            "Usage: guppi_daq [options] sender_hostname\n"
-            "Options:\n"
-            "  -p n, --port=n    Port number\n"
-            "  -s n, --size=n    Set packet size in bytes (8208)\n"
-            "  -h, --help        This message\n"
-           );
-}
+#include "guppi_daq_cmd.h"
 
 /* Thread declarations */
 void *guppi_net_thread(void *_up);
 void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
-
     struct guppi_udp_params p;
+    Cmdline *cmd;
 
-    static struct option long_opts[] = {
-        {"help",   0, NULL, 'h'},
-        {"port",   1, NULL, 'p'},
-        {"size",   1, NULL, 's'},
-        {0,0,0,0}
-    };
-    int opt, opti;
-    p.port = 50000;
-    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
-    while ((opt=getopt_long(argc,argv,"hp:s:",long_opts,&opti))!=-1) {
-        switch (opt) {
-            case 'p':
-                p.port = atoi(optarg);
-                break;
-            case 's':
-                p.packet_size = atoi(optarg);
-                break;
-            default:
-            case 'h':
-                usage();
-                exit(0);
-                break;
-        }
-    }
+    /* Parse the command line using the excellent program Clig */
+    cmd = parseCmdline(argc, argv);
+    /*showOptionValues();  For debugging */
 
-    /* Default to bee2 if no hostname given */
-    if (optind==argc) {
-        strcpy(p.sender, "bee2_10");
-    } else {
-        strcpy(p.sender, argv[optind]);
-    }
+    p.port = cmd->port;
+    p.packet_size = cmd->size; /* Expected 8k + 8 byte seq num + 8 byte flags */
+    strcpy(p.sender, cmd->hostname);
 
     /* Set first (network) databuf id */
     p.output_buffer = 1;
