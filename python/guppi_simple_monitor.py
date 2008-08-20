@@ -192,6 +192,7 @@ else:
     main_line, = ax.plot(freqs, main_spec, 'r',  animated=True)
     max_line, = ax.plot(freqs, max_spec, 'b:', animated=True)
     min_line, = ax.plot(freqs, min_spec, 'b:', animated=True)
+ax.axis([freqs.min(),freqs.max(),-128,128])
 fig.canvas.draw()
 
 # Start the event loop
