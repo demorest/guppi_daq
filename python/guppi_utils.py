@@ -148,8 +148,8 @@ GUPPI_DATABUF_KEY = 12987498
 
 class guppi_databuf:
 
-    def __init__(self):
-        self.buf = shm.SharedMemoryHandle(GUPPI_DATABUF_KEY)
+    def __init__(self,databuf_id=1):
+        self.buf = shm.SharedMemoryHandle(GUPPI_DATABUF_KEY+databuf_id-1)
         self.data_type = self.buf.read(NumberOfBytes=64, offset=0)
         packed = self.buf.read(NumberOfBytes=3*8+3*4, offset=64)
         self.struct_size, self.block_size, self.header_size = \

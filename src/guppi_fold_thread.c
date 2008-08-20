@@ -304,8 +304,8 @@ void guppi_fold_thread(void *_args) {
         /* Select polyco set */
         ipc = select_pc(pc, npc, NULL, imjd, fmjd);
         if (ipc<0) { 
-            sprintf(errmsg, "No matching polycos (src=%s, imjd=%d, fmjd=%f)",
-                    pf.hdr.source, imjd, fmjd);
+            sprintf(errmsg, "No matching polycos (npc=%d, src=%s, imjd=%d, fmjd=%f)",
+                    npc, pf.hdr.source, imjd, fmjd);
             guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
