@@ -97,6 +97,7 @@ class guppi_status:
             self.gbtstat = GBTStatus()
         self.gbtstat.collectKVPairs()
         g = self.gbtstat.kvPairs
+        self.update("TELESCOP", "GBT")
         self.update("OBSERVER", g['observer'])
         self.update("PROJID", g['data_dir'])
         self.update("FRONTEND", g['receiver'])
@@ -194,10 +195,6 @@ class guppi_databuf:
         
 if __name__=="__main__":
     g = guppi_status()
-    g.show()
-
-    g.update("UPDATE", 3.12343545)
-    g.write()
     g.show()
 
     print 
