@@ -1,34 +1,64 @@
 from guppi_utils import *
 from astro_utils import current_MJD
+from optparse import OptionParser
+
+# Parse command line
+par = OptionParser()
+par.add_option("-s", "--src", dest="src", help="Set observed source name",
+        action="store", default="Fake_PSR")
+par.add_option("-r", "--ra", dest="ra", help="Set source R.A. (hh:mm:ss.s)",
+        action="store", default="12:34:56.7")
+par.add_option("-d", "--dec", dest="dec", help="Set source Dec (+/-dd:mm:ss.s)",
+        action="store", default="+12:34:56.7")
+par.add_option("-f", "--freq", dest="freq", help="Set center freq (MHz)",
+        action="store", type="float", default=1200.0)
+par.add_option("-n", "--scannum", dest="scan", help="Set scan number",
+        action="store", type="int", default=1);
+par.add_option("-c", "--cal", dest="cal", help="Setup for cal scan",
+        action="store_true", default=False)
+par.add_option("-g", "--gbt", dest="gbt", 
+        help="Use values from gbtstatus (overrides most other settings)",
+        action="store_true", default=False)
+(opt,arg) = par.parse_args()
+
 g = guppi_status()
 
-g.update("SCANNUM", 1)
-#g.update("SRC_NAME", "B0329+54")
-#g.update("RA_STR", "03:32:59.36")
-#g.update("DEC_STR", "+54:34:43.6")
-g.update("SRC_NAME", "B1937+21")
-#g.update("SRC_NAME", "test_tone")
-g.update("RA_STR", "19:39:38.560")
-g.update("DEC_STR", "21:34:59.143")
-#g.update("SRC_NAME", "B0950+08")
-#g.update("RA_STR", "09:53:09.309")
-#g.update("DEC_STR", "+07:55:35.75")
+g.update("SCANNUM", opt.scan)
 g.update("OBS_MODE", "SEARCH")
 
-g.update("SCANLEN", 1800.0)
-g.update("BASENAME", "guppi_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
+if (opt.gbt):
+    g.update_with_gbtstatus()
+    g.update("OBSBW", 800.0)
+else:
+    g.update("TELESCOP", "GB43m")
+    g.update("OBSERVER", "GUPPI Crew")
+    g.update("FRONTEND", "None")
+    g.update("PROJID", "GUPPI tests")
+    g.update("FD_POLN", "LIN")
+    g.update("TRK_MODE", "TRACK")
+    g.update("SRC_NAME", opt.src)
+    g.update("RA_STR", opt.ra)
+    g.update("DEC_STR", opt.dec)
+    g.update("OBSFREQ", opt.freq)
+    g.update("OBSBW", -800.0)
 
-g.update("TELESCOP", "GB43m")
-g.update("OBSERVER", "GUPPI Crew")
-g.update("FRONTEND", "None")
+if (opt.cal):
+    g.update("SCANLEN", 120.0)
+    g.update("BASENAME", "guppi_%s_%04d_cal"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("CAL_MODE", "ON")
+else:
+    g.update("SCANLEN", 1800.0)
+    g.update("BASENAME", "guppi_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("CAL_MODE", "OFF")
+
 g.update("BACKEND", "GUPPI")
 g.update("PKTFMT", "GUPPI")
-g.update("PROJID", "first light tests")
-g.update("FD_POLN", "LIN")
 g.update("POL_TYPE", "IQUV")
 
-g.update("OBSFREQ", 2600.0)
-g.update("OBSBW", 800.0)
+g.update("CAL_FREQ", 25.0)
+g.update("CAL_DCYC", 0.5)
+g.update("CAL_PHS", 0.0)
+
 g.update("OBSNCHAN", 2048)
 g.update("NPOL", 4)
 g.update("NBITS", 8)
@@ -38,8 +68,6 @@ g.update("ACC_LEN", 16)
 
 g.update("NRCVR", 2)
 
-g.update("TRK_MODE", "TRACK")
-g.update("CAL_MODE", "OFF")
 #g.update("BLOCSIZE", )
 g.update("OFFSET0", 0.0)
 g.update("SCALE0", 1.0)
@@ -52,8 +80,6 @@ g.update("SCALE3", 1.0)
 
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
-# Correct for 4-bin offset problem
-#g.update("OBSFREQ", g['OBSFREQ']+4*g['CHAN_BW'])
 
 if (1):  # in case we don't get a real start time
     MJD = current_MJD()
