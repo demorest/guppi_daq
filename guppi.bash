@@ -2,7 +2,7 @@
 
 # Check for an existing GUPPI_DIR, if it's there we don't
 # do anything.
-if test "${GUPPI_DIR}zz"=zz; then
+if test "${GUPPI_DIR}zz" = zz; then
 	opt64=/opt/64bit
 	export GUPPI_DIR=$opt64/guppi/guppi_daq
 	export PATH=$opt64/bin:$GUPPI_DIR/bin:$PATH

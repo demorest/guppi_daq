@@ -1,4 +1,4 @@
-# Set environment variables for GUPPI, bash version
+# Set environment variables for GUPPI, csh version
 
 # Check for an existing GUPPI_DIR, if it's there we don't
 # do anything.
