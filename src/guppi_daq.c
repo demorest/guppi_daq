@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     /* Parse the command line using the excellent program Clig */
     cmd = parseCmdline(argc, argv);
-    /*showOptionValues();  For debugging */
+    //showOptionValues();  /* For debugging */
 
     p.port = cmd->port;
     p.packet_size = cmd->size; /* Expected 8k + 8 byte seq num + 8 byte flags */

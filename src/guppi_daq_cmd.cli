@@ -14,4 +14,4 @@ Int    -port     port     {Port number for UDP packets} \
 Int    -size     size     {UDP packet size (bytes)} \
 	-d 8208
 String -host     hostname {Hostname of the data taking instrument} \
-    -d 'bee2_10'
+    -d bee2_10

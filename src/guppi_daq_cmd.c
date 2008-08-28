@@ -40,7 +40,7 @@ static Cmdline cmd = {
   /* sizeC = */ 1,
   /***** -host: Hostname of the data taking instrument */
   /* hostnameP = */ 1,
-  /* hostname = */ "'bee2_10'",
+  /* hostname = */ "bee2_10",
   /* hostnameC = */ 1,
   /***** uninterpreted rest of command line */
   /* argc = */ 0,
@@ -739,84 +739,6 @@ catArgv(int argc, char **argv)
 /**********************************************************************/
 
 void
-showOptionValues(void)
-{
-  int i;
-
-  printf("Full command line is:\n`%s'\n", cmd.full_cmd_line);
-
-  /***** -outchan: Number of output frequency channels (combining if necessary) */
-  if( !cmd.outchanP ) {
-    printf("-outchan not found.\n");
-  } else {
-    printf("-outchan found:\n");
-    if( !cmd.outchanC ) {
-      printf("  no values\n");
-    } else {
-      printf("  value = `%d'\n", cmd.outchan);
-    }
-  }
-
-  /***** -downsamp: Number of samples to average in time (defaults to none) */
-  if( !cmd.downsampP ) {
-    printf("-downsamp not found.\n");
-  } else {
-    printf("-downsamp found:\n");
-    if( !cmd.downsampC ) {
-      printf("  no values\n");
-    } else {
-      printf("  value = `%d'\n", cmd.downsamp);
-    }
-  }
-
-  /***** -port: Port number for UDP packets */
-  if( !cmd.portP ) {
-    printf("-port not found.\n");
-  } else {
-    printf("-port found:\n");
-    if( !cmd.portC ) {
-      printf("  no values\n");
-    } else {
-      printf("  value = `%d'\n", cmd.port);
-    }
-  }
-
-  /***** -size: UDP packet size (bytes) */
-  if( !cmd.sizeP ) {
-    printf("-size not found.\n");
-  } else {
-    printf("-size found:\n");
-    if( !cmd.sizeC ) {
-      printf("  no values\n");
-    } else {
-      printf("  value = `%d'\n", cmd.size);
-    }
-  }
-
-  /***** -host: Hostname of the data taking instrument */
-  if( !cmd.hostnameP ) {
-    printf("-host not found.\n");
-  } else {
-    printf("-host found:\n");
-    if( !cmd.hostnameC ) {
-      printf("  no values\n");
-    } else {
-      printf("  value = `%s'\n", cmd.hostname);
-    }
-  }
-  if( !cmd.argc ) {
-    printf("no remaining parameters in argv\n");
-  } else {
-    printf("argv =");
-    for(i=0; i<cmd.argc; i++) {
-      printf(" `%s'", cmd.argv[i]);
-    }
-    printf("\n");
-  }
-}
-/**********************************************************************/
-
-void
 usage(void)
 {
   fprintf(stderr,"%s","   [-outchan outchan] [-downsamp downsamp] [-port port] [-size size] [-host hostname]\n");
@@ -835,8 +757,8 @@ usage(void)
   fprintf(stderr,"%s","               default: `8208'\n");
   fprintf(stderr,"%s","        -host: Hostname of the data taking instrument\n");
   fprintf(stderr,"%s","               1 char* value\n");
-  fprintf(stderr,"%s","               default: `'bee2_10''\n");
-  fprintf(stderr,"%s","  version: 20Aug08\n");
+  fprintf(stderr,"%s","               default: `bee2_10'\n");
+  fprintf(stderr,"%s","  version: 28Aug08\n");
   fprintf(stderr,"%s","  ");
   exit(EXIT_FAILURE);
 }
