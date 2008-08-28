@@ -8,4 +8,5 @@ if test "${GUPPI_DIR}zz" = zz; then
 	export PATH=$opt64/bin:$GUPPI_DIR/bin:$PATH
 	export PYTHONPATH=$opt64/lib/python:$opt64/lib/python/site-packages:$opt64/presto/lib/python:$GUPPI_DIR/python
 	export LD_LIBRARY_PATH=$opt64/lib:$opt64/pgplot:$opt64/presto/lib
+	export TEMPO=$opt64/tempo
 fi

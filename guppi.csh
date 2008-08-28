@@ -8,4 +8,5 @@ if (! $?GUPPI_DIR) then
 	setenv PATH $opt64/bin:$GUPPI_DIR/bin:$PATH
 	setenv PYTHONPATH $opt64/lib/python:$opt64/lib/python/site-packages:$opt64/presto/lib/python:$GUPPI_DIR/python
 	setenv LD_LIBRARY_PATH $opt64/lib:$opt64/pgplot:$opt64/presto/lib
+	setenv TEMPO $opt64/tempo
 endif
