@@ -33,6 +33,25 @@ extern void guppi_read_subint_params(char *buf,
                                      struct guppi_params *g,
                                      struct psrfits *p);
 
+/* Downsampling functions */
+extern void get_stokes_I(struct psrfits *pf);
+extern void downsample_freq(struct psrfits *pf);
+extern void downsample_time(struct psrfits *pf);
+extern void guppi_update_ds_params(struct psrfits *pf);
+
+void zero_end_chans(struct psrfits *pf)
+{
+    int ii, jj;
+    struct hdrinfo *hdr = &(pf->hdr);
+    char *data = (char *)pf->sub.data;
+    const int nchan = hdr->nchan;
+    const int nspec = hdr->nsblk * hdr->npol;
+    
+    for (ii = 0, jj = 0 ; ii < nspec ; ii++, jj += nchan)
+        data[jj] = data[jj+nchan-1] = 0;
+}
+
+
 void guppi_psrfits_thread(void *_args) {
     
     /* Set cpu affinity */
@@ -124,6 +143,7 @@ void guppi_psrfits_thread(void *_args) {
         if (got_packet_0==0 && gp.packetindex==0) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
+            guppi_update_ds_params(&pf);
         }
 
         /* If actual observation has started, write the data */
@@ -137,6 +157,23 @@ void guppi_psrfits_thread(void *_args) {
             /* Get the pointer to the current data */
             pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
             
+            /* Set the DC and Nyquist channels explicitly to zero */
+            /* because of the "FFT Problem" that splits DC power  */
+            /* into those two bins.                               */
+            zero_end_chans(&pf);
+
+            /* Output only Stokes I (in place) */
+            if (pf.hdr.onlyI && pf.hdr.npol==4)
+                get_stokes_I(&pf);
+
+            /* Downsample in frequency (in place) */
+            if (pf.hdr.ds_freq_fact > 1)
+                downsample_freq(&pf);
+
+            /* Downsample in time (in place) */
+            if (pf.hdr.ds_time_fact > 1)
+                downsample_time(&pf);
+
             /* Write the data */
             psrfits_write_subint(&pf);
                 

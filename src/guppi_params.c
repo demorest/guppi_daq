@@ -141,6 +141,11 @@ void guppi_read_obs_params(char *buf,
                            struct guppi_params *g, 
                            struct psrfits *p)
 {
+    // Software data-stream modification params
+    get_int("DS_TIME", p->hdr.ds_time_fact, 1); // Time down-sampling
+    get_int("DS_FREQ", p->hdr.ds_freq_fact, 1); // Freq down-sampling
+    get_int("ONLY_I", p->hdr.onlyI, 0);         // Only output Stokes I
+
     // Freq, BW, etc.
     get_dbl("OBSFREQ", p->hdr.fctr, 0.0);
     get_dbl("OBSBW", p->hdr.BW, 0.0);
@@ -257,13 +262,19 @@ void guppi_read_obs_params(char *buf,
         if (p->sub.dat_scales) free(p->sub.dat_scales);
 
         // Allocate the subband arrays
-        p->sub.dat_freqs = (float *)malloc(sizeof(float) *  p->hdr.nchan);
-        p->sub.dat_weights = (float *)malloc(sizeof(float) *  p->hdr.nchan);
+        p->sub.dat_freqs = (float *)malloc(sizeof(float) * p->hdr.nchan);
+        p->sub.dat_weights = (float *)malloc(sizeof(float) * p->hdr.nchan);
+        // The following correctly accounts for the middle-of-bin FFT offset
         dtmp = p->hdr.fctr - 0.5 * p->hdr.BW;
         for (ii = 0 ; ii < p->hdr.nchan ; ii++) {
             p->sub.dat_freqs[ii] = dtmp + ii * p->hdr.df;
             p->sub.dat_weights[ii] = 1.0;
         }
+        // Explicitly weight the DC and Nyquist channels zero
+        // because of how power is split between them
+        p->sub.dat_weights[0] = 0.0;
+        p->sub.dat_weights[p->hdr.nchan] = 0.0;
+        
         p->sub.dat_offsets = (float *)malloc(sizeof(float) *  
                                              p->hdr.nchan * p->hdr.npol);
         p->sub.dat_scales = (float *)malloc(sizeof(float) *  
