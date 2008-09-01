@@ -34,6 +34,7 @@ void usage() {
 /* Thread declarations */
 void *guppi_net_thread(void *_up);
 void *guppi_fold_thread(void *args);
+void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
@@ -70,10 +71,11 @@ int main(int argc, char *argv[]) {
     p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Data buffer ids */
-    struct guppi_thread_args fold_args;
+    struct guppi_thread_args fold_args, disk_args;
     p.output_buffer = 1;
     fold_args.input_buffer = p.output_buffer;
     fold_args.output_buffer = 2;
+    disk_args.input_buffer = fold_args.output_buffer;
 
     /* Init shared mem */
     struct guppi_status stat;
@@ -112,7 +114,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Launch raw fold thread */
+    /* Launch fold thread */
     pthread_t fold_thread_id;
     rv = pthread_create(&fold_thread_id, NULL, guppi_fold_thread, 
             (void *)&fold_args);
@@ -122,16 +124,30 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    /* Launch psrfits thread */
+    pthread_t disk_thread_id;
+    rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
+            (void *)&disk_args);
+    if (rv) { 
+        fprintf(stderr, "Error creating psrfits thread.\n");
+        perror("pthread_create");
+        exit(1);
+    }
+
     /* Wait for end */
     while (run) { sleep(1); }
     pthread_cancel(fold_thread_id);
     pthread_cancel(net_thread_id);
+    pthread_cancel(disk_thread_id);
     pthread_kill(fold_thread_id,SIGINT);
     pthread_kill(net_thread_id,SIGINT);
+    pthread_kill(disk_thread_id,SIGINT);
     pthread_join(net_thread_id,NULL);
     printf("Joined net thread\n"); fflush(stdout);
     pthread_join(fold_thread_id,NULL);
     printf("Joined fold thread\n"); fflush(stdout);
+    pthread_join(disk_thread_id,NULL);
+    printf("Joined disk thread\n"); fflush(stdout);
 
     exit(0);
 }

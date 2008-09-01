@@ -127,6 +127,7 @@ void guppi_fold_thread(void *_args) {
     int curblock_in=0, curblock_out=0;
     int refresh_polycos=1, next_integration=0, first=1, reset_foldbufs=1;
     int nblock_int=0, npacket=0, ndrop=0;
+    double tsubint=0.0, offset=0.0, suboffs=0.0;
     int cur_thread=0;
     char *hdr_in, *hdr_out;
     signal(SIGINT,cc);
@@ -167,10 +168,10 @@ void guppi_fold_thread(void *_args) {
         }
 
         /* Figure out what time it is */
+        offset = pf.hdr.dt * gp.packetindex * gp.packetsize 
+            / pf.hdr.nchan / pf.hdr.npol; // Only true for 8-bit data
         imjd = pf.hdr.start_day;
-        fmjd = pf.hdr.start_sec 
-            + pf.hdr.dt*gp.packetindex*gp.packetsize/pf.hdr.nchan/pf.hdr.npol;
-        fmjd /= 86400.0;
+        fmjd = (pf.hdr.start_sec + offset) / 86400.0;
 
         /* Do any first time stuff */
         if (first) {
@@ -246,7 +247,7 @@ void guppi_fold_thread(void *_args) {
 
             printf("Finalizing integration\n"); fflush(stdout); // DEBUG
 
-            /* TODO: add any extra info to current output header */
+            /* Add any final info to current output header */
 
             /* Close out current integration */
             guppi_databuf_set_filled(db_out, curblock_out);
@@ -274,6 +275,8 @@ void guppi_fold_thread(void *_args) {
             nblock_int=0;
             npacket=0;
             ndrop=0;
+            tsubint=0.0;
+            suboffs=0.0;
             next_integration=0;
         }
 
@@ -333,9 +336,13 @@ void guppi_fold_thread(void *_args) {
         nblock_int++;
         npacket += gp.n_packets;
         ndrop += gp.n_dropped;
+        tsubint = (npacket - ndrop) * pf.hdr.dt;
+        suboffs += offset;
         hputi4(hdr_out, "NBLOCK", nblock_int);
         hputi4(hdr_out, "NPKT", npacket);
         hputi4(hdr_out, "NDROP", ndrop);
+        hputr8(hdr_out, "TSUBINT", tsubint);
+        hputr8(hdr_out, "OFFS_SUB", suboffs / (double)nblock_int);
 
         /* Mark in as free.. not yet! */
         //guppi_databuf_set_free(db_in, curblock_in);

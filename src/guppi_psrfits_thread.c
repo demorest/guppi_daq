@@ -15,7 +15,9 @@
 #include <sys/types.h>
 
 #include "fitshead.h"
+#include "polyco.h"
 #include "psrfits.h"
+#include "fold.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -93,6 +95,7 @@ void guppi_psrfits_thread(void *_args) {
     /* Initialize some key parameters */
     struct guppi_params gp;
     struct psrfits pf;
+    pf.sub.data = NULL;
     pf.sub.dat_freqs = pf.sub.dat_weights = NULL;
     pf.sub.dat_offsets = pf.sub.dat_scales = NULL;
     pf.filenum = 0; // This is crucial
@@ -108,8 +111,11 @@ void guppi_psrfits_thread(void *_args) {
     }
     
     /* Loop */
-    int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;;
+    int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;
+    int mode=SEARCH_MODE;
     char *ptr;
+    struct foldbuf *fb=NULL;
+    float *fold_output_array = NULL;
     signal(SIGINT, cc);
     do {
         /* Note waiting status */
@@ -137,6 +143,9 @@ void guppi_psrfits_thread(void *_args) {
             guppi_read_subint_params(ptr, &gp, &pf);
         }
 
+        /* Find out what mode this data is in */
+        mode = psrfits_obs_mode(pf.hdr.obs_mode);
+
         /* Check if we got packet 0.  If so, flag writing to 
          * start, and update obs_params as well.
          */
@@ -155,7 +164,15 @@ void guppi_psrfits_thread(void *_args) {
             guppi_status_unlock_safe(&st);
             
             /* Get the pointer to the current data */
-            pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
+            if (mode==FOLD_MODE) {
+                printf("fold mode\n");
+                fb = (struct foldbuf *)guppi_databuf_data(db, curblock);
+                fold_output_array = (float *)realloc(fold_output_array,
+                        sizeof(float) * pf.hdr.nbin * pf.hdr.nchan * 
+                        pf.hdr.npol);
+                pf.sub.data = (unsigned char *)fold_output_array;
+            } else
+                pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
             
             /* Set the DC and Nyquist channels explicitly to zero */
             /* because of the "FFT Problem" that splits DC power  */
@@ -174,8 +191,30 @@ void guppi_psrfits_thread(void *_args) {
             if (pf.hdr.ds_time_fact > 1)
                 downsample_time(&pf);
 
+            /* Folded data needs a transpose */
+            if (mode==FOLD_MODE)
+                normalize_transpose_folds(fold_output_array, fb);
+
             /* Write the data */
             psrfits_write_subint(&pf);
+
+            /* Fold mode: deal with polyco, ephemeris table */
+            if (mode==FOLD_MODE) {
+
+                if (pf.rownum==2) {
+                    printf("remove ephem\n");
+                    psrfits_remove_ephem(&pf); // XXX for now
+                    struct polyco *pc;
+                    FILE *pcf = fopen("polyco.dat","r"); // XXX also temp
+                    if (pcf!=NULL) { 
+                        int npc = read_all_pc(pcf, &pc);
+                        fclose(pcf);
+                        if (npc>0) 
+                            psrfits_write_polycos(&pf, pc, npc);
+                    }
+                }
+
+            }
                 
             /* Is the scan complete? */
             if ((pf.hdr.scanlen > 0.0) && 
@@ -202,6 +241,7 @@ void guppi_psrfits_thread(void *_args) {
     
     /* Cleanup */
     
+    if (fold_output_array!=NULL) free(fold_output_array);
     free(pf.sub.dat_freqs);
     free(pf.sub.dat_weights);
     free(pf.sub.dat_offsets);

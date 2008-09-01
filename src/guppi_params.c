@@ -108,11 +108,21 @@ void guppi_read_subint_params(char *buf,
     get_int("NBITSADC", g->n_bits_adc, 8);
     get_int("PFB_OVER", g->pfb_overlap, 4);
 
+    // Check fold mode 
+    int fold=0;
+    if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
+    if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
+
     // Midtime of this block (relative to obs start)
-    int bytes_per_dt = p->hdr.nchan * p->hdr.npol * p->hdr.nbits / 8;
-    p->sub.offs = p->hdr.dt * 
-        (double)(g->packetindex * g->packetsize / bytes_per_dt)
-        + 0.5 * p->sub.tsubint;
+    if (fold) {
+        get_dbl("TSUBINT", p->sub.tsubint, 0.0); 
+        get_dbl("OFFS_SUB", p->sub.offs, 0.0); 
+    } else {
+        int bytes_per_dt = p->hdr.nchan * p->hdr.npol * p->hdr.nbits / 8;
+        p->sub.offs = p->hdr.dt * 
+            (double)(g->packetindex * g->packetsize / bytes_per_dt)
+            + 0.5 * p->sub.tsubint;
+    }
 
     { // MJD and LST calcs
         int imjd, smjd, lst_secs;
@@ -196,8 +206,10 @@ void guppi_read_obs_params(char *buf,
     // Fold mode specific stuff
     int fold=0;
     if (strcmp("FOLD", p->hdr.obs_mode)==0) { fold=1; }
+    if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
+    if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
     if (fold) {
-        get_int("NBIN", p->hdr.nbin, 1024);
+        get_int("NBIN", p->hdr.nbin, 256);
     } else {
         p->hdr.nbin = 1;
     }
@@ -243,10 +255,9 @@ void guppi_read_obs_params(char *buf,
         p->sub.FITS_typecode = TBYTE;
         p->sub.tsubint = p->hdr.nsblk * p->hdr.dt;
         if (fold) { 
-            // TODO fix this up
             p->hdr.nsblk = 1;
             p->sub.FITS_typecode = TFLOAT;
-            p->sub.tsubint *= 128;
+            get_dbl("TSUBINT", p->sub.tsubint, 0.0); 
             p->sub.bytes_per_subint = sizeof(float) * p->hdr.nbin *
                 p->hdr.nchan * p->hdr.npol;
         }
