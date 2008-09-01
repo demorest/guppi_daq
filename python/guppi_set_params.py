@@ -14,6 +14,8 @@ par.add_option("-f", "--freq", dest="freq", help="Set center freq (MHz)",
         action="store", type="float", default=1200.0)
 par.add_option("-n", "--scannum", dest="scan", help="Set scan number",
         action="store", type="int", default=1);
+par.add_option("-l", "--length", dest="len", help="Scan length",
+        action="store", type="float", default=3600.0)
 par.add_option("-c", "--cal", dest="cal", help="Setup for cal scan",
         action="store_true", default=False)
 par.add_option("-g", "--gbt", dest="gbt", 
@@ -47,7 +49,7 @@ if (opt.cal):
     g.update("BASENAME", "guppi_%s_%04d_cal"%(g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "ON")
 else:
-    g.update("SCANLEN", 1800.0)
+    g.update("SCANLEN", opt.len)
     g.update("BASENAME", "guppi_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "OFF")
 
@@ -67,6 +69,10 @@ g.update("NBITSADC", 8)
 g.update("ACC_LEN", 16)
 
 g.update("NRCVR", 2)
+
+g.update("ONLY_I", 0)
+g.update("DS_TIME", 1)
+g.update("DS_FREQ", 1)
 
 #g.update("BLOCSIZE", )
 g.update("OFFSET0", 0.0)
