@@ -287,6 +287,13 @@ void *guppi_net_thread(void *_up) {
                     guppi_warn("guppi_net_thread", msg);
                 }
                 stt_offs = 0.0;
+                /* Warn if 1st packet number is not zero */
+                if (seq_num!=0) {
+                    char msg[256];
+                    sprintf(msg, "First packet number is not 0 (seq_num=%lld)",
+                            seq_num);
+                    guppi_warn("guppi_net_thread", msg);
+                }
             }
 
             /* Read/update current status shared mem */
