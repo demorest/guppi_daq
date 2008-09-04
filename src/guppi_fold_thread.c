@@ -312,6 +312,7 @@ void guppi_fold_thread(void *_args) {
             guppi_error("guppi_fold_thread", errmsg);
             pthread_exit(NULL);
         }
+        pc[ipc].used = 1;
 
         /* Launch fold thread */
         input_block_list[cur_thread] = curblock_in;
