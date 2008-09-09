@@ -19,9 +19,19 @@
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
+#include "guppi_params.h"
 
 #define STATUS_KEY "NULLSTAT"
 #include "guppi_threads.h"
+
+/* Parse info from buffer into param struct */
+extern void guppi_read_subint_params(char *buf, 
+                                     struct guppi_params *g,
+                                     struct psrfits *p);
+extern void guppi_read_obs_params(char *buf, 
+                                     struct guppi_params *g,
+                                     struct psrfits *p);
+
 
 void guppi_null_thread(void *_args) {
 
@@ -74,6 +84,9 @@ void guppi_null_thread(void *_args) {
     }
 
     /* Loop */
+    char *ptr;
+    struct guppi_params gp;
+    struct psrfits pf;
     int curblock=0;
     signal(SIGINT,cc);
     while (run) {
@@ -91,6 +104,17 @@ void guppi_null_thread(void *_args) {
         hputs(st.buf, STATUS_KEY, "blanking");
         hputi4(st.buf, "CURBLOCK", curblock);
         guppi_status_unlock_safe(&st);
+
+        /* Get params */
+        ptr = guppi_databuf_header(db, curblock);
+        guppi_read_obs_params(ptr, &gp, &pf);
+
+        /* Output if data was lost */
+        if (gp.n_dropped!=0 && gp.packetindex==0) {
+            printf("Block beginning with pktidx=%lld dropped %d packets\n",
+                    gp.packetindex, gp.n_dropped);
+            fflush(stdout);
+        }
 
         /* Mark as free */
         guppi_databuf_set_free(db, curblock);

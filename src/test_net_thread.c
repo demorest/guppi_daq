@@ -138,9 +138,9 @@ int main(int argc, char *argv[]) {
     pthread_kill(disk_thread_id,SIGINT);
     pthread_kill(net_thread_id,SIGINT);
     pthread_join(net_thread_id,NULL);
-    printf("Joined net thread\n"); fflush(stdout);
+    printf("Joined net thread\n"); fflush(stdout); fflush(stderr);
     pthread_join(disk_thread_id,NULL);
-    printf("Joined disk thread\n"); fflush(stdout);
+    printf("Joined disk thread\n"); fflush(stdout); fflush(stderr);
 
     exit(0);
 }
