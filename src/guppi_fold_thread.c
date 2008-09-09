@@ -185,6 +185,7 @@ void guppi_fold_thread(void *_args) {
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
             hputi4(hdr_out, "NBIN", fb.nbin);
+            hputs(hdr_out, "OBS_MODE", "PSR");
 
             first=0;
         }
@@ -228,6 +229,9 @@ void guppi_fold_thread(void *_args) {
             /* Set output fold params */
             fb.nchan = pf.hdr.nchan;
             fb.npol = pf.hdr.npol;
+            fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
+            fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
+            clear_foldbuf(&fb);
 
             /* Loop over thread foldbufs */
             for (i=0; i<nthread; i++) {
@@ -253,9 +257,11 @@ void guppi_fold_thread(void *_args) {
                 (struct polyco *)(guppi_databuf_data(db_out, curblock_out)
                         + foldbuf_data_size(&fb) + foldbuf_count_size(&fb));
             for (i=0; i<npc; i++) { 
-                n_polyco_used += pc[i].used ? 1 : 0;
-                *pc_ptr = pc[i];
-                pc_ptr++;
+                if (pc[i].used) { 
+                    n_polyco_used += 1;
+                    *pc_ptr = pc[i];
+                    pc_ptr++;
+                }
             }
             hputi4(hdr_out, "NPOLYCO", n_polyco_used);
 

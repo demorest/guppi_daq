@@ -114,7 +114,7 @@ void guppi_psrfits_thread(void *_args) {
     int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;
     int mode=SEARCH_MODE;
     char *ptr;
-    struct foldbuf *fb=NULL;
+    struct foldbuf fb;
     struct polyco pc[64];  
     memset(pc, 0, sizeof(pc));
     int n_polyco_written=0;
@@ -170,15 +170,19 @@ void guppi_psrfits_thread(void *_args) {
             
             /* Get the pointer to the current data */
             if (mode==FOLD_MODE) {
-                printf("fold mode\n");
-                fb = (struct foldbuf *)guppi_databuf_data(db, curblock);
+                fb.nchan = pf.hdr.nchan;
+                fb.npol = pf.hdr.npol;
+                fb.nbin = pf.hdr.nbin;
+                fb.data = (float *)guppi_databuf_data(db, curblock);
+                fb.count = (unsigned *)(guppi_databuf_data(db, curblock)
+                        + foldbuf_data_size(&fb));
                 fold_output_array = (float *)realloc(fold_output_array,
                         sizeof(float) * pf.hdr.nbin * pf.hdr.nchan * 
                         pf.hdr.npol);
                 pf.sub.data = (unsigned char *)fold_output_array;
                 pf.fold.pc = (struct polyco *)(guppi_databuf_data(db,curblock)
-                        + foldbuf_data_size(fb) + foldbuf_count_size(fb));
-            } else
+                        + foldbuf_data_size(&fb) + foldbuf_count_size(&fb));
+            } else 
                 pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
             
             /* Set the DC and Nyquist channels explicitly to zero */
@@ -200,7 +204,7 @@ void guppi_psrfits_thread(void *_args) {
 
             /* Folded data needs a transpose */
             if (mode==FOLD_MODE)
-                normalize_transpose_folds(fold_output_array, fb);
+                normalize_transpose_folds(fold_output_array, &fb);
 
             /* Write the data */
             psrfits_write_subint(&pf);
@@ -216,7 +220,7 @@ void guppi_psrfits_thread(void *_args) {
                         break;
                     }
                 }
-                if (new_pc) {
+                if (new_pc || n_polyco_written==0) {
                     pc[n_polyco_written] = pf.fold.pc[i];
                     n_polyco_written++;
                     write_pc=1;
