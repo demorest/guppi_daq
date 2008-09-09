@@ -113,15 +113,17 @@ void guppi_read_subint_params(char *buf,
     if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
     if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
 
-    // Midtime of this block (relative to obs start)
+    // Fold-specifc stuff
     if (fold) {
         get_dbl("TSUBINT", p->sub.tsubint, 0.0); 
         get_dbl("OFFS_SUB", p->sub.offs, 0.0); 
+        get_int("NPOLYCO", p->fold.n_polyco_sets, 0);
     } else {
         int bytes_per_dt = p->hdr.nchan * p->hdr.npol * p->hdr.nbits / 8;
         p->sub.offs = p->hdr.dt * 
             (double)(g->packetindex * g->packetsize / bytes_per_dt)
             + 0.5 * p->sub.tsubint;
+        p->fold.n_polyco_sets = 0;
     }
 
     { // MJD and LST calcs
@@ -210,10 +212,10 @@ void guppi_read_obs_params(char *buf,
     if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
     if (fold) {
         get_int("NBIN", p->hdr.nbin, 256);
-        get_str("PARFILE", p->hdr.parfile, 256, "");
+        get_str("PARFILE", p->fold.parfile, 256, "");
     } else {
         p->hdr.nbin = 1;
-        p->hdr.parfile[0] = '\0';
+        p->fold.parfile[0] = '\0';
     }
     
     { // Start time, MJD

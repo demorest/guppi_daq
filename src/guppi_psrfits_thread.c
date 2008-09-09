@@ -115,6 +115,9 @@ void guppi_psrfits_thread(void *_args) {
     int mode=SEARCH_MODE;
     char *ptr;
     struct foldbuf *fb=NULL;
+    struct polyco pc[64];  
+    memset(pc, 0, sizeof(pc));
+    int n_polyco_written=0;
     float *fold_output_array = NULL;
     signal(SIGINT, cc);
     do {
@@ -153,6 +156,8 @@ void guppi_psrfits_thread(void *_args) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
             guppi_update_ds_params(&pf);
+            memset(pc, 0, sizeof(pc));
+            n_polyco_written=0;
         }
 
         /* If actual observation has started, write the data */
@@ -171,6 +176,8 @@ void guppi_psrfits_thread(void *_args) {
                         sizeof(float) * pf.hdr.nbin * pf.hdr.nchan * 
                         pf.hdr.npol);
                 pf.sub.data = (unsigned char *)fold_output_array;
+                pf.fold.pc = (struct polyco *)(guppi_databuf_data(db,curblock)
+                        + foldbuf_data_size(fb) + foldbuf_count_size(fb));
             } else
                 pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
             
@@ -198,22 +205,28 @@ void guppi_psrfits_thread(void *_args) {
             /* Write the data */
             psrfits_write_subint(&pf);
 
-            /* Fold mode: deal with polyco, ephemeris table */
-            if (mode==FOLD_MODE) {
-
-                if (pf.rownum==2) {
-                    struct polyco *pc;
-                    FILE *pcf = fopen("polyco.dat","r"); // XXX also temp
-                    if (pcf!=NULL) { 
-                        int npc = read_all_pc(pcf, &pc);
-                        fclose(pcf);
-                        if (npc>0) 
-                            psrfits_write_polycos(&pf, pc, npc);
+            /* Write the polycos if needed */
+            int write_pc=0, i, j;
+            for (i=0; i<pf.fold.n_polyco_sets; i++) {
+                if (pf.fold.pc[i].used==0) continue; 
+                int new_pc=0;
+                for (j=0; j<n_polyco_written; j++) {
+                    if (polycos_differ(&pf.fold.pc[i], &pc[j])==0) {
+                        new_pc=1;
+                        break;
                     }
                 }
-
+                if (new_pc) {
+                    pc[n_polyco_written] = pf.fold.pc[i];
+                    n_polyco_written++;
+                    write_pc=1;
+                } else {
+                    pf.fold.pc[i].used = 0; // Already have this one
+                }
             }
-                
+            if (write_pc) 
+                psrfits_write_polycos(&pf, pf.fold.pc, pf.fold.n_polyco_sets);
+
             /* Is the scan complete? */
             if ((pf.hdr.scanlen > 0.0) && 
                 (pf.T > pf.hdr.scanlen)) run = 0;

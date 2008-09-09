@@ -129,7 +129,7 @@ void guppi_fold_thread(void *_args) {
     int nblock_int=0, npacket=0, ndrop=0;
     double tsubint=0.0, offset=0.0, suboffs=0.0;
     int cur_thread=0;
-    char *hdr_in, *hdr_out;
+    char *hdr_in=NULL, *hdr_out=NULL;
     signal(SIGINT,cc);
     while (run) {
 
@@ -234,7 +234,7 @@ void guppi_fold_thread(void *_args) {
                 fargs[i].fb->nbin = fb.nbin;
                 fargs[i].fb->nchan = pf.hdr.nchan;
                 fargs[i].fb->npol = pf.hdr.npol;
-                if (fargs[i].data==NULL) free_foldbuf(fargs[i].fb);
+                if (fargs[i].data!=NULL) free_foldbuf(fargs[i].fb);
                 malloc_foldbuf(fargs[i].fb);
                 clear_foldbuf(fargs[i].fb);
             }
@@ -247,7 +247,17 @@ void guppi_fold_thread(void *_args) {
 
             printf("Finalizing integration\n"); fflush(stdout); // DEBUG
 
-            /* Add any final info to current output header */
+            /* Add polyco info to current output block */
+            int n_polyco_used = 0;
+            struct polyco *pc_ptr = 
+                (struct polyco *)(guppi_databuf_data(db_out, curblock_out)
+                        + foldbuf_data_size(&fb) + foldbuf_count_size(&fb));
+            for (i=0; i<npc; i++) { 
+                n_polyco_used += pc[i].used ? 1 : 0;
+                *pc_ptr = pc[i];
+                pc_ptr++;
+            }
+            hputi4(hdr_out, "NPOLYCO", n_polyco_used);
 
             /* Close out current integration */
             guppi_databuf_set_filled(db_out, curblock_out);
@@ -269,7 +279,7 @@ void guppi_fold_thread(void *_args) {
             hputi4(hdr_out, "PKTIDX", gp.packetindex);
 
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
-            fb.count = (unsigned *)(fb.data + fb.nbin * fb.nchan * fb.npol);
+            fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
             clear_foldbuf(&fb);
 
             nblock_int=0;
@@ -280,7 +290,6 @@ void guppi_fold_thread(void *_args) {
             next_integration=0;
         }
 
-
         /* Check src, get correct polycos */
         if (refresh_polycos) { 
             polyco_file = fopen("polyco.dat", "r");
@@ -288,14 +297,7 @@ void guppi_fold_thread(void *_args) {
                 guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
                 pthread_exit(NULL);
             }
-            npc=0;
-            do { 
-                pc = (struct polyco *)realloc(pc, 
-                        sizeof(struct polyco) * (npc+1));
-                rv = read_one_pc(polyco_file, &pc[npc]);
-                npc++;
-            } while (rv==0);
-            npc--;
+            npc = read_all_pc(polyco_file, &pc);
             if (npc==0) { 
                 guppi_error("guppi_fold_thread", "Error parsing polyco file.");
                 pthread_exit(NULL);

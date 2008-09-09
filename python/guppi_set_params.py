@@ -21,6 +21,9 @@ par.add_option("-c", "--cal", dest="cal", help="Setup for cal scan",
 par.add_option("-g", "--gbt", dest="gbt", 
         help="Use values from gbtstatus (overrides most other settings)",
         action="store_true", default=False)
+par.add_option("-P", "--parfile", dest="parfile", 
+        help="Use this parfile for folding",
+        action="store", default="");
 (opt,arg) = par.parse_args()
 
 g = guppi_status()
@@ -73,6 +76,8 @@ g.update("NRCVR", 2)
 g.update("ONLY_I", 0)
 g.update("DS_TIME", 1)
 g.update("DS_FREQ", 1)
+
+g.update("PARFILE", opt.parfile);
 
 #g.update("BLOCSIZE", )
 g.update("OFFSET0", 0.0)
