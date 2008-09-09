@@ -202,8 +202,6 @@ void guppi_psrfits_thread(void *_args) {
             if (mode==FOLD_MODE) {
 
                 if (pf.rownum==2) {
-                    printf("remove ephem\n");
-                    psrfits_remove_ephem(&pf); // XXX for now
                     struct polyco *pc;
                     FILE *pcf = fopen("polyco.dat","r"); // XXX also temp
                     if (pcf!=NULL) { 

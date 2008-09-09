@@ -210,8 +210,10 @@ void guppi_read_obs_params(char *buf,
     if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
     if (fold) {
         get_int("NBIN", p->hdr.nbin, 256);
+        get_str("PARFILE", p->hdr.parfile, 256, "");
     } else {
         p->hdr.nbin = 1;
+        p->hdr.parfile[0] = '\0';
     }
     
     { // Start time, MJD
