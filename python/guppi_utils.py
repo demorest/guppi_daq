@@ -181,14 +181,26 @@ class guppi_databuf:
             raise IndexError, "block %d out of range (n_block=%d)" \
                     % (block, self.n_block)
         self.read_hdr(block) 
+        try:
+            if (self.hdr[block]["OBS_MODE"] == "PSR"):
+                self.dtype = n.float
+            else:
+                self.dype = n.int8
+        except KeyError:
+            self.dtype = n.int8
         raw = n.fromstring(self.buf.read(self.block_size, \
                 self.data_offset + block*self.block_size), \
                 dtype=self.dtype)
         try:
             npol = self.hdr[block]["NPOL"]
             nchan = self.hdr[block]["OBSNCHAN"]
-            nspec = self.block_size / (npol*nchan)
-            raw.shape = (nspec, npol, nchan)
+            nbin = self.hdr[block]["NBIN"]
+            if (self.hdr[block]["OBS_MODE"] == "PSR"):
+                #raw.shape = (nbin, npol, nchan)
+                return raw
+            else:
+                nspec = self.block_size / (npol*nchan)
+                raw.shape = (nspec, npol, nchan)
         except KeyError:
             pass
         return raw

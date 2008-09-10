@@ -118,6 +118,8 @@ void guppi_fold_thread(void *_args) {
         fargs[i].fb->nbin = fb.nbin;
         fargs[i].fb->nchan = 0;
         fargs[i].fb->npol = 0;
+        fargs[i].fb->data = NULL;
+        fargs[i].fb->count = NULL;
         fargs[i].nsamp = 0;
         fargs[i].tsamp = 0.0;
         fargs[i].raw_signed = 1;
@@ -187,6 +189,11 @@ void guppi_fold_thread(void *_args) {
             hputi4(hdr_out, "NBIN", fb.nbin);
             hputs(hdr_out, "OBS_MODE", "PSR");
 
+            /* Set up data ptrs, zero out area */
+            fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
+            fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
+            clear_foldbuf(&fb);
+
             first=0;
         }
 
@@ -200,10 +207,14 @@ void guppi_fold_thread(void *_args) {
             for (i=0; i<cur_thread; i++) {
 
                 /* Wait for thread */
-                rv = pthread_join(thread_id[i], NULL);
+                int *thread_rv;
+                rv = pthread_join(thread_id[i], (void**)&thread_rv);
                 if (rv) {
                     guppi_error("guppi_fold_thread", "Error joining subthread");
                     continue;
+                }
+                if (*thread_rv!=0) {
+                    fprintf(stderr, "fold_thread returned %d\n", *thread_rv);
                 }
 
                 /* Mark input block as free */
@@ -211,7 +222,9 @@ void guppi_fold_thread(void *_args) {
                     guppi_databuf_set_free(db_in, input_block_list[i]);
                 
                 /* Combine result into total int */
-                accumulate_folds(&fb, fargs[i].fb);
+                rv = accumulate_folds(&fb, fargs[i].fb);
+                if (rv!=0) 
+                    fprintf(stderr, "accumulate_folds returned %d\n",rv);
 
                 /* Reset thread info */
                 clear_foldbuf(fargs[i].fb);
@@ -229,16 +242,13 @@ void guppi_fold_thread(void *_args) {
             /* Set output fold params */
             fb.nchan = pf.hdr.nchan;
             fb.npol = pf.hdr.npol;
-            fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
-            fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
-            clear_foldbuf(&fb);
 
             /* Loop over thread foldbufs */
             for (i=0; i<nthread; i++) {
                 fargs[i].fb->nbin = fb.nbin;
                 fargs[i].fb->nchan = pf.hdr.nchan;
                 fargs[i].fb->npol = pf.hdr.npol;
-                if (fargs[i].data!=NULL) free_foldbuf(fargs[i].fb);
+                if (fargs[i].fb->data!=NULL) free_foldbuf(fargs[i].fb);
                 malloc_foldbuf(fargs[i].fb);
                 clear_foldbuf(fargs[i].fb);
             }
@@ -328,7 +338,7 @@ void guppi_fold_thread(void *_args) {
         fargs[cur_thread].pc = &pc[ipc];
         fargs[cur_thread].imjd = imjd;
         fargs[cur_thread].fmjd = fmjd;
-        fargs[cur_thread].fb->nbin = pf.hdr.nbin;
+        fargs[cur_thread].fb->nbin = fb.nbin;
         fargs[cur_thread].fb->nchan = pf.hdr.nchan;
         fargs[cur_thread].fb->npol = pf.hdr.npol;
         fargs[cur_thread].nsamp = gp.n_packets*gp.packetsize 

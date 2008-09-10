@@ -95,15 +95,12 @@ PSR_fieldNames = [
 class GBTStatus:
     def __init__(self):
         self.info = 'Information'
-        try:
-            self.db = MySQLdb.connect(passwd="w3bqu3ry",db="gbt_status",host="leo",user="gbtstatus")
-            self.cursor = self.db.cursor()
-        except:
-            sys.exit()
+        self.db = MySQLdb.connect(passwd="w3bqu3ry",db="gbt_status",host="gbtdata.gbt.nrao.edu",user="gbtstatus")
+        self.cursor = self.db.cursor()
         self.noValue = "unknown"
-	self.fieldNames = PSR_fieldNames
-	self.prepQuery()
-	
+        self.fieldNames = PSR_fieldNames
+        self.prepQuery()
+        
     def getValue(self, key):
         # Set the value based on the key provided.
         if key is not None:
@@ -134,30 +131,30 @@ class GBTStatus:
             for f in self.fieldNames:
                 if f not in self.dbfields:
                     pass
-		else:
+                else:
                     queryList = queryList + f + ","
             queryList = queryList[0:-1]
             self.query = "select %s from status" % queryList
-	
-	except: #Database error - use last values from db
-	    print "Uh-oh!  DB error!"
-	    pass
+        
+        except: #Database error - use last values from db
+            print "Uh-oh!  DB error!"
+            pass
 
     def collectKVPairs(self):
         try:
-	    # Run the query.
+            # Run the query.
             self.cursor.execute(self.query)
             fieldValues = self.cursor.fetchall()[0]
             self.kvPairs = {}
         except: #Database error - use last values from db
-	    print "Uh-oh!  DB error!"
-	    pass
+            print "Uh-oh!  DB error!"
+            pass
 
-	# Build a dictionary of keyword to value mappings.
+        # Build a dictionary of keyword to value mappings.
         for i, d in enumerate(self.fieldNames):
             if d not in self.dbfields:
                 self.kvPairs[d] = self.noValue
-	    else:
+            else:
                 self.kvPairs[self.fieldNames[i]] = fieldValues[i]
             
     def show(self, key, title = None, units = None):
@@ -190,7 +187,7 @@ class GBTStatus:
         else:
             units = ""        
         
-	print title, value, units
+        print title, value, units
 
     def getScanStartInfo(self, key):
 
