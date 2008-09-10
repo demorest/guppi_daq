@@ -194,8 +194,8 @@ class guppi_databuf:
         try:
             npol = self.hdr[block]["NPOL"]
             nchan = self.hdr[block]["OBSNCHAN"]
-            nbin = self.hdr[block]["NBIN"]
             if (self.hdr[block]["OBS_MODE"] == "PSR"):
+                #nbin = self.hdr[block]["NBIN"]
                 #raw.shape = (nbin, npol, nchan)
                 return raw
             else:
