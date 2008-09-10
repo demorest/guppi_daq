@@ -69,6 +69,7 @@ void guppi_psrfits_thread(void *_args) {
 
     /* Get args */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+    pthread_cleanup_push((void *)guppi_thread_set_finished, args);
     
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, 0);
@@ -119,11 +120,15 @@ void guppi_psrfits_thread(void *_args) {
     memset(pc, 0, sizeof(pc));
     int n_polyco_written=0;
     float *fold_output_array = NULL;
+    int scan_finished=0;
     signal(SIGINT, cc);
     do {
         /* Note waiting status */
         guppi_status_lock_safe(&st);
-        hputs(st.buf, STATUS_KEY, "waiting");
+        if (got_packet_0)
+            hputs(st.buf, STATUS_KEY, "waiting");
+        else
+            hputs(st.buf, STATUS_KEY, "ready");
         guppi_status_unlock_safe(&st);
         
         /* Wait for buf to have data */
@@ -233,7 +238,7 @@ void guppi_psrfits_thread(void *_args) {
 
             /* Is the scan complete? */
             if ((pf.hdr.scanlen > 0.0) && 
-                (pf.T > pf.hdr.scanlen)) run = 0;
+                (pf.T > pf.hdr.scanlen)) scan_finished = 1;
             
             /* For debugging... */
             if (gp.drop_frac > 0.0) {
@@ -252,7 +257,7 @@ void guppi_psrfits_thread(void *_args) {
         /* Check for cancel */
         pthread_testcancel();
         
-    } while (run);
+    } while (run && !scan_finished);
     
     /* Cleanup */
     
@@ -266,4 +271,5 @@ void guppi_psrfits_thread(void *_args) {
     
     pthread_cleanup_pop(0); /* Closes psrfits_close */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes set_finished */
 }

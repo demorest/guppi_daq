@@ -58,6 +58,7 @@ void guppi_fold_thread(void *_args) {
         pthread_exit(NULL);
     }
     pthread_cleanup_push((void *)set_exit_status, &st);
+    pthread_cleanup_push((void *)guppi_thread_set_finished, args);
 
     /* Init status */
     guppi_status_lock_safe(&st);
@@ -91,7 +92,7 @@ void guppi_fold_thread(void *_args) {
     /* Load polycos */
     int imjd;
     double fmjd, fmjd0, fmjd_next=0.0;
-    double tfold=15.0;
+    double tfold=30.0;
     int npc=0, ipc;
     struct polyco *pc=NULL;
     FILE *polyco_file=NULL;
@@ -259,8 +260,6 @@ void guppi_fold_thread(void *_args) {
         /* Finalize this output block if needed, move to next */
         if (next_integration) {
 
-            printf("Finalizing integration\n"); fflush(stdout); // DEBUG
-
             /* Add polyco info to current output block */
             int n_polyco_used = 0;
             struct polyco *pc_ptr = 
@@ -377,5 +376,6 @@ void guppi_fold_thread(void *_args) {
     pthread_exit(NULL);
 
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes set_finished */
 
 }

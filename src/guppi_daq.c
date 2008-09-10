@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
 
     /* Launch PSRFITS disk thread */
     struct guppi_thread_args disk_args;
+    guppi_thread_args_init(&disk_args);
     disk_args.input_buffer = p.output_buffer;
     pthread_t disk_thread_id;
     rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread, 
@@ -97,6 +98,8 @@ int main(int argc, char *argv[]) {
     printf("Joined net thread\n"); fflush(stdout);
     pthread_join(disk_thread_id,NULL);
     printf("Joined disk thread\n"); fflush(stdout);
+
+    guppi_thread_args_destroy(&disk_args);
 
     exit(0);
 }

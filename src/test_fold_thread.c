@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
 
     /* Data buffer ids */
     struct guppi_thread_args fold_args, disk_args;
+    guppi_thread_args_init(&fold_args);
+    guppi_thread_args_init(&disk_args);
     p.output_buffer = 1;
     fold_args.input_buffer = p.output_buffer;
     fold_args.output_buffer = 2;
@@ -124,30 +126,40 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Launch psrfits thread */
-    pthread_t disk_thread_id;
-    rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
-            (void *)&disk_args);
-    if (rv) { 
-        fprintf(stderr, "Error creating psrfits thread.\n");
-        perror("pthread_create");
-        exit(1);
+    /* Launch psrfits thread, then wait for it to finish */
+    pthread_t disk_thread_id=0;
+    while (run) {
+
+        if (disk_thread_id==0) {
+            printf("Starting new psrfits thread...\n"); fflush(stdout);
+            rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
+                    (void *)&disk_args);
+            if (rv) { 
+                fprintf(stderr, "Error creating psrfits thread.\n");
+                perror("pthread_create");
+                exit(1);
+            }
+        }
+
+        if (guppi_thread_finished(&disk_args,0.5)) { run=0; }
     }
 
-    /* Wait for end */
-    while (run) { sleep(1); }
+    /* Clean up */
     pthread_cancel(fold_thread_id);
     pthread_cancel(net_thread_id);
-    pthread_cancel(disk_thread_id);
+    if (disk_thread_id!=0) pthread_cancel(disk_thread_id);
     pthread_kill(fold_thread_id,SIGINT);
     pthread_kill(net_thread_id,SIGINT);
-    pthread_kill(disk_thread_id,SIGINT);
+    if (disk_thread_id!=0) pthread_kill(disk_thread_id,SIGINT);
     pthread_join(net_thread_id,NULL);
     printf("Joined net thread\n"); fflush(stdout);
     pthread_join(fold_thread_id,NULL);
     printf("Joined fold thread\n"); fflush(stdout);
-    pthread_join(disk_thread_id,NULL);
+    if (disk_thread_id!=0) pthread_join(disk_thread_id,NULL);
     printf("Joined disk thread\n"); fflush(stdout);
+
+    guppi_thread_args_destroy(&fold_args);
+    guppi_thread_args_destroy(&disk_args);
 
     exit(0);
 }

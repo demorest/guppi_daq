@@ -117,6 +117,7 @@ int main(int argc, char *argv[]) {
 
     /* Launch raw disk (or null) thread */
     struct guppi_thread_args null_args;
+    guppi_thread_args_init(&null_args);
     null_args.input_buffer = p.output_buffer;
     pthread_t disk_thread_id;
     if (disk)
@@ -141,6 +142,8 @@ int main(int argc, char *argv[]) {
     printf("Joined net thread\n"); fflush(stdout); fflush(stderr);
     pthread_join(disk_thread_id,NULL);
     printf("Joined disk thread\n"); fflush(stdout); fflush(stderr);
+
+    guppi_thread_args_destroy(&null_args);
 
     exit(0);
 }
