@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include "guppi_udp.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -28,9 +27,7 @@ void usage() {
             "Default hostname: bee2_10\n"
             "Options:\n"
             "  -h, --help        This message\n"
-            "  -p n, --port=n    Port number (default 50000)\n"
             "  -d, --disk        Write raw data to disk (default no)\n"
-            "  -s n, --size=n    Set packet size in bytes (8208)\n"
            );
 }
 
@@ -41,29 +38,17 @@ void *guppi_null_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
-    struct guppi_udp_params p;
-
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
-        {"port",   1, NULL, 'p'},
         {"disk",   0, NULL, 'd'},
-        {"size",   1, NULL, 's'},
         {0,0,0,0}
     };
     int opt, opti;
     int disk=0;
-    p.port = 50000;
-    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
-    while ((opt=getopt_long(argc,argv,"hp:ds:",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"hd",long_opts,&opti))!=-1) {
         switch (opt) {
-            case 'p':
-                p.port = atoi(optarg);
-                break;
             case 'd':
                 disk=1;
-                break;
-            case 's':
-                p.packet_size = atoi(optarg);
                 break;
             default:
             case 'h':
@@ -71,14 +56,6 @@ int main(int argc, char *argv[]) {
                 exit(0);
                 break;
         }
-    }
-
-    /* Default to bee2 if no hostname given */
-    /* TODO: fill into shared mem, not udp_params struct */
-    if (optind==argc) {
-        strcpy(p.sender, "bee2_10");
-    } else {
-        strcpy(p.sender, argv[optind]);
     }
 
     /* Net thread args */

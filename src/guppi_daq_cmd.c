@@ -30,18 +30,6 @@ static Cmdline cmd = {
   /* downsampP = */ 0,
   /* downsamp = */ (int)0,
   /* downsampC = */ 0,
-  /***** -port: Port number for UDP packets */
-  /* portP = */ 1,
-  /* port = */ 50000,
-  /* portC = */ 1,
-  /***** -size: UDP packet size (bytes) */
-  /* sizeP = */ 1,
-  /* size = */ 8208,
-  /* sizeC = */ 1,
-  /***** -host: Hostname of the data taking instrument */
-  /* hostnameP = */ 1,
-  /* hostname = */ "bee2_10",
-  /* hostnameC = */ 1,
   /***** uninterpreted rest of command line */
   /* argc = */ 0,
   /* argv = */ (char**)0,
@@ -741,7 +729,7 @@ catArgv(int argc, char **argv)
 void
 usage(void)
 {
-  fprintf(stderr,"%s","   [-outchan outchan] [-downsamp downsamp] [-port port] [-size size] [-host hostname]\n");
+  fprintf(stderr,"%s","   [-outchan outchan] [-downsamp downsamp]\n");
   fprintf(stderr,"%s","      \n");
   fprintf(stderr,"%s","      Take search-mode data using GUPPI and write it to disk.\n");
   fprintf(stderr,"%s","      \n");
@@ -749,16 +737,7 @@ usage(void)
   fprintf(stderr,"%s","               1 int value\n");
   fprintf(stderr,"%s","    -downsamp: Number of samples to average in time (defaults to none)\n");
   fprintf(stderr,"%s","               1 int value\n");
-  fprintf(stderr,"%s","        -port: Port number for UDP packets\n");
-  fprintf(stderr,"%s","               1 int value\n");
-  fprintf(stderr,"%s","               default: `50000'\n");
-  fprintf(stderr,"%s","        -size: UDP packet size (bytes)\n");
-  fprintf(stderr,"%s","               1 int value\n");
-  fprintf(stderr,"%s","               default: `8208'\n");
-  fprintf(stderr,"%s","        -host: Hostname of the data taking instrument\n");
-  fprintf(stderr,"%s","               1 char* value\n");
-  fprintf(stderr,"%s","               default: `bee2_10'\n");
-  fprintf(stderr,"%s","  version: 28Aug08\n");
+  fprintf(stderr,"%s","  version: 11Sep08\n");
   fprintf(stderr,"%s","  ");
   exit(EXIT_FAILURE);
 }
@@ -784,30 +763,6 @@ parseCmdline(int argc, char **argv)
       cmd.downsampP = 1;
       i = getIntOpt(argc, argv, i, &cmd.downsamp, 1);
       cmd.downsampC = i-keep;
-      continue;
-    }
-
-    if( 0==strcmp("-port", argv[i]) ) {
-      int keep = i;
-      cmd.portP = 1;
-      i = getIntOpt(argc, argv, i, &cmd.port, 1);
-      cmd.portC = i-keep;
-      continue;
-    }
-
-    if( 0==strcmp("-size", argv[i]) ) {
-      int keep = i;
-      cmd.sizeP = 1;
-      i = getIntOpt(argc, argv, i, &cmd.size, 1);
-      cmd.sizeC = i-keep;
-      continue;
-    }
-
-    if( 0==strcmp("-host", argv[i]) ) {
-      int keep = i;
-      cmd.hostnameP = 1;
-      i = getStringOpt(argc, argv, i, &cmd.hostname, 1);
-      cmd.hostnameC = i-keep;
       continue;
     }
 

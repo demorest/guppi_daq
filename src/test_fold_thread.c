@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include "guppi_udp.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -26,7 +25,6 @@ void usage() {
     fprintf(stderr,
             "Usage: test_net_thread [options] sender_hostname\n"
             "Options:\n"
-            "  -p n, --port=n    Port number\n"
             "  -h, --help        This message\n"
            );
 }
@@ -38,20 +36,13 @@ void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
-    struct guppi_udp_params p;
-
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
-        {"port",   1, NULL, 'p'},
         {0,0,0,0}
     };
     int opt, opti;
-    p.port = 50000;
-    while ((opt=getopt_long(argc,argv,"hp:",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"h",long_opts,&opti))!=-1) {
         switch (opt) {
-            case 'p':
-                p.port = atoi(optarg);
-                break;
             default:
             case 'h':
                 usage();
@@ -59,17 +50,6 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-
-    /* Default to bee2 if no hostname given */
-    /* TODO fill into shmem struct */
-    if (optind==argc) {
-        strcpy(p.sender, "bee2_10");
-    } else {
-        strcpy(p.sender, argv[optind]);
-    }
-
-    /* Init udp params */
-    p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Data buffer ids */
     struct guppi_thread_args net_args, fold_args, disk_args;

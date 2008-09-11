@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include "guppi_udp.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -27,17 +26,11 @@ void *guppi_net_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
-    struct guppi_udp_params p;
     Cmdline *cmd;
 
     /* Parse the command line using the excellent program Clig */
     cmd = parseCmdline(argc, argv);
     //showOptionValues();  /* For debugging */
-
-    /* TODO put these into status buf instead */
-    p.port = cmd->port;
-    p.packet_size = cmd->size; /* Expected 8k + 8 byte seq num + 8 byte flags */
-    strcpy(p.sender, cmd->hostname);
 
     /* thread args */
     struct guppi_thread_args net_args, disk_args;

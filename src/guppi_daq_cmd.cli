@@ -9,9 +9,3 @@ Commandline full_cmd_line
 # Options (in order you want them to appear)
 Int    -outchan  outchan  {Number of output frequency channels (combining if necessary)}
 Int    -downsamp downsamp {Number of samples to average in time (defaults to none)}
-Int    -port     port     {Port number for UDP packets} \
-	-d 50000
-Int    -size     size     {UDP packet size (bytes)} \
-	-d 8208
-String -host     hostname {Hostname of the data taking instrument} \
-    -d bee2_10

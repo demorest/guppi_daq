@@ -17,18 +17,6 @@ typedef struct s_Cmdline {
   char downsampP;
   int downsamp;
   int downsampC;
-  /***** -port: Port number for UDP packets */
-  char portP;
-  int port;
-  int portC;
-  /***** -size: UDP packet size (bytes) */
-  char sizeP;
-  int size;
-  int sizeC;
-  /***** -host: Hostname of the data taking instrument */
-  char hostnameP;
-  char* hostname;
-  int hostnameC;
   /***** uninterpreted command line parameters */
   int argc;
   /*@null*/char **argv;
