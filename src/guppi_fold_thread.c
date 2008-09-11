@@ -106,7 +106,7 @@ void guppi_fold_thread(void *_args) {
     fb.count = NULL;
 
     /* Sub-thread management */
-    const int nthread = 4;
+    const int nthread = 6;
     pthread_t thread_id[nthread];
     int input_block_list[nthread];
     struct fold_args fargs[nthread];

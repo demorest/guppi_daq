@@ -16,6 +16,8 @@ par.add_option("-n", "--scannum", dest="scan", help="Set scan number",
         action="store", type="int", default=1);
 par.add_option("-l", "--length", dest="len", help="Scan length",
         action="store", type="float", default=3600.0)
+par.add_option("-a", "--acc_len", dest="acc_len", help="Accumulation length",
+        action="store", type="int", default=16)
 par.add_option("-c", "--cal", dest="cal", help="Setup for cal scan",
         action="store_true", default=False)
 par.add_option("-g", "--gbt", dest="gbt", 
@@ -69,7 +71,7 @@ g.update("NPOL", 4)
 g.update("NBITS", 8)
 g.update("PFB_OVER", 4)
 g.update("NBITSADC", 8)
-g.update("ACC_LEN", 16)
+g.update("ACC_LEN", opt.acc_len)
 
 g.update("NRCVR", 2)
 
