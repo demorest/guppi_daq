@@ -67,7 +67,7 @@ int guppi_udp_init(struct guppi_udp_params *p) {
     fcntl(p->sock, F_SETFL, O_NONBLOCK);
 
     /* Increase recv buffer for this sock */
-    int bufsize = 64*1024*1024;
+    int bufsize = 128*1024*1024;
     socklen_t ss = sizeof(int);
     rv = setsockopt(p->sock, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(int));
     if (rv<0) { 

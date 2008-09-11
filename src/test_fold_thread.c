@@ -30,9 +30,10 @@ void usage() {
 }
 
 /* Thread declarations */
-void *guppi_net_thread(void *_up);
+void *guppi_net_thread(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_psrfits_thread(void *args);
+void *guppi_null_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
@@ -60,6 +61,8 @@ int main(int argc, char *argv[]) {
     fold_args.input_buffer = net_args.output_buffer;
     fold_args.output_buffer = 2;
     disk_args.input_buffer = fold_args.output_buffer;
+    //fold_args.priority = 10;
+    //net_args.priority = -10;
 
     /* Init shared mem */
     struct guppi_status stat;
@@ -108,7 +111,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Launch psrfits thread, then wait for it to finish */
+    /* Launch psrfits/null thread, then wait for it to finish */
     pthread_t disk_thread_id=0;
     while (run) {
 
@@ -116,6 +119,8 @@ int main(int argc, char *argv[]) {
             printf("Starting new psrfits thread...\n"); fflush(stdout);
             rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
                     (void *)&disk_args);
+            //rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread,
+            //        (void *)&disk_args);
             if (rv) { 
                 fprintf(stderr, "Error creating psrfits thread.\n");
                 perror("pthread_create");

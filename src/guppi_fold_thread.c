@@ -41,8 +41,18 @@ void guppi_fold_thread(void *_args) {
     /* Get arguments */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
+    /* Set cpu affinity */
+    cpu_set_t cpuset;
+    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset);
+    CPU_CLR(2, &cpuset);
+    CPU_CLR(3, &cpuset);
+    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    if (rv<0) { 
+        guppi_error("guppi_fold_thread", "Error setting cpu affinity.");
+        perror("sched_setaffinity");
+    }
+
     /* Set priority */
-    int rv;
     rv = setpriority(PRIO_PROCESS, 0, args->priority);
     if (rv<0) {
         guppi_error("guppi_fold_thread", "Error setting priority level.");
