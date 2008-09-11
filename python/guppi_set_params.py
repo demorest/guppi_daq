@@ -60,6 +60,8 @@ else:
 
 g.update("BACKEND", "GUPPI")
 g.update("PKTFMT", "GUPPI")
+g.update("DATAHOST", "bee2_10")
+g.update("DATAPORT", 50000)
 g.update("POL_TYPE", "IQUV")
 
 g.update("CAL_FREQ", 25.0)
