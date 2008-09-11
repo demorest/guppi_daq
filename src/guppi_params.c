@@ -11,6 +11,7 @@
 #include "guppi_params.h"
 #include "guppi_time.h"
 #include "guppi_error.h"
+#include "guppi_udp.h"
 #include "slalib.h"
 
 #ifndef DEGTORAD
@@ -80,6 +81,16 @@ double beam_FWHM(double obs_freq, double dish_diam)
     return 1.2 * lambda / dish_diam * RADTODEG;
 }
 
+// Read networking parameters
+void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
+    get_str("DATAHOST", u->sender, 80, "bee2_10");
+    get_int("DATAPORT", u->port, 50000);
+    get_str("PKTFMT", u->packet_format, 32, "GUPPI");
+    if (strncmp(u->packet_format, "PARKES", 6)==0)
+        u->packet_size = 2056;
+    else
+        u->packet_size = 8208;
+}
 
 // Read a status buffer all of the key observation paramters
 void guppi_read_subint_params(char *buf, 
@@ -94,7 +105,6 @@ void guppi_read_subint_params(char *buf,
     get_dbl("DROPAVG", g->drop_frac_avg, 0.0);
     get_dbl("DROPTOT", g->drop_frac_tot, 0.0);
     g->drop_frac = (double) g->n_dropped / (double) g->n_packets;
-    get_str("PKTFMT", g->packet_format, 32, "GUPPI");
 
     // Observation params
     get_dbl("AZ", p->sub.tel_az, 0.0);

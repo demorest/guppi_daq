@@ -22,7 +22,15 @@ struct guppi_params {
     int pfb_overlap;            // PFB overlap factor
     float scale[16*1024];       // Per-channel scale factor
     float offset[16*1024];      // Per-channel offset
-    char packet_format[32];     // Packet format type (GUPPI/PARKES)
 };
 
+#include "guppi_udp.h"
+#include "psrfits.h"
+void guppi_read_net_params(char *buf, struct guppi_udp_params *u);
+void guppi_read_subint_params(char *buf, 
+                              struct guppi_params *g, 
+                              struct psrfits *p);
+void guppi_read_obs_params(char *buf, 
+                           struct guppi_params *g, 
+                           struct psrfits *p);
 #endif

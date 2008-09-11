@@ -18,16 +18,13 @@ struct guppi_udp_params {
     /* Info needed from outside: */
     char sender[80];  /* Sender hostname */
     int port;         /* Receive port */
-    size_t packet_size; /* Expected packet size, 0 = don't care */
+    size_t packet_size;     /* Expected packet size, 0 = don't care */
+    char packet_format[32]; /* Packet format */
 
     /* Derived from above: */
     int sock;                       /* Receive socket */
     struct addrinfo sender_addr;    /* Sender hostname/IP params */
     struct pollfd pfd;              /* Use to poll for avail data */
-
-    /* Memory buffer number to put results in */
-    int output_buffer;
-
 };
 
 /* Basic structure of a packet.  This struct, functions should 

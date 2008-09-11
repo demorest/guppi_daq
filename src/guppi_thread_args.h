@@ -10,6 +10,7 @@
 struct guppi_thread_args {
     int input_buffer;
     int output_buffer;
+    int priority;
     int finished;
     pthread_cond_t finished_c;
     pthread_mutex_t finished_m;

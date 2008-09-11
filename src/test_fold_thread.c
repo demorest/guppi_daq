@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Default to bee2 if no hostname given */
+    /* TODO fill into shmem struct */
     if (optind==argc) {
         strcpy(p.sender, "bee2_10");
     } else {
@@ -71,11 +72,12 @@ int main(int argc, char *argv[]) {
     p.packet_size = 8208; /* Expected 8k + 8 byte seq num + 8 byte flags */
 
     /* Data buffer ids */
-    struct guppi_thread_args fold_args, disk_args;
+    struct guppi_thread_args net_args, fold_args, disk_args;
+    guppi_thread_args_init(&net_args);
     guppi_thread_args_init(&fold_args);
     guppi_thread_args_init(&disk_args);
-    p.output_buffer = 1;
-    fold_args.input_buffer = p.output_buffer;
+    net_args.output_buffer = 1;
+    fold_args.input_buffer = net_args.output_buffer;
     fold_args.output_buffer = 2;
     disk_args.input_buffer = fold_args.output_buffer;
 
@@ -88,7 +90,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    dbuf_net = guppi_databuf_attach(p.output_buffer);
+    dbuf_net = guppi_databuf_attach(net_args.output_buffer);
     if (dbuf_net==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
         exit(1);
@@ -109,7 +111,7 @@ int main(int argc, char *argv[]) {
     /* Launch net thread */
     pthread_t net_thread_id;
     rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
-            (void *)&p);
+            (void *)&net_args);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
         perror("pthread_create");

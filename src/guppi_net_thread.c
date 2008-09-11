@@ -39,7 +39,10 @@ extern void guppi_read_obs_params(char *buf,
  * be cancelled and restarted if any hardware params
  * change, as this potentially affects packet size, etc.
  */
-void *guppi_net_thread(void *_up) {
+void *guppi_net_thread(void *_args) {
+
+    /* Get arguments */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Set cpu affinity */
     cpu_set_t cpuset, cpuset_orig;
@@ -59,10 +62,6 @@ void *guppi_net_thread(void *_up) {
         guppi_error("guppi_net_thread", "Error setting priority level.");
         perror("set_priority");
     }
-
-    /* Get UDP param struct */
-    struct guppi_udp_params *up =
-        (struct guppi_udp_params *)_up;
 
     /* Attach to status shared mem area */
     struct guppi_status st;
@@ -88,9 +87,13 @@ void *guppi_net_thread(void *_up) {
     guppi_status_unlock_safe(&st);
     guppi_read_obs_params(status_buf, &gp, &pf);
 
+    /* Read network params */
+    struct guppi_udp_params up;
+    guppi_read_net_params(status_buf, &up);
+
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
-    db = guppi_databuf_attach(up->output_buffer); 
+    db = guppi_databuf_attach(args->output_buffer); 
     if (db==NULL) {
         guppi_error("guppi_net_thread",
                 "Error attaching to databuf shared memory.");
@@ -98,13 +101,13 @@ void *guppi_net_thread(void *_up) {
     }
 
     /* Set up UDP socket */
-    rv = guppi_udp_init(up);
+    rv = guppi_udp_init(&up);
     if (rv!=GUPPI_OK) {
         guppi_error("guppi_net_thread",
                 "Error opening UDP socket.");
         pthread_exit(NULL);
     }
-    pthread_cleanup_push((void *)guppi_udp_close, up);
+    pthread_cleanup_push((void *)guppi_udp_close, &up);
 
     /* Time parameters */
     int stt_imjd=0, stt_smjd=0;
@@ -113,7 +116,7 @@ void *guppi_net_thread(void *_up) {
     /* See which packet format to use */
     int use_parkes_packets=0;
     int nchan=0, npol=0, acclen=0;
-    if (strncmp(gp.packet_format, "PARKES", 6)==0) { use_parkes_packets=1; }
+    if (strncmp(up.packet_format, "PARKES", 6)==0) { use_parkes_packets=1; }
     if (use_parkes_packets) {
         printf("guppi_net_thread: Using Parkes UDP packet format.\n");
         nchan = pf.hdr.nchan;
@@ -143,9 +146,9 @@ void *guppi_net_thread(void *_up) {
      */
     int block_size;
     struct guppi_udp_packet p;
-    size_t packet_data_size = guppi_udp_packet_datasize(up->packet_size); 
+    size_t packet_data_size = guppi_udp_packet_datasize(up.packet_size); 
     if (use_parkes_packets) 
-        packet_data_size = parkes_udp_packet_datasize(up->packet_size);
+        packet_data_size = parkes_udp_packet_datasize(up.packet_size);
     unsigned packets_per_block; 
     if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
             block_size = db->block_size;
@@ -179,7 +182,7 @@ void *guppi_net_thread(void *_up) {
     while (run) {
 
         /* Wait for data */
-        rv = guppi_udp_wait(up);
+        rv = guppi_udp_wait(&up);
         if (rv!=GUPPI_OK) {
             if (rv==GUPPI_TIMEOUT) { 
                 /* Set "waiting" flag */
@@ -199,7 +202,7 @@ void *guppi_net_thread(void *_up) {
         }
 
         /* Read packet */
-        rv = guppi_udp_recv(up, &p);
+        rv = guppi_udp_recv(&up, &p);
         if (rv!=GUPPI_OK) {
             if (rv==GUPPI_ERR_PACKET) {
                 /* Unexpected packet size, ignore? */

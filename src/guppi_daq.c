@@ -23,7 +23,7 @@
 #include "guppi_daq_cmd.h"
 
 /* Thread declarations */
-void *guppi_net_thread(void *_up);
+void *guppi_net_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
@@ -34,12 +34,17 @@ int main(int argc, char *argv[]) {
     cmd = parseCmdline(argc, argv);
     //showOptionValues();  /* For debugging */
 
+    /* TODO put these into status buf instead */
     p.port = cmd->port;
     p.packet_size = cmd->size; /* Expected 8k + 8 byte seq num + 8 byte flags */
     strcpy(p.sender, cmd->hostname);
 
-    /* Set first (network) databuf id */
-    p.output_buffer = 1;
+    /* thread args */
+    struct guppi_thread_args net_args, disk_args;
+    guppi_thread_args_init(&net_args);
+    guppi_thread_args_init(&disk_args);
+    net_args.output_buffer = 1;
+    disk_args.input_buffer = net_args.output_buffer;
 
     /* Init shared mem */
     struct guppi_status stat;
@@ -49,10 +54,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
-    dbuf = guppi_databuf_attach(p.output_buffer);
+    dbuf = guppi_databuf_attach(net_args.output_buffer);
     /* If attach fails, first try to create the databuf */
     if (dbuf==NULL) 
-        dbuf = guppi_databuf_create(24, 32*1024*1024, p.output_buffer);
+        dbuf = guppi_databuf_create(24, 32*1024*1024, net_args.output_buffer);
     /* If that also fails, exit */
     if (dbuf==NULL) {
         fprintf(stderr, "Error connecting to guppi_databuf\n");
@@ -65,7 +70,7 @@ int main(int argc, char *argv[]) {
     /* Launch net thread */
     pthread_t net_thread_id;
     rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
-            (void *)&p);
+            (void *)&net_args);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
         perror("pthread_create");
@@ -73,9 +78,6 @@ int main(int argc, char *argv[]) {
     }
 
     /* Launch PSRFITS disk thread */
-    struct guppi_thread_args disk_args;
-    guppi_thread_args_init(&disk_args);
-    disk_args.input_buffer = p.output_buffer;
     pthread_t disk_thread_id;
     rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread, 
             (void *)&disk_args);
