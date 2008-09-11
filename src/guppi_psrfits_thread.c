@@ -56,6 +56,10 @@ void zero_end_chans(struct psrfits *pf)
 
 void guppi_psrfits_thread(void *_args) {
     
+    /* Get args */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+    pthread_cleanup_push((void *)guppi_thread_set_finished, args);
+    
     /* Set cpu affinity */
     cpu_set_t cpuset, cpuset_orig;
     sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
@@ -67,12 +71,8 @@ void guppi_psrfits_thread(void *_args) {
         perror("sched_setaffinity");
     }
 
-    /* Get args */
-    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
-    pthread_cleanup_push((void *)guppi_thread_set_finished, args);
-    
     /* Set priority */
-    rv = setpriority(PRIO_PROCESS, 0, 0);
+    rv = setpriority(PRIO_PROCESS, 0, args->priority);
     if (rv<0) {
         guppi_error("guppi_psrfits_thread", "Error setting priority level.");
         perror("set_priority");

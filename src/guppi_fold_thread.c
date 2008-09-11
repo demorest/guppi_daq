@@ -38,16 +38,16 @@ extern void guppi_read_subint_params(char *buf,
 
 void guppi_fold_thread(void *_args) {
 
+    /* Get arguments */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+
     /* Set priority */
     int rv;
-    rv = setpriority(PRIO_PROCESS, 0, 0);
+    rv = setpriority(PRIO_PROCESS, 0, args->priority);
     if (rv<0) {
         guppi_error("guppi_fold_thread", "Error setting priority level.");
         perror("set_priority");
     }
-
-    /* Get arguments */
-    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Attach to status shared mem area */
     struct guppi_status st;

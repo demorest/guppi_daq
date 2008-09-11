@@ -57,7 +57,7 @@ void *guppi_net_thread(void *_args) {
     }
 
     /* Set priority */
-    rv = setpriority(PRIO_PROCESS, 0, 0);
+    rv = setpriority(PRIO_PROCESS, 0, args->priority);
     if (rv<0) {
         guppi_error("guppi_net_thread", "Error setting priority level.");
         perror("set_priority");
