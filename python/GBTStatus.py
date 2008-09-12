@@ -260,7 +260,7 @@ class GBTStatus:
         if deg == self.noValue:
             return self.noValue
         sign, arr = s.sla_dr2tf(4, deg*DEGTORAD)
-        return "%02d:%02d:%02.4f" % (arr[0], arr[1], arr[2]+0.0001*arr[3])
+        return "%02d:%02d:%07.4f" % (arr[0], arr[1], arr[2]+0.0001*arr[3])
 
     def degrees2dms(self, deg):
         "converts degrees to d:m:s format"
