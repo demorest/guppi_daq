@@ -317,6 +317,10 @@ void guppi_fold_thread(void *_args) {
 
         /* Check src, get correct polycos */
         if (refresh_polycos) { 
+            // TODO: implemenet auto-polyco making:
+            // 1. if mode==psr and PARFILE is set, generate polycos
+            // 2. if mode==psr and no PARFILE, try reading polyco.dat
+            // 3. if mode==cal, generate const-freq polyco
             polyco_file = fopen("polyco.dat", "r");
             if (polyco_file==NULL) { 
                 guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
