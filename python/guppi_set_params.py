@@ -43,7 +43,6 @@ if (opt.gb43m):
 g = guppi_status()
 
 g.update("SCANNUM", opt.scan)
-g.update("OBS_MODE", "SEARCH")
 
 if (opt.gbt):
     g.update_with_gbtstatus()
@@ -68,10 +67,12 @@ if (opt.fake):
     g.update("OBSBW", 800.0)
 
 if (opt.cal):
-    g.update("SCANLEN", 120.0)
+    g.update("OBS_MODE", "CAL")
+    g.update("SCANLEN", opt.len)
     g.update("BASENAME", "guppi_%5d_%s_%04d_cal"%(g['STT_IMJD'], g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "ON")
 else:
+    g.update("OBS_MODE", "SEARCH")
     g.update("SCANLEN", opt.len)
     g.update("BASENAME", "guppi_%5d_%s_%04d"%(g['STT_IMJD'], g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "OFF")
