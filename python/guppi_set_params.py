@@ -20,13 +20,27 @@ par.add_option("-a", "--acc_len", dest="acc_len", help="Accumulation length",
         action="store", type="int", default=16)
 par.add_option("-c", "--cal", dest="cal", help="Setup for cal scan",
         action="store_true", default=False)
+par.add_option("-4", "--gb43m", dest="gb43m", 
+        help="Set params for 43m observing",
+        action="store_true", default=False)
+par.add_option("-F", "--fake", dest="fake", help="Set params for fake psr",
+        action="store_true", default=False)
 par.add_option("-g", "--gbt", dest="gbt", 
         help="Use values from gbtstatus (overrides most other settings)",
-        action="store_true", default=False)
+        action="store_true", default=True)
 par.add_option("-P", "--parfile", dest="parfile", 
         help="Use this parfile for folding",
         action="store", default="");
+par.add_option("-i", "--tfold", dest="tfold", help="Fold dump time",
+        action="store", type="float", default=30.0)
 (opt,arg) = par.parse_args()
+
+if (opt.gb43m):
+    opt.gbt = False
+
+if (opt.fake):
+    opt.gbt = False
+    opt.gb43m = False
 
 g = guppi_status()
 
@@ -37,7 +51,6 @@ if (opt.gbt):
     g.update_with_gbtstatus()
     g.update("OBSBW", 800.0)
 else:
-    g.update("TELESCOP", "GB43m")
     g.update("OBSERVER", "GUPPI Crew")
     g.update("FRONTEND", "None")
     g.update("PROJID", "GUPPI tests")
@@ -47,7 +60,13 @@ else:
     g.update("RA_STR", opt.ra)
     g.update("DEC_STR", opt.dec)
     g.update("OBSFREQ", opt.freq)
+
+if (opt.gb43m):
+    g.update("TELESCOP", "GB43m")
     g.update("OBSBW", -800.0)
+else:
+    g.update("TELESCOP", "@")
+    g.update("OBSBW", 800.0)
 
 if (opt.cal):
     g.update("SCANLEN", 120.0)
@@ -81,7 +100,9 @@ g.update("ONLY_I", 0)
 g.update("DS_TIME", 1)
 g.update("DS_FREQ", 1)
 
-g.update("PARFILE", opt.parfile);
+g.update("NBIN", 256)
+g.update("TFOLD", opt.tfold)
+g.update("PARFILE", opt.parfile)
 
 #g.update("BLOCSIZE", )
 g.update("OFFSET0", 0.0)

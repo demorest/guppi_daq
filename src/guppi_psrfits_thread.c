@@ -132,7 +132,8 @@ void guppi_psrfits_thread(void *_args) {
         guppi_status_unlock_safe(&st);
         
         /* Wait for buf to have data */
-        guppi_databuf_wait_filled(db, curblock);
+        rv = guppi_databuf_wait_filled(db, curblock);
+        if (rv!=0) continue; 
 
         /* Note current block */
         guppi_status_lock_safe(&st);

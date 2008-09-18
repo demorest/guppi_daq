@@ -217,16 +217,16 @@ void guppi_read_obs_params(char *buf,
 
     // Fold mode specific stuff
     int fold=0;
+    get_int("NBIN", p->fold.nbin, 256);
+    get_dbl("TFOLD", p->fold.tfold, 30.0);
+    get_str("PARFILE", p->fold.parfile, 256, "");
     if (strcmp("FOLD", p->hdr.obs_mode)==0) { fold=1; }
     if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
     if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
-    if (fold) {
-        get_int("NBIN", p->hdr.nbin, 256);
-        get_str("PARFILE", p->fold.parfile, 256, "");
-    } else {
+    if (fold) 
+        p->hdr.nbin = p->fold.nbin;
+    else 
         p->hdr.nbin = 1;
-        p->fold.parfile[0] = '\0';
-    }
     
     { // Start time, MJD
         int mjd_d, mjd_s;

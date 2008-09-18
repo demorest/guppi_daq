@@ -102,14 +102,13 @@ void guppi_fold_thread(void *_args) {
     /* Load polycos */
     int imjd;
     double fmjd, fmjd0, fmjd_next=0.0;
-    double tfold=30.0;
     int npc=0, ipc;
     struct polyco *pc=NULL;
     FILE *polyco_file=NULL;
 
     /* Total foldbuf */
     struct foldbuf fb;
-    fb.nbin = 256;
+    fb.nbin = 0;
     fb.nchan = 0;
     fb.npol = 0;
     fb.data = NULL;
@@ -191,19 +190,25 @@ void guppi_fold_thread(void *_args) {
 
             /* Set mjds */
             fmjd0 = fmjd;
-            fmjd_next = fmjd0 + tfold/86400.0;
+            fmjd_next = fmjd0 + pf.fold.tfold/86400.0;
+
+            /* Set nbin */
+            fb.nbin = pf.fold.nbin;
 
             /* Set up first output header */
             hdr_out = guppi_databuf_header(db_out, curblock_out);
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
             hputi4(hdr_out, "NBIN", fb.nbin);
-            hputs(hdr_out, "OBS_MODE", "PSR");
+            if (strncmp(pf.hdr.obs_mode,"CAL",3))
+                hputs(hdr_out, "OBS_MODE", "PSR");
 
             /* Set up data ptrs, zero out area */
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
             clear_foldbuf(&fb);
+
+            fprintf(stderr, "nbin=%d tfold=%f\n", fb.nbin, pf.fold.tfold);
 
             first=0;
         }
@@ -251,6 +256,7 @@ void guppi_fold_thread(void *_args) {
         if (reset_foldbufs) {
 
             /* Set output fold params */
+            fb.nbin = pf.fold.nbin;
             fb.nchan = pf.hdr.nchan;
             fb.npol = pf.hdr.npol;
 
@@ -289,7 +295,7 @@ void guppi_fold_thread(void *_args) {
 
             /* Set up params for next int */
             fmjd0 = fmjd;
-            fmjd_next = fmjd0 + tfold/86400.0;
+            fmjd_next = fmjd0 + pf.fold.tfold/86400.0;
             fb.nchan = pf.hdr.nchan;
             fb.npol = pf.hdr.npol;
 
@@ -299,7 +305,8 @@ void guppi_fold_thread(void *_args) {
             hdr_out = guppi_databuf_header(db_out, curblock_out);
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
-            hputs(hdr_out, "OBS_MODE", "PSR");
+            if (strncmp(pf.hdr.obs_mode,"CAL",3))
+                hputs(hdr_out, "OBS_MODE", "PSR");
             hputi4(hdr_out, "NBIN", fb.nbin);
             hputi4(hdr_out, "PKTIDX", gp.packetindex);
 
@@ -317,31 +324,75 @@ void guppi_fold_thread(void *_args) {
 
         /* Check src, get correct polycos */
         if (refresh_polycos) { 
-            // TODO: implemenet auto-polyco making:
-            // 1. if mode==psr and PARFILE is set, generate polycos
-            // 2. if mode==psr and no PARFILE, try reading polyco.dat
-            // 3. if mode==cal, generate const-freq polyco
-            polyco_file = fopen("polyco.dat", "r");
-            if (polyco_file==NULL) { 
-                guppi_error("guppi_fold_thread", "Couldn't open polyco.dat");
-                pthread_exit(NULL);
+            // Auto polyco making:
+            // 1. if mode==cal, generate const-freq polyco
+            // 2. if mode==psr and PARFILE is set, generate polycos
+            // 3. if mode==psr and no PARFILE, try reading polyco.dat
+            if (strncmp(pf.hdr.obs_mode,"CAL",3)==0) {
+                // Cal mode
+                pc = realloc(pc, sizeof(struct polyco));
+                npc = 1;
+                sprintf(pc[0].psr, "CONST");
+                pc[0].mjd = pf.hdr.start_day;
+                pc[0].fmjd = pf.hdr.start_sec/86400.0;
+                pc[0].rphase = 0.0;
+                pc[0].f0 = pf.hdr.cal_freq;
+                pc[0].nsite = 0;
+                pc[0].nmin = 24 * 60;
+                pc[0].nc = 1;
+                pc[0].rf = pf.hdr.fctr;
+                pc[0].c[0] = 0.0;
+                pc[0].used = 0;
+            } else {
+                // Psr mode
+                if (pf.fold.parfile[0]=='\0') {
+                    // Try reading polyco.dat
+                    fprintf(stderr, "Reading polyco.dat\n"); // DEBUG
+                    polyco_file = fopen("polyco.dat", "r");
+                    if (polyco_file==NULL) { 
+                        guppi_error("guppi_fold_thread", 
+                                "Couldn't open polyco.dat");
+                        pthread_exit(NULL);
+                    }
+                    npc = read_all_pc(polyco_file, &pc);
+                    if (npc==0) { 
+                        guppi_error("guppi_fold_thread", 
+                                "Error parsing polyco file.");
+                        pthread_exit(NULL);
+                    }
+                    fclose(polyco_file);
+                } else {
+                    // Try calling tempo
+                    fprintf(stderr, "Calling tempo on %s\n",
+                            pf.fold.parfile); // DEBUG
+                    npc = make_polycos(pf.fold.parfile, &pf.hdr, NULL, &pc);
+                    if (npc<=0) {
+                        guppi_error("guppi_fold_thread", 
+                                "Error generating polycos.");
+                        pthread_exit(NULL);
+                    }
+                }
+                fprintf(stderr, "Read %d polycos\n", npc);
             }
-            npc = read_all_pc(polyco_file, &pc);
-            if (npc==0) { 
-                guppi_error("guppi_fold_thread", "Error parsing polyco file.");
-                pthread_exit(NULL);
-            }
-            fclose(polyco_file);
+
             refresh_polycos=0;
         }
 
         /* Select polyco set */
-        ipc = select_pc(pc, npc, NULL, imjd, fmjd);
-        if (ipc<0) { 
-            sprintf(errmsg, "No matching polycos (npc=%d, src=%s, imjd=%d, fmjd=%f)",
-                    npc, pf.hdr.source, imjd, fmjd);
-            guppi_error("guppi_fold_thread", errmsg);
-            pthread_exit(NULL);
+        if (strncmp(pf.hdr.obs_mode,"CAL",3)) {
+            // PSR mode, select appropriate block
+            ipc = select_pc(pc, npc, NULL, imjd, fmjd);
+            if (ipc<0) { 
+                sprintf(errmsg, 
+                        "No matching polycos "
+                        "(npc=%d, src=%s, imjd=%d, fmjd=%f)",
+                        npc, pf.hdr.source, imjd, fmjd);
+                guppi_error("guppi_fold_thread", errmsg);
+                pthread_exit(NULL);
+            }
+        } else {
+            // CAL mode, use the (only) const-polyco block
+            ipc = 0;
         }
         pc[ipc].used = 1;
 

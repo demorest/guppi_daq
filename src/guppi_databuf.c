@@ -195,6 +195,8 @@ int guppi_databuf_wait_filled(struct guppi_databuf *d, int block_id) {
     op[1].sem_op = 1;
     rv = semop(d->semid, op, 2);
     if (rv==-1) { 
+        // Don't complain on a signal interruption
+        if (errno==EINTR) return(GUPPI_ERR_SYS);
         guppi_error("guppi_databuf_wait_filled", "semop error");
         perror("semop");
         return(GUPPI_ERR_SYS);
