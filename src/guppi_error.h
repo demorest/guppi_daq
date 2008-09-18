@@ -14,6 +14,8 @@
 #define GUPPI_ERR_KEY    -4 // Requested key doesn't exist
 #define GUPPI_ERR_PACKET -5 // Unexpected packet size
 
+#define DEBUGOUT 0 
+
 /* Call this to log an error message */
 void guppi_error(const char *name, const char *msg);
 

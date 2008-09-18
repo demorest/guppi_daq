@@ -23,7 +23,7 @@
 
 void usage() {
     fprintf(stderr,
-            "Usage: test_net_thread [options] sender_hostname\n"
+            "Usage: guppi_daq_fold [options] sender_hostname\n"
             "Options:\n"
             "  -h, --help        This message\n"
            );

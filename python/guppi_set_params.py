@@ -33,14 +33,12 @@ par.add_option("-P", "--parfile", dest="parfile",
         action="store", default="");
 par.add_option("-i", "--tfold", dest="tfold", help="Fold dump time",
         action="store", type="float", default=30.0)
+par.add_option("-b", "--bins", dest="nbin", help="Number of profile bins",
+        action="store", type="int", default=256)
 (opt,arg) = par.parse_args()
 
 if (opt.gb43m):
     opt.gbt = False
-
-if (opt.fake):
-    opt.gbt = False
-    opt.gb43m = False
 
 g = guppi_status()
 
@@ -64,17 +62,18 @@ else:
 if (opt.gb43m):
     g.update("TELESCOP", "GB43m")
     g.update("OBSBW", -800.0)
-else:
+
+if (opt.fake):
     g.update("TELESCOP", "@")
     g.update("OBSBW", 800.0)
 
 if (opt.cal):
     g.update("SCANLEN", 120.0)
-    g.update("BASENAME", "guppi_%s_%04d_cal"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("BASENAME", "guppi_%5d_%s_%04d_cal"%(g['STT_IMJD'], g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "ON")
 else:
     g.update("SCANLEN", opt.len)
-    g.update("BASENAME", "guppi_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("BASENAME", "guppi_%5d_%s_%04d"%(g['STT_IMJD'], g['SRC_NAME'], g['SCANNUM']))
     g.update("CAL_MODE", "OFF")
 
 g.update("BACKEND", "GUPPI")
@@ -100,7 +99,7 @@ g.update("ONLY_I", 0)
 g.update("DS_TIME", 1)
 g.update("DS_FREQ", 1)
 
-g.update("NBIN", 256)
+g.update("NBIN", opt.nbin)
 g.update("TFOLD", opt.tfold)
 g.update("PARFILE", opt.parfile)
 
