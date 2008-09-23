@@ -1,0 +1,16 @@
+#! /usr/bin/env python
+
+import os, sys, time
+
+# connect to bee2 client
+from client import Client
+cicada = Client()
+
+# Set extra arm
+cicada.arm()
+time.sleep(2)
+pid = os.spawnl(os.P_NOWAIT,"/data1/demorest/guppi_daq/bin/guppi_daq_fold","guppi_daq_fold")
+time.sleep(3)
+cicada.arm()
+os.waitpid(pid,0)
+
