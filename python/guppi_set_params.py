@@ -14,6 +14,8 @@ par.add_option("-f", "--freq", dest="freq", help="Set center freq (MHz)",
         action="store", type="float", default=1200.0)
 par.add_option("-n", "--scannum", dest="scan", help="Set scan number",
         action="store", type="int", default=1);
+par.add_option("-I", "--increment_scan", dest="inc", help="Increment scan num",
+        action="store_true", default=False);
 par.add_option("-l", "--length", dest="len", help="Scan length",
         action="store", type="float", default=3600.0)
 par.add_option("-a", "--acc_len", dest="acc_len", help="Accumulation length",
@@ -26,7 +28,7 @@ par.add_option("-4", "--gb43m", dest="gb43m",
 par.add_option("-F", "--fake", dest="fake", help="Set params for fake psr",
         action="store_true", default=False)
 par.add_option("-g", "--gbt", dest="gbt", 
-        help="Use values from gbtstatus (overrides most other settings)",
+        help="Use values from gbtstatus",
         action="store_true", default=True)
 par.add_option("-P", "--parfile", dest="parfile", 
         help="Use this parfile for folding",
@@ -37,12 +39,19 @@ par.add_option("-b", "--bins", dest="nbin", help="Number of profile bins",
         action="store", type="int", default=256)
 (opt,arg) = par.parse_args()
 
-if (opt.gb43m):
-    opt.gbt = False
-
 g = guppi_status()
 
+g.read()
+
+if (opt.inc):
+    opt.scan = g["SCANNUM"] + 1
+
 g.update("SCANNUM", opt.scan)
+
+if (opt.gb43m or opt.fake):
+    opt.gbt = False
+    g.update("TELESCOP", "GB43m")
+    g.update("OBSBW", -800.0)
 
 if (opt.gbt):
     g.update_with_gbtstatus()
@@ -58,13 +67,18 @@ else:
     g.update("DEC_STR", opt.dec)
     g.update("OBSFREQ", opt.freq)
 
-if (opt.gb43m):
-    g.update("TELESCOP", "GB43m")
-    g.update("OBSBW", -800.0)
+if (1):  # in case we don't get a real start time
+    MJD = current_MJD()
+    MJDd = int(MJD)
+    MJDf = MJD - MJDd
+    MJDs = int(MJDf * 86400 + 1e-6)
+    offs = (MJD - MJDd - MJDs/86400.0) * 86400.0
+    g.update("STT_IMJD", MJDd)
+    g.update("STT_SMJD", MJDs)
+    if offs < 2e-6: offs = 0.0
+    g.update("STT_OFFS", offs)
 
-if (opt.fake):
-    g.update("TELESCOP", "@")
-    g.update("OBSBW", 800.0)
+g.write()
 
 if (opt.cal):
     g.update("OBS_MODE", "CAL")
@@ -116,17 +130,6 @@ g.update("SCALE3", 1.0)
 
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
-
-if (1):  # in case we don't get a real start time
-    MJD = current_MJD()
-    MJDd = int(MJD)
-    MJDf = MJD - MJDd
-    MJDs = int(MJDf * 86400 + 1e-6)
-    offs = (MJD - MJDd - MJDs/86400.0) * 86400.0
-    g.update("STT_IMJD", MJDd)
-    g.update("STT_SMJD", MJDs)
-    if offs < 2e-6: offs = 0.0
-    g.update("STT_OFFS", offs)
 
 g.update_azza()
 g.write()

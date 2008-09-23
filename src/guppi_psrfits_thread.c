@@ -219,10 +219,10 @@ void guppi_psrfits_thread(void *_args) {
             int write_pc=0, i, j;
             for (i=0; i<pf.fold.n_polyco_sets; i++) {
                 if (pf.fold.pc[i].used==0) continue; 
-                int new_pc=0;
+                int new_pc=1;
                 for (j=0; j<n_polyco_written; j++) {
                     if (polycos_differ(&pf.fold.pc[i], &pc[j])==0) {
-                        new_pc=1;
+                        new_pc=0;
                         break;
                     }
                 }
