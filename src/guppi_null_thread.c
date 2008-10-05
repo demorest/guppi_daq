@@ -110,7 +110,8 @@ void guppi_null_thread(void *_args) {
         guppi_read_obs_params(ptr, &gp, &pf);
 
         /* Output if data was lost */
-        if (gp.n_dropped!=0 && gp.packetindex==0) {
+        if (gp.n_dropped!=0 && 
+                (gp.packetindex==0 || strcmp(pf.hdr.obs_mode,"SEARCH"))) {
             printf("Block beginning with pktidx=%lld dropped %d packets\n",
                     gp.packetindex, gp.n_dropped);
             fflush(stdout);

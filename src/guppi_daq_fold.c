@@ -39,11 +39,16 @@ int main(int argc, char *argv[]) {
 
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
+        {"null",   0, NULL, 'n'},
         {0,0,0,0}
     };
+    int use_null_thread = 0;
     int opt, opti;
-    while ((opt=getopt_long(argc,argv,"h",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"hn",long_opts,&opti))!=-1) {
         switch (opt) {
+            case 'n':
+                use_null_thread = 1;
+                break;
             default:
             case 'h':
                 usage();
@@ -117,10 +122,12 @@ int main(int argc, char *argv[]) {
 
         if (disk_thread_id==0) {
             printf("Starting new psrfits thread...\n"); fflush(stdout);
-            rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
-                    (void *)&disk_args);
-            //rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread,
-            //        (void *)&disk_args);
+            if (use_null_thread)
+                rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread,
+                        (void *)&disk_args);
+            else
+                rv = pthread_create(&disk_thread_id, NULL, guppi_psrfits_thread,
+                        (void *)&disk_args);
             if (rv) { 
                 fprintf(stderr, "Error creating psrfits thread.\n");
                 perror("pthread_create");
@@ -128,7 +135,8 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (guppi_thread_finished(&disk_args,0.5)) { run=0; }
+        //if (guppi_thread_finished(&disk_args,0.5)) { run=0; }
+        sleep(1);
     }
 
     /* Clean up */
