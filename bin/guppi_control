@@ -1,4 +1,5 @@
 #!/bin/sh
 
 # Accept command-line arguments.  Run interactively.
+cd /data1/demorest/rpc/src
 /usr/bin/env python -i /data1/demorest/rpc/src/command_prompt.py $@
