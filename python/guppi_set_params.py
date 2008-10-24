@@ -37,19 +37,25 @@ par.add_option("--dsfreq", dest="dsfreq",
                action="store", type="int", default=1)
 par.add_option("--obs", dest="obs",
                help="Set observers name",
-               action="store", default="unknown")
+               action="store", default=None)
 par.add_option("--src", dest="src",
                help="Set observed source name",
-               action="store", default="Fake_PSR")
+               action="store", default=None)
 par.add_option("--ra", dest="ra",
                help="Set source R.A. (hh:mm:ss.s)",
-               action="store", default="12:34:56.7")
+               action="store", default=None)
 par.add_option("--dec", dest="dec",
                help="Set source Dec (+/-dd:mm:ss.s)",
-               action="store", default="+12:34:56.7")
+               action="store", default=None)
 par.add_option("--freq", dest="freq",
                help="Set center freq (MHz)",
-               action="store", type="float", default=1200.0)
+               action="store", type="float", default=None)
+par.add_option("--bw", dest="bw",
+               help="Hardware total bandwidth (MHz)",
+               action="store", type="float", default=800.0)
+par.add_option("--nchan", dest="nchan", 
+               help="Number of hardware channels", type="int",
+               action="store", default=2048)
 par.add_option("--acc_len", dest="acc_len",
                help="Hardware accumulation length",
                action="store", type="int", default=16)
@@ -71,32 +77,39 @@ g.read()
 if (opt.inc):
     opt.scan = g["SCANNUM"] + 1
 
-if opt.obs=="unknown":
+if opt.obs==None:
     try:
         username = os.environ['LOGNAME']
     except KeyError:
         username = os.getlogin()
     else:
         username = "unknown"
+else:
+    username = opt.obs
 
 g.update("SCANNUM", opt.scan)
 
 if (opt.gb43m or opt.fake):
     opt.gbt = False
     g.update("TELESCOP", "GB43m")
-    g.update("OBSBW", -800.0)
+    g.update("OBSBW", -opt.bw)
 
 if (opt.gbt):
     g.update_with_gbtstatus()
-    g.update("OBSBW", 800.0)
+    g.update("OBSBW", opt.bw)
 else:
     g.update("FRONTEND", "None")
     g.update("PROJID", "GUPPI tests")
     g.update("FD_POLN", "LIN")
     g.update("TRK_MODE", "TRACK")
+
+if (opt.src!=None):
     g.update("SRC_NAME", opt.src)
+if (opt.ra!=None):
     g.update("RA_STR", opt.ra)
+if (opt.dec!=None):
     g.update("DEC_STR", opt.dec)
+if (opt.freq!=None):
     g.update("OBSFREQ", opt.freq)
 
 if g['OBSERVER']=='unknown':
@@ -139,7 +152,7 @@ g.update("CAL_FREQ", 25.0)
 g.update("CAL_DCYC", 0.5)
 g.update("CAL_PHS", 0.0)
 
-g.update("OBSNCHAN", 2048)
+g.update("OBSNCHAN", opt.nchan)
 g.update("NPOL", 4)
 g.update("NBITS", 8)
 g.update("PFB_OVER", 4)
@@ -158,7 +171,6 @@ g.update("DS_FREQ", opt.dsfreq)
 g.update("NBIN", opt.nbin)
 g.update("PARFILE", opt.parfile)
 
-#g.update("BLOCSIZE", )
 g.update("OFFSET0", 0.0)
 g.update("SCALE0", 1.0)
 g.update("OFFSET1", 0.0)

@@ -163,6 +163,9 @@ fctr = g["OBSFREQ"]
 bins = n.arange(nchan)
 freqs = bins/float(nchan)*BW + (fctr-0.5*BW)
 
+# Sum different amount depending on nchan
+nspec_sum = 512 * 2048 / nchan
+
 # Access the data buffer
 d = guppi_databuf()
 data = d.data(0) # argument is the block in the data buffer
