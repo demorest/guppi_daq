@@ -419,7 +419,8 @@ void guppi_fold_thread(void *_args) {
         nblock_int++;
         npacket += gp.n_packets;
         ndrop += gp.n_dropped;
-        tsubint = (npacket - ndrop) * pf.hdr.dt;
+        tsubint = pf.hdr.dt * (npacket - ndrop) * gp.packetsize 
+            / pf.hdr.nchan / pf.hdr.npol; // Only true for 8-bit data
         suboffs += offset;
         hputi4(hdr_out, "NBLOCK", nblock_int);
         hputi4(hdr_out, "NPKT", npacket);
