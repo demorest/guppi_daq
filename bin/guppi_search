@@ -1,2 +1,17 @@
 #! /usr/bin/env python
-/data1/demorest/rpc/src/guppi
+import os, sys, time
+
+# connect to bee2 client
+from client import Client
+cicada = Client()
+
+cmd = os.path.join(os.environ['GUPPI_DIR'], "bin/guppi_daq")
+
+# Set extra arm
+cicada.arm()
+time.sleep(2)
+pid = os.spawnl(os.P_NOWAIT, cmd, "guppi_daq")
+time.sleep(3)
+cicada.arm()
+os.waitpid(pid,0)
+

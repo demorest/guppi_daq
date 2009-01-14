@@ -29,6 +29,9 @@ par.add_option("-b", "--bins", dest="nbin",
 par.add_option("-I", "--onlyI", dest="onlyI",
                help="Only record total intensity",
                action="store_true", default=False)
+par.add_option("--cal_freq", dest="cal_freq",
+               help="Frequency of pulsed noise cal (Hz, default 25.0)",
+               action="store", type="float", default=25.0)
 par.add_option("--dstime", dest="dstime",
                help="Downsample in time (int, power of 2)",
                action="store", type="int", default=1)
@@ -148,7 +151,7 @@ g.update("DATAHOST", "bee2_10")
 g.update("DATAPORT", 50000)
 g.update("POL_TYPE", "IQUV")
 
-g.update("CAL_FREQ", 25.0)
+g.update("CAL_FREQ", opt.cal_freq)
 g.update("CAL_DCYC", 0.5)
 g.update("CAL_PHS", 0.0)
 

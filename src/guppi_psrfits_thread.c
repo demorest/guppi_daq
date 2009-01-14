@@ -99,6 +99,7 @@ void guppi_psrfits_thread(void *_args) {
     pf.sub.data = NULL;
     pf.sub.dat_freqs = pf.sub.dat_weights = NULL;
     pf.sub.dat_offsets = pf.sub.dat_scales = NULL;
+    pf.hdr.chan_dm = 0.0;
     pf.filenum = 0; // This is crucial
     pthread_cleanup_push((void *)psrfits_close, &pf);
     
