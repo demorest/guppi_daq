@@ -2,34 +2,25 @@
 
 """GUPPI DAQ package
 
-
-
+Data acquisition Python package for the Green Bank Ultimate Pulsar Processing
+Instrument (GUPPI).
 """
 
 from distutils.core import setup, Extension
-from distutils.command.build import build as _build
 import os
 import sys
 
 srcdir = 'python'
 doclines = __doc__.split("\n")
 
-class build(_build):
-    def run(self):
-        if os.system('make -C %s' % srcdir) != 0:
-            print >>sys.stderr, "call to 'make' failed..."
-            print >>sys.stderr, "unable to build dependencies. aborting..."
-            sys.exit(1)
-        _build.run(self)
-
 setup(
     name        = 'guppi_daq'
   , version     = '0.1'
   , packages    = ['guppi_daq']
   , package_dir = {'guppi_daq' : srcdir}
-  , package_data = {'guppi_daq': ['*.so']}
-  , cmdclass = {'build': build}
   , maintainer = "NRAO"
+  , ext_modules=[Extension('guppi_daq._possem',
+                           [os.path.join(srcdir, 'possem.i')])]
   # , maintainer_email = ""
   # , url = ""
   , license = "http://www.gnu.org/copyleft/gpl.html"
