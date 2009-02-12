@@ -106,7 +106,7 @@ int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b) {
     }
 }
 
-unsigned long long change_endian64(unsigned long long *d) {
+unsigned long long change_endian64(const unsigned long long *d) {
     unsigned long long tmp;
     char *in=(char *)d, *out=(char *)&tmp;
     int i;
@@ -116,21 +116,57 @@ unsigned long long change_endian64(unsigned long long *d) {
     return(tmp);
 }
 
-unsigned long long guppi_udp_packet_seq_num(struct guppi_udp_packet *p) {
+unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
     return(change_endian64((unsigned long long *)(p->data)));
 }
 
+#define PACKET_SIZE_ORIG ((size_t)8208)
+#define PACKET_SIZE_1SFA ((size_t)8160)
+
 size_t guppi_udp_packet_datasize(size_t packet_size) {
-    return(packet_size - 2*sizeof(unsigned long long));
+    /* Special case for the new "1SFA" packets, which have an extra
+     * 16 bytes at the end reserved for future use.  All other guppi
+     * packets have 8 bytes index at the front, and 8 bytes error
+     * flags at the end.
+     */
+    if (packet_size==PACKET_SIZE_1SFA) // 1SFA packet size
+        return((size_t)8128);
+    else              
+        return(packet_size - 2*sizeof(unsigned long long));
 }
 
-char *guppi_udp_packet_data(struct guppi_udp_packet *p) {
+char *guppi_udp_packet_data(const struct guppi_udp_packet *p) {
+    /* This is valid for all guppi packet formats */
     return((char *)(p->data) + sizeof(unsigned long long));
 }
 
-unsigned long long guppi_udp_packet_flags(struct guppi_udp_packet *p) {
+unsigned long long guppi_udp_packet_flags(const struct guppi_udp_packet *p) {
     return(*(unsigned long long *)((char *)(p->data) 
                 + p->packet_size - sizeof(unsigned long long)));
+}
+
+/* Copy the data portion of a guppi udp packet to the given output
+ * address.  This function takes care of expanding out the 
+ * "missing" channels in 1SFA packets.
+ */
+void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
+    if (p->packet_size==PACKET_SIZE_1SFA) {
+        /* Expand out, leaving space for missing data.  So far only 
+         * need to deal with 4k-channel case of 2 spectra per packet.
+         * May need to be updated in the future if 1SFA works with 
+         * different numbers of channels.
+         */
+        const size_t pad = 16;
+        const size_t spec_data_size = 4096 - 2*pad;
+        memcpy(out + pad, guppi_udp_packet_data(p), spec_data_size);
+        memcpy(out + pad + spec_data_size + pad + pad, 
+                guppi_udp_packet_data(p) + spec_data_size, 
+                spec_data_size);
+    } else {
+        /* Packet has full data, just do a memcpy */
+        memcpy(out, guppi_udp_packet_data(p), 
+                guppi_udp_packet_datasize(p->packet_size));
+    }
 }
 
 size_t parkes_udp_packet_datasize(size_t packet_size) {

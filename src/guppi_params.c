@@ -88,6 +88,8 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
     get_str("PKTFMT", u->packet_format, 32, "GUPPI");
     if (strncmp(u->packet_format, "PARKES", 6)==0)
         u->packet_size = 2056;
+    else if (strncmp(u->packet_format, "1SFA", 4)==0)
+        u->packet_size = 8160;
     else
         u->packet_size = 8208;
 }

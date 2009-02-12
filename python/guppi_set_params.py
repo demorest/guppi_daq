@@ -59,6 +59,9 @@ par.add_option("--bw", dest="bw",
 par.add_option("--nchan", dest="nchan", 
                help="Number of hardware channels", type="int",
                action="store", default=2048)
+par.add_option("--npol", dest="npol",
+               help="Number of hardware polarizations", type="int",
+               action="store", default=4)
 par.add_option("--acc_len", dest="acc_len",
                help="Hardware accumulation length",
                action="store", type="int", default=16)
@@ -71,6 +74,8 @@ par.add_option("--gbt", dest="gbt",
 par.add_option("--fake", dest="fake",
                help="Set params for fake psr",
                action="store_true", default=False)
+par.add_option("--packets", dest="packet_fmt", help="UDP packet format",
+               action="store", default="GUPPI")
 (opt,arg) = par.parse_args()
 
 g = guppi_status()
@@ -146,7 +151,7 @@ else:
 
 g.update("SCANLEN", opt.tscan)
 g.update("BACKEND", "GUPPI")
-g.update("PKTFMT", "GUPPI")
+g.update("PKTFMT", opt.packet_fmt)
 g.update("DATAHOST", "bee2_10")
 g.update("DATAPORT", 50000)
 g.update("POL_TYPE", "IQUV")
@@ -156,7 +161,7 @@ g.update("CAL_DCYC", 0.5)
 g.update("CAL_PHS", 0.0)
 
 g.update("OBSNCHAN", opt.nchan)
-g.update("NPOL", 4)
+g.update("NPOL", opt.npol)
 g.update("NBITS", 8)
 g.update("PFB_OVER", 4)
 g.update("NBITSADC", 8)
