@@ -97,7 +97,7 @@ else:
 
 g.update("SCANNUM", opt.scan)
 
-if (opt.gb43m or opt.fake):
+if (opt.gb43m):
     opt.gbt = False
     g.update("TELESCOP", "GB43m")
     g.update("OBSBW", -opt.bw)
@@ -120,7 +120,7 @@ if (opt.dec!=None):
 if (opt.freq!=None):
     g.update("OBSFREQ", opt.freq)
 
-if g['OBSERVER']=='unknown':
+if (opt.obs!=None or g['OBSERVER']=='unknown'):
     g.update("OBSERVER", username)
 
 if (1):  # in case we don't get a real start time
