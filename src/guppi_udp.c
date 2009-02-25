@@ -128,9 +128,10 @@ size_t guppi_udp_packet_datasize(size_t packet_size) {
      * 16 bytes at the end reserved for future use.  All other guppi
      * packets have 8 bytes index at the front, and 8 bytes error
      * flags at the end.
+     * NOTE: This represents the "full" packet output size...
      */
     if (packet_size==PACKET_SIZE_1SFA) // 1SFA packet size
-        return((size_t)8128);
+        return((size_t)8192);
     else              
         return(packet_size - 2*sizeof(unsigned long long));
 }
