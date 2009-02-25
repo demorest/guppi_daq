@@ -6,10 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <errno.h>
+#include <time.h>
 
 #include "fitshead.h"
 #include "guppi_status.h"
@@ -195,6 +197,7 @@ int guppi_databuf_wait_filled(struct guppi_databuf *d, int block_id) {
     op[1].sem_op = 1;
     rv = semop(d->semid, op, 2);
     if (rv==-1) { 
+        if (errno==EAGAIN) return(GUPPI_TIMEOUT);
         // Don't complain on a signal interruption
         if (errno==EINTR) return(GUPPI_ERR_SYS);
         guppi_error("guppi_databuf_wait_filled", "semop error");
@@ -205,30 +208,32 @@ int guppi_databuf_wait_filled(struct guppi_databuf *d, int block_id) {
 }
 
 int guppi_databuf_set_free(struct guppi_databuf *d, int block_id) {
-    /* TODO : check that buf is filled? use NOWAIT? */
+    /* This function should always succeed regardless of the current
+     * state of the specified databuf.  So we use semctl (not semop) to set
+     * the value to zero.
+     */
     int rv;
-    struct sembuf op;
-    op.sem_num = block_id;
-    op.sem_op = -1;
-    op.sem_flg = 0;
-    rv = semop(d->semid, &op, 1);
+    union semun arg;
+    arg.val = 0;
+    rv = semctl(d->semid, block_id, SETVAL, arg);
     if (rv==-1) { 
-        guppi_error("guppi_databuf_set_free", "semop error");
+        guppi_error("guppi_databuf_set_free", "semctl error");
         return(GUPPI_ERR_SYS);
     }
     return(0);
 }
 
 int guppi_databuf_set_filled(struct guppi_databuf *d, int block_id) {
-    /* TODO : check that buf is free? use NOWAIT? */
+    /* This function should always succeed regardless of the current
+     * state of the specified databuf.  So we use semctl (not semop) to set
+     * the value to one.
+     */
     int rv;
-    struct sembuf op;
-    op.sem_num = block_id;
-    op.sem_op = 1;
-    op.sem_flg = 0;
-    rv = semop(d->semid, &op, 1);
+    union semun arg;
+    arg.val = 1;
+    rv = semctl(d->semid, block_id, SETVAL, arg);
     if (rv==-1) { 
-        guppi_error("guppi_databuf_set_filled", "semop error");
+        guppi_error("guppi_databuf_set_filled", "semctl error");
         return(GUPPI_ERR_SYS);
     }
     return(0);
