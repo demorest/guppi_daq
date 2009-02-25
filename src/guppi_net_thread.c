@@ -348,7 +348,8 @@ void *guppi_net_thread(void *_args) {
         }
         // TODO replace memcpy with special func that expands out
         // 1SFA packets, etc.
-        memcpy(dataptr, guppi_udp_packet_data(&p), packet_data_size);
+        //memcpy(dataptr, guppi_udp_packet_data(&p), packet_data_size);
+        guppi_udp_packet_data_copy(dataptr, &p);
         npacket_total++;
         npacket_block++;
         last_block_packet_idx = block_packet_idx + 1;

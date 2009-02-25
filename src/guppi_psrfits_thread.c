@@ -6,6 +6,7 @@
 #define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
@@ -116,6 +117,7 @@ void guppi_psrfits_thread(void *_args) {
     int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;
     int mode=SEARCH_MODE;
     char *ptr;
+    char tmpstr[256];
     struct foldbuf fb;
     struct polyco pc[64];  
     memset(pc, 0, sizeof(pc));
@@ -127,14 +129,20 @@ void guppi_psrfits_thread(void *_args) {
         /* Note waiting status */
         guppi_status_lock_safe(&st);
         if (got_packet_0)
-            hputs(st.buf, STATUS_KEY, "waiting");
+            sprintf(tmpstr, "waiting(%d)", curblock);
         else
-            hputs(st.buf, STATUS_KEY, "ready");
+            sprintf(tmpstr, "ready");
+        hputs(st.buf, STATUS_KEY, tmpstr);
         guppi_status_unlock_safe(&st);
         
         /* Wait for buf to have data */
         rv = guppi_databuf_wait_filled(db, curblock);
-        if (rv!=0) continue; 
+        if (rv!=0) {
+            // This is a big ol' kludge to avoid this process hanging
+            // due to thread synchronization problems.
+            sleep(1);
+            continue; 
+        }
 
         /* Note current block */
         guppi_status_lock_safe(&st);

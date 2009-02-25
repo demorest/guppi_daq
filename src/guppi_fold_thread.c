@@ -151,7 +151,7 @@ void guppi_fold_thread(void *_args) {
         guppi_status_unlock_safe(&st);
 
         /* Wait for buf to have data */
-        guppi_databuf_wait_filled(db_in, curblock_in);
+        rv = guppi_databuf_wait_filled(db_in, curblock_in);
 
         /* Note current block(s) */
         guppi_status_lock_safe(&st);
