@@ -19,18 +19,12 @@
 #include "guppi_databuf.h"
 #include "guppi_params.h"
 #include "guppi_thread_main.h"
-#include "guppi_daq_cmd.h"
 
 /* Thread declarations */
 void *guppi_net_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 
 int main(int argc, char *argv[]) {
-    Cmdline *cmd;
-
-    /* Parse the command line using the excellent program Clig */
-    cmd = parseCmdline(argc, argv);
-    //showOptionValues();  /* For debugging */
 
     /* thread args */
     struct guppi_thread_args net_args, disk_args;
