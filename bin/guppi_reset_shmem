@@ -8,6 +8,7 @@ export GUPPI_DIR=/opt/64bit/guppi/guppi_daq
 
 # Delete all old shmem
 $GUPPI_DIR/bin/clean_guppi_shmem
+$GUPPI_DIR/bin/clean_guppi_shmem
 
 # New status shmem
 $GUPPI_DIR/bin/check_guppi_status > /dev/null

@@ -152,6 +152,7 @@ void guppi_fold_thread(void *_args) {
 
         /* Wait for buf to have data */
         rv = guppi_databuf_wait_filled(db_in, curblock_in);
+        if (rv!=0) continue;
 
         /* Note current block(s) */
         guppi_status_lock_safe(&st);
@@ -372,7 +373,9 @@ void guppi_fold_thread(void *_args) {
                         pthread_exit(NULL);
                     }
                 }
-                fprintf(stderr, "Read %d polycos\n", npc);
+                fprintf(stderr, "Read %d polycos (%.3f->%.3f)\n", 
+                        npc, (double)pc[0].mjd + pc[0].fmjd, 
+                        (double)pc[npc-1].mjd + pc[1].fmjd);
             }
 
             refresh_polycos=0;
