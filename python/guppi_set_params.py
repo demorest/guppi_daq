@@ -62,6 +62,9 @@ par.add_option("--nchan", dest="nchan",
 par.add_option("--npol", dest="npol",
                help="Number of hardware polarizations", type="int",
                action="store", default=4)
+par.add_option("--feed_pol", dest="feed_pol", 
+               help="Feed polarization type (LIN/CIRC)",
+               action="store", default=None)
 par.add_option("--acc_len", dest="acc_len",
                help="Hardware accumulation length",
                action="store", type="int", default=16)
@@ -111,6 +114,7 @@ else:
     g.update("FD_POLN", "LIN")
     g.update("TRK_MODE", "TRACK")
 
+
 if (opt.src!=None):
     g.update("SRC_NAME", opt.src)
 if (opt.ra!=None):
@@ -119,6 +123,8 @@ if (opt.dec!=None):
     g.update("DEC_STR", opt.dec)
 if (opt.freq!=None):
     g.update("OBSFREQ", opt.freq)
+if (opt.feed_pol!=None):
+    g.update("FD_POLN", opt.feed_pol)
 
 if (opt.obs!=None or g['OBSERVER']=='unknown'):
     g.update("OBSERVER", username)

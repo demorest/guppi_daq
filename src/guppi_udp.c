@@ -159,10 +159,14 @@ void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
          */
         const size_t pad = 16;
         const size_t spec_data_size = 4096 - 2*pad;
+        memset(out, 0, pad);
         memcpy(out + pad, guppi_udp_packet_data(p), spec_data_size);
+        memset(out + pad + spec_data_size, 0, 2*pad);
         memcpy(out + pad + spec_data_size + pad + pad, 
                 guppi_udp_packet_data(p) + spec_data_size, 
                 spec_data_size);
+        memset(out + pad + spec_data_size + pad
+                + pad + spec_data_size, 0, pad);
     } else {
         /* Packet has full data, just do a memcpy */
         memcpy(out, guppi_udp_packet_data(p), 
