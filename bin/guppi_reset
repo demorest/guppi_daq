@@ -1,9 +1,0 @@
-#! /usr/bin/env python
-import os, sys, time
-
-# connect to bee2 client
-from client import Client
-cicada = Client()
-cicaca.init()
-cicada.arm()
-cicada.arm()

@@ -2,7 +2,7 @@
 import os, sys, time
 
 # connect to bee2 client
-from client import Client
+from guppi.client import Client
 cicada = Client()
 
 cmd = os.path.join(os.environ['GUPPI_DIR'], "bin/guppi_daq")
