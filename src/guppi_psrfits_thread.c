@@ -103,6 +103,7 @@ void guppi_psrfits_thread(void *_args) {
     pf.hdr.chan_dm = 0.0;
     pf.filenum = 0; // This is crucial
     pthread_cleanup_push((void *)psrfits_close, &pf);
+    pf.multifile = 0;  // Use a single file for fold mode
     
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
