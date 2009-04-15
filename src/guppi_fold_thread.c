@@ -375,7 +375,7 @@ void guppi_fold_thread(void *_args) {
                 }
                 fprintf(stderr, "Read %d polycos (%.3f->%.3f)\n", 
                         npc, (double)pc[0].mjd + pc[0].fmjd, 
-                        (double)pc[npc-1].mjd + pc[1].fmjd);
+                        (double)pc[npc-1].mjd + pc[npc-1].fmjd);
             }
 
             refresh_polycos=0;

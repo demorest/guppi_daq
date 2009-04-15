@@ -16,11 +16,14 @@ par.add_option("-m", "--mode", dest="mode",
 par.add_option("-l", "--list", dest="list",
         help="List available modes",
         action="store_true", default=False)
+par.add_option("-L", "--longlist", dest="longlist",
+        help="List available modes with lots more info",
+        action="store_true", default=False)
 par.add_option("-c", "--clock", dest="clock",
         help="Sampling clock rate in MHz (200, 800)",
         action="store", default=None)
 par.add_option("-f", "--force", dest="force",
-        help="Force reload",
+        help="Force reload even if params match current settings",
         action="store_true", default=False)
 (opt,arg) = par.parse_args()
 
@@ -104,16 +107,19 @@ modelist = {'2k':bofs_2k, '4k':bofs_4k_1sfa}
 initlist = {'2k':init_2k, '4k':init_4k_1sfa}
 
 # List modes if needed
-if opt.list:
+if opt.list or opt.longlist:
     for m in sorted(modelist.keys()):
-        print "Mode '%s'" % m
-        print "  bofs:"
-        for b in modelist[m]:
-            print "    %s" % b
-        #print "  defaults:"
-        #for p in initlist[m].items():
-        #    print "   ", p
-        print
+        if opt.longlist:
+            print "Mode '%s'" % m
+            print "  bofs:"
+            for b in modelist[m]:
+                print "    %s" % b
+            print "  init defaults:"
+            for p in sorted(initlist[m].items()):
+                print "   ", p
+            print
+        else:
+            print m
     sys.exit()
 
 # Validate arguments
