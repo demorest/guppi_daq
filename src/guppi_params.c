@@ -92,7 +92,8 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
         u->packet_size = 8160;
     else if (strncmp(u->packet_format, "SHORT", 5)==0)
         //u->packet_size = 528;
-        u->packet_size = 288;
+        //u->packet_size = 288;
+        u->packet_size = 544;
     else
         u->packet_size = 8208;
 }
