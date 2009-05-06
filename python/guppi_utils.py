@@ -109,7 +109,7 @@ class guppi_status:
         freq = float(g['freq'])
         self.update("OBSFREQ", freq)
         self.update("SRC_NAME", g['source'])
-        if g['ant_motion']=='Tracking':
+        if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':
             self.update("TRK_MODE", 'TRACK')
         else:
             self.update("TRK_MODE", 'UNKNOWN')
