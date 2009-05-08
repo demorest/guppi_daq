@@ -232,8 +232,14 @@ void *guppi_net_thread(void *_args) {
         /* Check seq num diff */
         seq_num = guppi_udp_packet_seq_num(&p);
         seq_num_diff = seq_num - last_seq_num;
-        if (seq_num_diff<0) { 
+        if (seq_num_diff<=0) { 
             if (seq_num_diff<-1024) { force_new_block=1; }
+            else if (seq_num_diff==0) {
+                char msg[256];
+                sprintf(msg, "Received duplicate packet (seq_num=%lld)", 
+                        seq_num);
+                guppi_warn("guppi_net_thread", msg);
+            }
             else  { continue; } /* No going backwards */
         } else { force_new_block=0; }
 
