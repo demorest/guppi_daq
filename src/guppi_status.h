@@ -43,4 +43,7 @@ int guppi_status_unlock(struct guppi_status *s);
  */
 void guppi_status_chkinit(struct guppi_status *s);
 
+/* Clear out whole buffer */
+void guppi_status_clear(struct guppi_status *s);
+
 #endif

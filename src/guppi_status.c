@@ -89,3 +89,20 @@ void guppi_status_chkinit(struct guppi_status *s) {
     /* Unlock */
     guppi_status_unlock(s);
 }
+
+/* Clear out guppi status buf */
+void guppi_status_clear(struct guppi_status *s) {
+
+    /* Lock */
+    guppi_status_lock(s);
+
+    /* Zero bufer */
+    memset(s->buf, 0, GUPPI_STATUS_SIZE);
+    /* Fill first card w/ spaces */
+    memset(s->buf, ' ', GUPPI_STATUS_CARD);
+    /* add END */
+    strncpy(s->buf, "END", 3);
+
+    /* Unlock */
+    guppi_status_unlock(s);
+}

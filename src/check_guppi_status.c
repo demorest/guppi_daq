@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
         {"double", 1, NULL, 'd'},
         {"int",    1, NULL, 'i'},
         {"quiet",  0, NULL, 'q'},
+        {"clear",  0, NULL, 'C'},
         {0,0,0,0}
     };
     int opt,opti;
@@ -40,8 +41,8 @@ int main(int argc, char *argv[]) {
     float flttmp;
     double dbltmp;
     int inttmp;
-    int quiet=0;
-    while ((opt=getopt_long(argc,argv,"k:g:s:f:d:i:q",long_opts,&opti))!=-1) {
+    int quiet=0, clear=0;
+    while ((opt=getopt_long(argc,argv,"k:g:s:f:d:i:qC",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'k':
                 key = optarg;
@@ -69,6 +70,9 @@ int main(int argc, char *argv[]) {
                 if (key) 
                     hputi4(s.buf, key, inttmp);
                 break;
+            case 'C':
+                clear=1;
+                break;
             case 'q':
                 quiet=1;
                 break;
@@ -83,5 +87,9 @@ int main(int argc, char *argv[]) {
     }
 
     guppi_status_unlock(&s);
+
+    if (clear) 
+        guppi_status_clear(&s);
+
     exit(0);
 }
