@@ -5,6 +5,9 @@ from optparse import OptionParser
 
 # Parse command line
 
+# Check that something was given on the command line
+nargs = len(sys.argv) - 1
+
 # Dict containing list of key/val pairs to update in
 # the status shared mem
 update_list = {}
@@ -30,6 +33,12 @@ def add_param_option(longopt, name, help, type="string", short=None):
 # Non-parameter options
 par.add_option("-U", "--update", dest="update",
         help="Run in update mode",
+        action="store_true", default=False)
+par.add_option("-D", "--default", dest="default",
+        help="Use all default values",
+        action="store_true", default=True)
+par.add_option("-f", "--force", dest="force",
+        help="Force guppi_set_params to run even if unsafe",
         action="store_true", default=False)
 par.add_option("-c", "--cal", dest="cal", 
                help="Setup for cal scan (folding mode)",
@@ -102,17 +111,48 @@ add_param_option("--packets",
 
 
 # non-parameter options
-par.add_option("--gb43m", dest="gb43m", 
-               help="Set params for 43m observing",
-               action="store_true", default=False)
 par.add_option("--nogbt", dest="gbt", 
                help="Don't pull values from gbtstatus",
                action="store_false", default=True)
+par.add_option("--gb43m", dest="gb43m", 
+               help="Set params for 43m observing",
+               action="store_true", default=False)
 par.add_option("--fake", dest="fake",
                help="Set params for fake psr",
                action="store_true", default=False)
 
 (opt,arg) = par.parse_args()
+
+# If extra command line stuff, exit
+if (len(arg)>0):
+    par.print_help()
+    print
+    print "guppi_set_params: Unrecognized command line values", arg
+    print
+    sys.exit(0)
+
+# If nothing was given on the command line, print help and exit
+if (nargs==0):
+    par.print_help()
+    print 
+    print "guppi_set_params: No command line options were given, exiting."
+    print "  Either specifiy some options, or to use all default parameter" 
+    print "  values, run with the -D flag."
+    print
+    sys.exit(0)
+
+# Check for ongoing observations
+if (os.popen("pgrep guppi_daq").read() != ""):
+    if (opt.force):
+        print "Warning: Proceeding to set params even though datataking is currently running!"
+    else:
+        print """
+guppi_set_params: A GUPPI datataking process appears to be running, exiting.
+  If you really want to change the parameters, run again with the --force 
+  option.  Note that this will likely cause problems with the current 
+  observation.
+        """
+        sys.exit(1)
 
 # 43m implies nogbt
 if (opt.gb43m):
