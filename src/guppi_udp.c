@@ -121,9 +121,9 @@ unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
 }
 
 #define PACKET_SIZE_ORIG ((size_t)8208)
-//#define PACKET_SIZE_SHORT ((size_t)288)
 #define PACKET_SIZE_SHORT ((size_t)544)
-#define PACKET_SIZE_1SFA ((size_t)8160)
+#define PACKET_SIZE_1SFA ((size_t)8224)
+#define PACKET_SIZE_1SFA_OLD ((size_t)8160)
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
     /* Special case for the new "1SFA" packets, which have an extra
@@ -156,11 +156,15 @@ unsigned long long guppi_udp_packet_flags(const struct guppi_udp_packet *p) {
  * "missing" channels in 1SFA packets.
  */
 void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
-    if (p->packet_size==PACKET_SIZE_1SFA) {
+    if (p->packet_size==PACKET_SIZE_1SFA_OLD) {
         /* Expand out, leaving space for missing data.  So far only 
          * need to deal with 4k-channel case of 2 spectra per packet.
          * May need to be updated in the future if 1SFA works with 
          * different numbers of channels.
+         *
+         * TODO: Update 5/12/2009, newer 1SFA modes always will have full 
+         * data contents, and the old 4k ones never really worked, so
+         * this code can probably be deleted.
          */
         const size_t pad = 16;
         const size_t spec_data_size = 4096 - 2*pad;

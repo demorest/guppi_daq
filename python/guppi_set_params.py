@@ -108,6 +108,9 @@ add_param_option("--acc_len",
 add_param_option("--packets", 
         name="PKTFMT", type="string",
         help="UDP packet format")
+add_param_option("--datadir", 
+        name="DATADIR", type="string",
+        help="Data output directory (default: current dir)")
 
 
 # non-parameter options
@@ -223,6 +226,8 @@ if (opt.update == False):
     g.update("SCALE2", 1.0)
     g.update("OFFSET3", 0.5)
     g.update("SCALE3", 1.0)
+
+    g.update("DATADIR", ".")
 
     # Pull from gbtstatus if needed
     if (opt.gbt):

@@ -89,10 +89,8 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
     if (strncmp(u->packet_format, "PARKES", 6)==0)
         u->packet_size = 2056;
     else if (strncmp(u->packet_format, "1SFA", 4)==0)
-        u->packet_size = 8160;
+        u->packet_size = 8224;
     else if (strncmp(u->packet_format, "SHORT", 5)==0)
-        //u->packet_size = 528;
-        //u->packet_size = 288;
         u->packet_size = 544;
     else
         u->packet_size = 8208;
@@ -203,7 +201,10 @@ void guppi_read_obs_params(char *buf,
     get_str("FD_POLN", p->hdr.poln_type, 8, "Unknown");
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
     get_int("SCANNUM", p->hdr.scan_number, 1);
-    get_str("BASENAME", p->basefilename, 200, "guppi");
+    char base[200], dir[200];
+    get_str("DATADIR", dir, 200, ".");
+    get_str("BASENAME", base, 200, "guppi");
+    sprintf(p->basefilename, "%s/%s", dir, base);
     if (strcmp("POL_TYPE", "AA+BB")==0 ||
         strcmp("POL_TYPE", "INTEN")==0)
         p->hdr.summed_polns = 1;
