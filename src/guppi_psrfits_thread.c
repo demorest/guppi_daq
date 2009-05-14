@@ -103,7 +103,9 @@ void guppi_psrfits_thread(void *_args) {
     pf.hdr.chan_dm = 0.0;
     pf.filenum = 0; // This is crucial
     pthread_cleanup_push((void *)psrfits_close, &pf);
-    pf.multifile = 0;  // Use a single file for fold mode
+    //pf.multifile = 0;  // Use a single file for fold mode
+    pf.multifile = 1;  // Use a multiple files for fold mode
+    pf.quiet = 0;      // Print a message per each subint written
     
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -223,7 +225,16 @@ void guppi_psrfits_thread(void *_args) {
                 normalize_transpose_folds(fold_output_array, &fb);
 
             /* Write the data */
+            int last_filenum = pf.filenum;
             psrfits_write_subint(&pf);
+
+            /* Any actions that need to be taken when a new file
+             * is created.
+             */
+            if (pf.filenum!=last_filenum) {
+                /* No polycos yet written to the new file */
+                n_polyco_written=0;
+            }
 
             /* Write the polycos if needed */
             int write_pc=0, i, j;
