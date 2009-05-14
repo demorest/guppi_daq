@@ -3,7 +3,7 @@ if test "$LOGNAME" != "root"; then
 	echo "guppi_reset_shmem should be run as root"
 	exit 1 
 fi
-export LD_LIBRARY_PATH=/opt/64bit/presto/lib
+export LD_LIBRARY_PATH=/home/pulsar64/presto/lib
 export GUPPI_DIR=/opt/64bit/guppi/guppi_daq
 
 # Delete all old shmem
@@ -17,4 +17,4 @@ $GUPPI_DIR/bin/check_guppi_status > /dev/null
 $GUPPI_DIR/bin/check_guppi_databuf -c -i1 -s32 -n24 > /dev/null
 
 # New databuf 2 (fold)
-$GUPPI_DIR/bin/check_guppi_databuf -c -i2 -s64 -n8 > /dev/null
+$GUPPI_DIR/bin/check_guppi_databuf -c -i2 -s256 -n4 > /dev/null
