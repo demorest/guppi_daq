@@ -193,8 +193,10 @@ void guppi_fold_thread(void *_args) {
             fmjd0 = fmjd;
             fmjd_next = fmjd0 + pf.fold.tfold/86400.0;
 
-            /* Set nbin */
+            /* Set nbin, nchan, npol */
             fb.nbin = pf.fold.nbin;
+            fb.nchan = pf.hdr.nchan;
+            fb.npol = pf.hdr.npol;
 
             /* Set up first output header */
             hdr_out = guppi_databuf_header(db_out, curblock_out);
@@ -204,12 +206,26 @@ void guppi_fold_thread(void *_args) {
             if (strncmp(pf.hdr.obs_mode,"CAL",3))
                 hputs(hdr_out, "OBS_MODE", "PSR");
 
-            /* Set up data ptrs, zero out area */
+            /* Set up output data ptrs */
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));
+
+            /* Check that output databuf has enough space to hold
+             * fold data, fold counts, and 2 polyco structs.
+             */
+            size_t total_output_size = foldbuf_data_size(&fb) +
+                foldbuf_count_size(&fb) + 2*sizeof(struct polyco);
+            if (total_output_size > db_out->block_size) {
+                guppi_error("guppi_fold_thread", 
+                        "Insufficient memory per block to hold fold results.");
+                pthread_exit(NULL);
+            }
+
+            /* Clear output data buffer */
             clear_foldbuf(&fb);
 
-            fprintf(stderr, "nbin=%d tfold=%f\n", fb.nbin, pf.fold.tfold);
+            fprintf(stderr, "nbin=%d nchan=%d npol=%d tfold=%f\n", 
+                    fb.nbin, fb.nchan, fb.npol, pf.fold.tfold);
 
             first=0;
         }
