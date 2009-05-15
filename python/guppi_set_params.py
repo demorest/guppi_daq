@@ -88,7 +88,7 @@ add_param_option("--dec",
         name="DEC_STR", type="string",
         help="Set source Dec (+/-dd:mm:ss.s)")
 add_param_option("--freq", 
-        name="OBS_FREQ", type="float",
+        name="OBSFREQ", type="float",
         help="Set center freq (MHz)")
 add_param_option("--bw", 
         name="OBSBW", type="float",
@@ -257,6 +257,10 @@ if (opt.fake):
     g.update("FRONTEND", "none")
     g.update("OBSFREQ", 1000.0)
     g.update("FD_POLN", "LIN")
+
+# Total intensity mode
+if (opt.onlyI):
+    g.update("ONLY_I", 1)
 
 # Cal mode
 if (opt.cal):
