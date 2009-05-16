@@ -2,8 +2,13 @@
 # Set environment variables for GUPPI, bash version
 echo "This script is specific to Green Bank."
 echo "Setting GUPPI_DIR, PATH, PYTHONPATH, LD_LIBRARY_PATH, TEMPO, PRESTO and PGPLOT_DIR for GUPPI..."
+
+export HEADAS=/home/pulsar64/src/heasoft-6.6.2/x86_64-unknown-linux-gnu-libc2.3.4
+alias ftools=". $HEADAS/headas-init.sh"
+
 PSR64=/home/pulsar64
 OPT64=/opt/64bit
+
 export GUPPI=$OPT64/guppi
 export GUPPI_DIR=$GUPPI/guppi_daq
 export PRESTO=$PSR64/presto
