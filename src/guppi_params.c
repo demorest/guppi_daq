@@ -81,6 +81,46 @@ double beam_FWHM(double obs_freq, double dish_diam)
     return 1.2 * lambda / dish_diam * RADTODEG;
 }
 
+
+// Any GB-specific derived parameters go here
+void set_obs_params_gb(char *buf, 
+                       struct guppi_params *g, 
+                       struct psrfits *p) {
+
+    // TODO could double-check telescope name first
+    
+    // Set the beamwidth
+    if (strcmp("GBT", p->hdr.telescope)==0)
+        p->hdr.beam_FWHM = beam_FWHM(p->hdr.fctr, 100.0);
+    else if (strcmp("GB43m", p->hdr.telescope)==0)
+        p->hdr.beam_FWHM = beam_FWHM(p->hdr.fctr, 43.0);
+    else
+        p->hdr.beam_FWHM = 0.0;
+
+    // Receiver orientations, poln parameters, etc
+    // Defaults:
+    p->hdr.fd_hand = -1;
+    p->hdr.fd_sang = 45.0;
+    p->hdr.fd_xyph = 0.0;
+    // Special cases:
+    //   - Linear-feed gregorian rcvrs (L, S, C bands) are rotated
+    //     90 degrees from PSRFITS convention.
+    if (strcmp("Rcvr1_2", p->hdr.frontend)==0) {
+        p->hdr.fd_sang=-45.0;
+    } else if (strcmp("Rcvr2_3", p->hdr.frontend)==0) {
+        p->hdr.fd_sang=-45.0;
+    } else if (strcmp("Rcvr4_6", p->hdr.frontend)==0) {
+        p->hdr.fd_sang=-45.0;
+    }
+
+    // Backend cross-term phase
+    if (strcmp("GUPPI", p->hdr.backend)==0)
+        p->hdr.be_phase = -1;
+    else 
+        p->hdr.be_phase = -1;
+    
+}
+
 // Read networking parameters
 void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
     get_str("DATAHOST", u->sender, 80, "bee2_10");
@@ -254,15 +294,11 @@ void guppi_read_obs_params(char *buf,
         sprintf(p->hdr.date_obs, "%04d-%02d-%02dT%02d:%02d:%06.3f", 
                 YYYY, MM, DD, h, m, s);
     }
-    
-    // The beamwidth
-    if (strcmp("GBT", p->hdr.telescope)==0)
-        p->hdr.beam_FWHM = beam_FWHM(p->hdr.fctr, 100.0);
-    else if (strcmp("GB43m", p->hdr.telescope)==0)
-        p->hdr.beam_FWHM = beam_FWHM(p->hdr.fctr, 43.0);
-    else
-        p->hdr.beam_FWHM = 0.0;
 
+    // TODO: call telescope-specific settings here
+    // Eventually make this depend on telescope name
+    set_obs_params_gb(buf, g, p);
+    
     // Now bookkeeping information
     {
         int ii, jj, kk;
