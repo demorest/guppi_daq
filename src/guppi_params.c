@@ -136,6 +136,11 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
         u->packet_size = 8208;
 }
 
+/* Some code just needs a simple way to get the obs mode string */
+void guppi_read_obs_mode(const char *buf, char *mode) {
+    get_str("OBS_MODE", mode, 8, "Unknown");
+}
+
 // Read a status buffer all of the key observation paramters
 void guppi_read_subint_params(char *buf, 
                               struct guppi_params *g, 
