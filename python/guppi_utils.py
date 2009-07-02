@@ -133,7 +133,7 @@ class guppi_status:
 
     def update_azza(self):
         """
-        update_posn():
+        update_azza():
             Update the AZ and ZA based on the current time with the guppi_status instance.
         """
         (iptr, ang, stat) = s.sla_dafin(self['RA_STR'].replace(':', ' '), 1)
@@ -141,7 +141,7 @@ class guppi_status:
         (iptr, ang, stat) = s.sla_dafin(self['DEC_STR'].replace(':', ' '), 1)
         self.update("DEC", ang*RADTODEG)
         MJD = astro.current_MJD()
-        az, za = astro.radec_to_azza(self['RA'], self['DEC'], MJD, scope='GBVA140')
+        az, za = astro.radec_to_azza(self['RA'], self['DEC'], MJD, scope='GBT')
         self.update("AZ", az)
         self.update("ZA", za)
 
