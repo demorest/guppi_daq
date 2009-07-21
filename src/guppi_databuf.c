@@ -173,9 +173,15 @@ int guppi_databuf_wait_free(struct guppi_databuf *d, int block_id) {
     op.sem_num = block_id;
     op.sem_op = 0;
     op.sem_flg = 0;
-    rv = semop(d->semid, &op, 1);
+    struct timespec timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_nsec = 250000000;
+    rv = semtimedop(d->semid, &op, 1, &timeout);
     if (rv==-1) { 
+        if (errno==EAGAIN) return(GUPPI_TIMEOUT);
+        if (errno==EINTR) return(GUPPI_ERR_SYS);
         guppi_error("guppi_databuf_wait_free", "semop error");
+        perror("semop");
         return(GUPPI_ERR_SYS);
     }
     return(0);
@@ -195,7 +201,10 @@ int guppi_databuf_wait_filled(struct guppi_databuf *d, int block_id) {
     op[0].sem_flg = op[1].sem_flg = 0;
     op[0].sem_op = -1;
     op[1].sem_op = 1;
-    rv = semop(d->semid, op, 2);
+    struct timespec timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_nsec = 250000000;
+    rv = semtimedop(d->semid, op, 2, &timeout);
     if (rv==-1) { 
         if (errno==EAGAIN) return(GUPPI_TIMEOUT);
         // Don't complain on a signal interruption

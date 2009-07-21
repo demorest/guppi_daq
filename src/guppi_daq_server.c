@@ -35,11 +35,76 @@ void usage() {
            );
 }
 
+/* Override "usual" SIGINT stuff */
+int srv_run=1;
+void srv_cc(int sig) { srv_run=0; run=0; }
+
 /* Thread declarations */
 void *guppi_net_thread(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
+
+/* Useful thread functions */
+
+void init_search_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]); // net
+    guppi_thread_args_init(&args[1]); // disk
+    args[0].output_buffer = 1;
+    args[1].input_buffer = args[0].output_buffer;
+    *nthread = 2;
+}
+
+void init_fold_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]); // net
+    guppi_thread_args_init(&args[1]); // fold
+    guppi_thread_args_init(&args[2]); // disk
+    args[0].output_buffer = 1;
+    args[1].input_buffer = args[0].output_buffer;
+    args[1].output_buffer = 2;
+    args[2].input_buffer = args[1].output_buffer;
+    *nthread = 3;
+}
+
+void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]); // net
+    guppi_thread_args_init(&args[1]); // null
+    args[0].output_buffer = 1;
+    args[1].input_buffer = args[0].output_buffer;
+    *nthread = 2;
+}
+
+void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_psrfits_thread, (void*)&args[1]);
+}
+
+void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_fold_thread, (void*)&args[1]);
+    rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+}
+
+void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
+}
+
+void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
+        unsigned nthread) {
+    unsigned i;
+    for (i=0; i<nthread; i++) pthread_cancel(ids[i]);
+    for (i=0; i<nthread; i++) pthread_kill(ids[i], SIGINT);
+    for (i=0; i<nthread; i++) pthread_join(ids[i], NULL);
+    for (i=0; i<nthread; i++) guppi_thread_args_destroy(&args[i]);
+    for (i=0; i<nthread; i++) ids[i] = 0;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -47,13 +112,9 @@ int main(int argc, char *argv[]) {
         {"help",   0, NULL, 'h'},
         {0,0,0,0}
     };
-    int use_null_thread = 0;
     int opt, opti;
-    while ((opt=getopt_long(argc,argv,"hn",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"h",long_opts,&opti))!=-1) {
         switch (opt) {
-            case 'n':
-                use_null_thread = 1;
-                break;
             default:
             case 'h':
                 usage();
@@ -61,6 +122,8 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    /* TODO: create FIFO */
 
     /* Open command FIFO for read */
 #define MAX_CMD_LEN 1024
@@ -98,17 +161,20 @@ int main(int argc, char *argv[]) {
 
     /* Thread setup */
 #define MAX_THREAD 8
+    int i;
+    int nthread_cur = 0;
     struct guppi_thread_args args[MAX_THREAD];
     pthread_t thread_id[MAX_THREAD];
-    char thread_type[MAX_THREAD][256];
+    for (i=0; i<MAX_THREAD; i++) thread_id[i] = 0;
 
     /* hmm.. keep this old signal stuff?? */
     run=1;
-    signal(SIGINT, cc);
+    srv_run=1;
+    signal(SIGINT, srv_cc);
 
     /* Loop over recv'd commands, process them */
     int cmd_wait=1;
-    while (cmd_wait && run) {
+    while (cmd_wait && srv_run) {
 
         // Wait for data on fifo
         struct pollfd pfd;
@@ -153,7 +219,9 @@ int main(int argc, char *argv[]) {
         // Process the command 
         if (strncasecmp(cmd,"QUIT",MAX_CMD_LEN)==0) {
             // Exit program
-            // TODO : decide how to behave if observations are running
+            printf("Exit\n");
+            run = 0;
+            stop_threads(args, thread_id, nthread_cur);
             cmd_wait=0;
             continue;
         } 
@@ -168,19 +236,37 @@ int main(int argc, char *argv[]) {
             guppi_status_lock(&stat);
             guppi_read_obs_mode(stat.buf, obs_mode);
             guppi_status_unlock(&stat);
+            printf("  obs_mode = %s\n", obs_mode);
+
+            // Clear out data bufs
+            guppi_databuf_clear(dbuf_net);
+            guppi_databuf_clear(dbuf_fold);
 
             // Do it
+            run = 1;
+            if (strncasecmp(obs_mode, "SEARCH", 7)==0) {
+                init_search_mode(args, &nthread_cur);
+                start_search_mode(args, thread_id);
+            } else if (strncasecmp(obs_mode, "FOLD", 5)==0) {
+                init_fold_mode(args, &nthread_cur);
+                start_fold_mode(args, thread_id);
+            } else if (strncasecmp(obs_mode, "CAL", 4)==0) {
+                init_fold_mode(args, &nthread_cur);
+                start_fold_mode(args, thread_id);
+            } else if (strncasecmp(obs_mode, "MONITOR", 8)==0) {
+                init_monitor_mode(args, &nthread_cur);
+                start_monitor_mode(args, thread_id);
+            } else {
+                printf("  unrecognized obs_mode!\n");
+            }
         } 
         
         else if (strncasecmp(cmd,"STOP",MAX_CMD_LEN)==0) {
             // Stop observations
             printf("Stop observations\n");
-        } 
-        
-        else if (strncasecmp(cmd,"MONITOR",MAX_CMD_LEN)==0) {
-            // Start monitor mode
-            // TODO : decide how to behave if observations are running
-            printf("Start monitor mode\n");
+            run = 0;
+            stop_threads(args, thread_id, nthread_cur);
+            nthread_cur = 0;
         } 
         
         else {
@@ -190,5 +276,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (command_fifo>0) close(command_fifo);
+
+    /* TODO: remove FIFO */
+
     exit(0);
 }

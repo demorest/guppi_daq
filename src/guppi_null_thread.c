@@ -98,6 +98,10 @@ void guppi_null_thread(void *_args) {
 
         /* Wait for buf to have data */
         rv = guppi_databuf_wait_filled(db, curblock);
+        if (rv!=0) {
+            //sleep(1);
+            continue;
+        }
 
         /* Note waiting status, current block */
         guppi_status_lock_safe(&st);

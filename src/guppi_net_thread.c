@@ -81,6 +81,10 @@ void *guppi_net_thread(void *_args) {
     /* Read in general parameters */
     struct guppi_params gp;
     struct psrfits pf;
+    pf.sub.dat_freqs = NULL;
+    pf.sub.dat_weights = NULL;
+    pf.sub.dat_offsets = NULL;
+    pf.sub.dat_scales = NULL;
     char status_buf[GUPPI_STATUS_SIZE];
     guppi_status_lock_safe(&st);
     memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);

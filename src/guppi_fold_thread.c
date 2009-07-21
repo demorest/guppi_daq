@@ -78,6 +78,10 @@ void guppi_fold_thread(void *_args) {
     /* Read in general parameters */
     struct guppi_params gp;
     struct psrfits pf;
+    pf.sub.dat_freqs = NULL;
+    pf.sub.dat_weights = NULL;
+    pf.sub.dat_offsets = NULL;
+    pf.sub.dat_scales = NULL;
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db_in, *db_out;
