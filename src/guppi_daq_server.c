@@ -47,6 +47,13 @@ void *guppi_null_thread(void *args);
 
 /* Useful thread functions */
 
+int check_thread_exit(struct guppi_thread_args *args, int nthread) {
+    int i, rv=0;
+    for (i=0; i<nthread; i++) 
+        rv += args[i].finished;
+    return(rv);
+}
+
 void init_search_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]); // net
     guppi_thread_args_init(&args[1]); // disk
@@ -176,6 +183,13 @@ int main(int argc, char *argv[]) {
     int cmd_wait=1;
     while (cmd_wait && srv_run) {
 
+        // Check to see if threads have exited, if so, stop them
+        if (check_thread_exit(args, nthread_cur)) {
+            run = 0;
+            stop_threads(args, thread_id, nthread_cur);
+            nthread_cur = 0;
+        }
+
         // Wait for data on fifo
         struct pollfd pfd;
         pfd.fd = command_fifo;
@@ -183,7 +197,7 @@ int main(int argc, char *argv[]) {
         rv = poll(&pfd, 1, 1000);
         if (rv==0) { continue; }
         else if (rv<0) {
-            perror("poll");
+            if (errno!=EINTR) perror("poll");
             continue;
         }
 
