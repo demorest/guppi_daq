@@ -132,7 +132,10 @@ int main(int argc, char *argv[]) {
 
 
     /* Alt loop, wait for run=0 */
-    while (run) sleep(1); 
+    while (run) {
+        sleep(1); 
+        if (disk_args.finished) run=0;
+    }
 
     /* Clean up */
     pthread_cancel(fold_thread_id);

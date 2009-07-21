@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
     run=1;
     while (run) { 
         sleep(1); 
+        if (disk_args.finished) run=0;
     }
     pthread_cancel(disk_thread_id);
     pthread_cancel(net_thread_id);
