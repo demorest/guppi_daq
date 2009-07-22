@@ -212,6 +212,8 @@ void guppi_read_obs_params(char *buf,
                            struct guppi_params *g, 
                            struct psrfits *p)
 {
+    char base[200], dir[200];
+
     // Software data-stream modification params
     get_int("DS_TIME", p->hdr.ds_time_fact, 1); // Time down-sampling
     get_int("DS_FREQ", p->hdr.ds_freq_fact, 1); // Freq down-sampling
@@ -246,10 +248,7 @@ void guppi_read_obs_params(char *buf,
     get_str("FD_POLN", p->hdr.poln_type, 8, "Unknown");
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
     get_int("SCANNUM", p->hdr.scan_number, 1);
-    char base[200], dir[200];
     get_str("DATADIR", dir, 200, ".");
-    get_str("BASENAME", base, 200, "guppi");
-    sprintf(p->basefilename, "%s/%s", dir, base);
     if (strcmp("POL_TYPE", "AA+BB")==0 ||
         strcmp("POL_TYPE", "INTEN")==0)
         p->hdr.summed_polns = 1;
@@ -292,6 +291,11 @@ void guppi_read_obs_params(char *buf,
         p->hdr.start_sec = mjd_s + mjd_fs;
     }
     
+    // Set the base filename
+    sprintf(base, "guppi_%5d_%s_%04d", p->hdr.start_day, 
+            p->hdr.source, p->hdr.scan_number);
+    sprintf(p->basefilename, "%s/%s", dir, base);
+
     { // Date and time of start
         int YYYY, MM, DD, h, m;
         double s;
