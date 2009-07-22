@@ -111,17 +111,18 @@ class guppi_status:
         self.update("SRC_NAME", g['source'])
         if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':
             self.update("TRK_MODE", 'TRACK')
+        elif g['ant_motion']=='Stopped':
+            self.update("TRK_MODE", 'DRIFT')
         else:
             self.update("TRK_MODE", 'UNKNOWN')
-        if g['epoch']=='J2000':
-            self.ra_str = self.gbtstat.getMajor().split()[0]
-            self.ra = float(g['major'].split()[0])
-            self.dec_str = self.gbtstat.getMinor().split()[0]
-            self.dec = float(g['minor'].split()[0])
-            self.update("RA_STR", self.ra_str)
-            self.update("RA", self.ra)
-            self.update("DEC_STR", self.dec_str)
-            self.update("DEC", self.dec)
+        self.ra = float(g['j2000_major'].split()[0])
+        self.ra_str = self.gbtstat.degrees2hms(self.ra)
+        self.dec = float(g['j2000_minor'].split()[0])
+        self.dec_str = self.gbtstat.degrees2dms(self.dec)
+        self.update("RA_STR", self.ra_str)
+        self.update("RA", self.ra)
+        self.update("DEC_STR", self.dec_str)
+        self.update("DEC", self.dec)
         h, m, s = g['lst'].split(":")
         lst = int(round(astro.hms_to_rad(int(h),int(m),float(s))*86400.0/astro.TWOPI))
         self.update("LST", lst)

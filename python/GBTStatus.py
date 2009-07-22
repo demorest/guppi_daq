@@ -53,7 +53,9 @@ TITLE = {
          "data_dir"           : "Project ID:         ",
          "lst"                : "LST:                ",
          "status"             : "Status:             ",
-         "time_to_set"        : "Time To Set:        "
+         "time_to_set"        : "Time To Set:        ",
+         "j2000_major"        : "RA  J2000 (deg):    ",
+         "j2000_minor"        : "Dec J2000 (deg):    "
         }
 
 PSR_fieldNames = [
@@ -89,7 +91,9 @@ PSR_fieldNames = [
        "data_dir",
        "lst",
        "status",
-       "time_to_set"]
+       "time_to_set",
+       "j2000_major",
+       "j2000_minor"]
 
 
 class GBTStatus:
