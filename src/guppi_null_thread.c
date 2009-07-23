@@ -87,6 +87,10 @@ void guppi_null_thread(void *_args) {
     char *ptr;
     struct guppi_params gp;
     struct psrfits pf;
+    pf.sub.dat_freqs = NULL;
+    pf.sub.dat_weights = NULL;
+    pf.sub.dat_offsets = NULL;
+    pf.sub.dat_scales = NULL;
     int curblock=0;
     signal(SIGINT,cc);
     while (run) {
