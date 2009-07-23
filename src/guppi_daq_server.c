@@ -17,7 +17,9 @@
 #include <poll.h>
 #include <getopt.h>
 #include <errno.h>
+#include <time.h>
 
+#include "fitshead.h"
 #include "guppi_error.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
@@ -190,6 +192,19 @@ int main(int argc, char *argv[]) {
             nthread_cur = 0;
         }
 
+        // Heartbeat, status update
+        time_t curtime;
+        char timestr[32];
+        char *ctmp;
+        time(&curtime);
+        ctime_r(&curtime, timestr);
+        ctmp = strchr(timestr, '\n');
+        if (ctmp!=NULL) { *ctmp = '\0'; } else { timestr[0]='\0'; }
+        guppi_status_lock(&stat);
+        hputs(stat.buf, "DAQPULSE", timestr);
+        hputs(stat.buf, "DAQSTATE", nthread_cur==0 ? "stopped" : "running");
+        guppi_status_unlock(&stat);
+
         // Wait for data on fifo
         struct pollfd pfd;
         pfd.fd = command_fifo;
@@ -245,34 +260,41 @@ int main(int argc, char *argv[]) {
             // TODO : decide how to behave if observations are running
             printf("Start observations\n");
 
-            // Figure out which mode to start
-            char obs_mode[32];
-            guppi_status_lock(&stat);
-            guppi_read_obs_mode(stat.buf, obs_mode);
-            guppi_status_unlock(&stat);
-            printf("  obs_mode = %s\n", obs_mode);
-
-            // Clear out data bufs
-            guppi_databuf_clear(dbuf_net);
-            guppi_databuf_clear(dbuf_fold);
-
-            // Do it
-            run = 1;
-            if (strncasecmp(obs_mode, "SEARCH", 7)==0) {
-                init_search_mode(args, &nthread_cur);
-                start_search_mode(args, thread_id);
-            } else if (strncasecmp(obs_mode, "FOLD", 5)==0) {
-                init_fold_mode(args, &nthread_cur);
-                start_fold_mode(args, thread_id);
-            } else if (strncasecmp(obs_mode, "CAL", 4)==0) {
-                init_fold_mode(args, &nthread_cur);
-                start_fold_mode(args, thread_id);
-            } else if (strncasecmp(obs_mode, "MONITOR", 8)==0) {
-                init_monitor_mode(args, &nthread_cur);
-                start_monitor_mode(args, thread_id);
+            if (nthread_cur>0) {
+                printf("  observations already running!\n");
             } else {
-                printf("  unrecognized obs_mode!\n");
+
+                // Figure out which mode to start
+                char obs_mode[32];
+                guppi_status_lock(&stat);
+                guppi_read_obs_mode(stat.buf, obs_mode);
+                guppi_status_unlock(&stat);
+                printf("  obs_mode = %s\n", obs_mode);
+
+                // Clear out data bufs
+                guppi_databuf_clear(dbuf_net);
+                guppi_databuf_clear(dbuf_fold);
+
+                // Do it
+                run = 1;
+                if (strncasecmp(obs_mode, "SEARCH", 7)==0) {
+                    init_search_mode(args, &nthread_cur);
+                    start_search_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "FOLD", 5)==0) {
+                    init_fold_mode(args, &nthread_cur);
+                    start_fold_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "CAL", 4)==0) {
+                    init_fold_mode(args, &nthread_cur);
+                    start_fold_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "MONITOR", 8)==0) {
+                    init_monitor_mode(args, &nthread_cur);
+                    start_monitor_mode(args, thread_id);
+                } else {
+                    printf("  unrecognized obs_mode!\n");
+                }
+
             }
+
         } 
         
         else if (strncasecmp(cmd,"STOP",MAX_CMD_LEN)==0) {
@@ -290,6 +312,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (command_fifo>0) close(command_fifo);
+
+    guppi_status_lock(&stat);
+    hputs(stat.buf, "DAQSTATE", "exiting");
+    guppi_status_unlock(&stat);
 
     /* TODO: remove FIFO */
 
