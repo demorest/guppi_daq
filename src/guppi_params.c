@@ -292,8 +292,13 @@ void guppi_read_obs_params(char *buf,
     }
     
     // Set the base filename
-    sprintf(base, "guppi_%5d_%s_%04d", p->hdr.start_day, 
-            p->hdr.source, p->hdr.scan_number);
+    if (strcmp("CAL", p->hdr.obs_mode)==0) { 
+        sprintf(base, "guppi_%5d_%s_%04d_cal", p->hdr.start_day, 
+                p->hdr.source, p->hdr.scan_number);
+    } else {
+        sprintf(base, "guppi_%5d_%s_%04d", p->hdr.start_day, 
+                p->hdr.source, p->hdr.scan_number);
+    }
     sprintf(p->basefilename, "%s/%s", dir, base);
 
     { // Date and time of start
