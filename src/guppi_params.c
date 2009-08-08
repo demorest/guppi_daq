@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "fitshead.h"
 #include "psrfits.h"
 #include "guppi_params.h"
