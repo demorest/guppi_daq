@@ -28,6 +28,7 @@ void usage() {
             "Options:\n"
             "  -h, --help        This message\n"
             "  -d, --disk        Write raw data to disk (default no)\n"
+            "  -o, --only_net    Run only guppi_net_thread\n"
            );
 }
 
@@ -39,16 +40,20 @@ void *guppi_null_thread(void *args);
 int main(int argc, char *argv[]) {
 
     static struct option long_opts[] = {
-        {"help",   0, NULL, 'h'},
-        {"disk",   0, NULL, 'd'},
+        {"help",    0, NULL, 'h'},
+        {"disk",    0, NULL, 'd'},
+        {"only_net",0, NULL, 'o'},
         {0,0,0,0}
     };
     int opt, opti;
-    int disk=0;
-    while ((opt=getopt_long(argc,argv,"hd",long_opts,&opti))!=-1) {
+    int disk=0, only_net=0;
+    while ((opt=getopt_long(argc,argv,"hdo",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'd':
                 disk=1;
+                break;
+            case 'o':
+                only_net=1;
                 break;
             default:
             case 'h':
@@ -99,29 +104,33 @@ int main(int argc, char *argv[]) {
     struct guppi_thread_args null_args;
     guppi_thread_args_init(&null_args);
     null_args.input_buffer = net_args.output_buffer;
-    pthread_t disk_thread_id;
-    if (disk)
-        rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, 
-                (void *)&null_args);
-    else
-        rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, 
-                (void *)&null_args);
-    if (rv) { 
-        fprintf(stderr, "Error creating null thread.\n");
-        perror("pthread_create");
-        exit(1);
+    pthread_t disk_thread_id=0;
+    if (only_net==0) {
+        if (disk)
+            rv = pthread_create(&disk_thread_id, NULL, guppi_rawdisk_thread, 
+                    (void *)&null_args);
+        else
+            rv = pthread_create(&disk_thread_id, NULL, guppi_null_thread, 
+                    (void *)&null_args);
+        if (rv) { 
+            fprintf(stderr, "Error creating null thread.\n");
+            perror("pthread_create");
+            exit(1);
+        }
     }
 
     /* Wait for end */
     while (run) { sleep(1); }
-    pthread_cancel(disk_thread_id);
+    if (disk_thread_id) pthread_cancel(disk_thread_id);
     pthread_cancel(net_thread_id);
-    pthread_kill(disk_thread_id,SIGINT);
+    if (disk_thread_id) pthread_kill(disk_thread_id,SIGINT);
     pthread_kill(net_thread_id,SIGINT);
     pthread_join(net_thread_id,NULL);
     printf("Joined net thread\n"); fflush(stdout); fflush(stderr);
-    pthread_join(disk_thread_id,NULL);
-    printf("Joined disk thread\n"); fflush(stdout); fflush(stderr);
+    if (disk_thread_id) {
+        pthread_join(disk_thread_id,NULL);
+        printf("Joined disk thread\n"); fflush(stdout); fflush(stderr);
+    }
 
     guppi_thread_args_destroy(&null_args);
 

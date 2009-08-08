@@ -292,11 +292,18 @@ void guppi_read_obs_params(char *buf,
     }
     
     // Set the base filename
+    int i;
+    char backend[24];
+    strncpy(backend, p->hdr.backend, 24);
+    for (i=0; i<24; i++) { 
+        if (backend[i]=='\0') break;
+        backend[i] = tolower(backend[i]); 
+    }
     if (strcmp("CAL", p->hdr.obs_mode)==0) { 
-        sprintf(base, "guppi_%5d_%s_%04d_cal", p->hdr.start_day, 
+        sprintf(base, "%s_%5d_%s_%04d_cal", backend, p->hdr.start_day, 
                 p->hdr.source, p->hdr.scan_number);
     } else {
-        sprintf(base, "guppi_%5d_%s_%04d", p->hdr.start_day, 
+        sprintf(base, "%s_%5d_%s_%04d", backend, p->hdr.start_day, 
                 p->hdr.source, p->hdr.scan_number);
     }
     sprintf(p->basefilename, "%s/%s", dir, base);

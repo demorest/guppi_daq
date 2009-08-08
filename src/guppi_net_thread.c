@@ -341,7 +341,20 @@ void *guppi_net_thread(void *_args) {
             last_block_packet_idx = 0;
             curblock_seq_num = seq_num - (seq_num % packets_per_block);
             nextblock_seq_num = curblock_seq_num + packets_per_block;
-            guppi_databuf_wait_free(db, curblock);
+            while ((rv=guppi_databuf_wait_free(db,curblock)) != GUPPI_OK) {
+                if (rv==GUPPI_TIMEOUT) {
+                    guppi_status_lock_safe(&st);
+                    hputs(st.buf, STATUS_KEY, "blocked");
+                    guppi_status_unlock_safe(&st);
+                    continue;
+                } else {
+                    guppi_error("guppi_net_thread", 
+                            "error waiting for free databuf");
+                    run=0;
+                    pthread_exit(NULL);
+                    break;
+                }
+            }
             memcpy(curheader, status_buf, GUPPI_STATUS_SIZE);
         }
 

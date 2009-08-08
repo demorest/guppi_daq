@@ -255,7 +255,8 @@ int main(int argc, char *argv[]) {
             continue;
         } 
         
-        else if (strncasecmp(cmd,"START",MAX_CMD_LEN)==0) {
+        else if (strncasecmp(cmd,"START",MAX_CMD_LEN)==0 ||
+                strncasecmp(cmd,"MONITOR",MAX_CMD_LEN)==0) {
             // Start observations
             // TODO : decide how to behave if observations are running
             printf("Start observations\n");
@@ -266,9 +267,13 @@ int main(int argc, char *argv[]) {
 
                 // Figure out which mode to start
                 char obs_mode[32];
-                guppi_status_lock(&stat);
-                guppi_read_obs_mode(stat.buf, obs_mode);
-                guppi_status_unlock(&stat);
+                if (strncasecmp(cmd,"START",MAX_CMD_LEN)==0) {
+                    guppi_status_lock(&stat);
+                    guppi_read_obs_mode(stat.buf, obs_mode);
+                    guppi_status_unlock(&stat);
+                } else {
+                    strncpy(obs_mode, cmd, 32);
+                }
                 printf("  obs_mode = %s\n", obs_mode);
 
                 // Clear out data bufs
