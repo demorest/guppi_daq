@@ -167,10 +167,10 @@ void guppi_psrfits_thread(void *_args) {
         /* Find out what mode this data is in */
         mode = psrfits_obs_mode(pf.hdr.obs_mode);
 
-        /* Check if we got packet 0.  If so, flag writing to 
-         * start, and update obs_params as well.
+        /* Check if we got both packet 0 and a valid observation
+         * start time.  If so, flag writing to start.
          */
-        if (got_packet_0==0 && gp.packetindex==0) {
+        if (got_packet_0==0 && gp.packetindex==0 && gp.stt_valid==1) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
             guppi_update_ds_params(&pf);

@@ -315,6 +315,9 @@ void *guppi_net_thread(void *_args) {
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
                 hputr8(st.buf, "STT_OFFS", stt_offs);
+                hputi4(st.buf, "STTVALID", 1);
+            } else {
+                hputi4(st.buf, "STTVALID", 0);
             }
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);

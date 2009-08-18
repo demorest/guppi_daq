@@ -156,6 +156,9 @@ void guppi_read_subint_params(char *buf,
     get_dbl("DROPTOT", g->drop_frac_tot, 0.0);
     g->drop_frac = (double) g->n_dropped / (double) g->n_packets;
 
+    // Valid obs start time
+    get_int("STTVALID", g->stt_valid, 0);
+
     // Observation params
     get_dbl("AZ", p->sub.tel_az, 0.0);
     if (p->sub.tel_az < 0.0) p->sub.tel_az += 360.0;
