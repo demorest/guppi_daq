@@ -346,6 +346,7 @@ void *guppi_net_thread(void *_args) {
             nextblock_seq_num = curblock_seq_num + packets_per_block;
             while ((rv=guppi_databuf_wait_free(db,curblock)) != GUPPI_OK) {
                 if (rv==GUPPI_TIMEOUT) {
+                    waiting=1;
                     guppi_status_lock_safe(&st);
                     hputs(st.buf, STATUS_KEY, "blocked");
                     guppi_status_unlock_safe(&st);

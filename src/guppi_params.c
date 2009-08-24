@@ -348,7 +348,9 @@ void guppi_read_obs_params(char *buf,
         }
         // Will probably want to tweak this so that it is a nice round number
         if (p->sub.bytes_per_subint!=0)
-            p->rows_per_file = max_bytes_per_file / p->sub.bytes_per_subint;
+            p->rows_per_file = p->hdr.ds_freq_fact * p->hdr.ds_time_fact *
+                (p->hdr.onlyI ? 4 : 1) * max_bytes_per_file / 
+                p->sub.bytes_per_subint;
 
         // Free the old ones in case we've changed the params
         if (p->sub.dat_freqs) free(p->sub.dat_freqs);
