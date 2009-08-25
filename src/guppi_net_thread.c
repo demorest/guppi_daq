@@ -236,15 +236,25 @@ void *guppi_net_thread(void *_args) {
         /* Check seq num diff */
         seq_num = guppi_udp_packet_seq_num(&p);
         seq_num_diff = seq_num - last_seq_num;
-        if (seq_num_diff<=0) { 
-            if (seq_num_diff<-1024) { force_new_block=1; }
-            else if (seq_num_diff==0) {
+        if (seq_num_diff<=0 && curblock>=0) { 
+            if (seq_num_diff<-128 && seq_num<4096) { 
+                printf("guppi_net_thread:  Packet sequence number reset\n");
+                force_new_block=1; 
+            } else if (seq_num_diff==0) {
                 char msg[256];
                 sprintf(msg, "Received duplicate packet (seq_num=%lld)", 
                         seq_num);
                 guppi_warn("guppi_net_thread", msg);
             }
-            else  { continue; } /* No going backwards */
+            else  { 
+                /* No going backwards */
+                char msg[256];
+                sprintf(msg, 
+                        "Received out-of-order packet (seq_num=%lld, diff=%lld)",
+                        seq_num, seq_num_diff);
+                guppi_warn("guppi_net_thread", msg);
+                continue; 
+            } 
         } else { force_new_block=0; }
 
         /* Determine if we go to next block */
