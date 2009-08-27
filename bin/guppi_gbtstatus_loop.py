@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-import os, sys, time
+import time
 from guppi_utils import *
-from astro_utils import current_MJD
 
 # Attach to status shared mem
 g = guppi_status()
 
 while (1):
-    g.read()
-    g.update_with_gbtstatus()
-    g.write()
+    try:
+        g.read()
+        g.update_with_gbtstatus()
+        g.write()
+    except:
+        pass
     time.sleep(1)
