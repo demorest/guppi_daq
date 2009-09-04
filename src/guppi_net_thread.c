@@ -237,7 +237,7 @@ void *guppi_net_thread(void *_args) {
         seq_num = guppi_udp_packet_seq_num(&p);
         seq_num_diff = seq_num - last_seq_num;
         if (seq_num_diff<=0 && curblock>=0) { 
-            if (seq_num_diff<-128 && seq_num<4096) { 
+            if (seq_num_diff<-128) { 
                 printf("guppi_net_thread:  Packet sequence number reset\n");
                 force_new_block=1; 
             } else if (seq_num_diff==0) {
