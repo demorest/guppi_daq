@@ -300,15 +300,6 @@ g.write()
 
 # Update any derived parameters:
 
-# Base file name
-if (opt.cal):
-    base = "guppi_%5d_%s_%04d_cal" % (g['STT_IMJD'], 
-            g['SRC_NAME'], g['SCANNUM'])
-else:
-    base = "guppi_%5d_%s_%04d" % (g['STT_IMJD'], 
-            g['SRC_NAME'], g['SCANNUM'])
-g.update("BASENAME", base)
-
 # Time res, channel bw
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
