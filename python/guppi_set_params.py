@@ -313,6 +313,15 @@ g.update("BASENAME", base)
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
 
+# Poln type.  This assumes 1-pol observations are always summed.
+if (g['NPOL']==1):
+    g.update("POL_TYPE", "AA+BB")
+elif (g['NPOL']==2):
+    g.update("POL_TYPE", "AABB")
+else:
+    g.update("POL_TYPE", "IQUV")
+
+
 # Az/el
 g.update_azza()
 
