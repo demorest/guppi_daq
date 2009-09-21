@@ -255,8 +255,8 @@ void guppi_read_obs_params(char *buf,
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
     get_int("SCANNUM", p->hdr.scan_number, 1);
     get_str("DATADIR", dir, 200, ".");
-    if (strcmp("POL_TYPE", "AA+BB")==0 ||
-        strcmp("POL_TYPE", "INTEN")==0)
+    if (strcmp(p->hdr.poln_order, "AA+BB")==0 ||
+        strcmp(p->hdr.poln_order, "INTEN")==0)
         p->hdr.summed_polns = 1;
     else
         p->hdr.summed_polns = 0;
