@@ -40,6 +40,7 @@ void usage() {
 /* Override "usual" SIGINT stuff */
 int srv_run=1;
 void srv_cc(int sig) { srv_run=0; run=0; }
+void srv_quit(int sig) { srv_run=0; }
 
 /* Thread declarations */
 void *guppi_net_thread(void *args);
@@ -176,10 +177,17 @@ int main(int argc, char *argv[]) {
     pthread_t thread_id[MAX_THREAD];
     for (i=0; i<MAX_THREAD; i++) thread_id[i] = 0;
 
+    /* Print start time for logs */
+    time_t curtime = time(NULL);
+    char tmp[256];
+    printf("\nguppi_daq_server started at %s", ctime_r(&curtime,tmp));
+    fflush(stdout);
+
     /* hmm.. keep this old signal stuff?? */
     run=1;
     srv_run=1;
     signal(SIGINT, srv_cc);
+    signal(SIGTERM, srv_quit);
 
     /* Loop over recv'd commands, process them */
     int cmd_wait=1;
@@ -204,6 +212,10 @@ int main(int argc, char *argv[]) {
         hputs(stat.buf, "DAQPULSE", timestr);
         hputs(stat.buf, "DAQSTATE", nthread_cur==0 ? "stopped" : "running");
         guppi_status_unlock(&stat);
+
+        // Flush any status/error/etc for logfiles
+        fflush(stdout);
+        fflush(stderr);
 
         // Wait for data on fifo
         struct pollfd pfd;
@@ -316,11 +328,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /* Stop any running threads */
+    run = 0;
+    stop_threads(args, thread_id, nthread_cur);
+
     if (command_fifo>0) close(command_fifo);
 
     guppi_status_lock(&stat);
     hputs(stat.buf, "DAQSTATE", "exiting");
     guppi_status_unlock(&stat);
+
+    curtime = time(NULL);
+    printf("guppi_daq_server exiting cleanly at %s\n", ctime_r(&curtime,tmp));
+
+    fflush(stdout);
+    fflush(stderr);
 
     /* TODO: remove FIFO */
 
