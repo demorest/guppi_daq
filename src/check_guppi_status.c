@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
         {"int",    1, NULL, 'i'},
         {"quiet",  0, NULL, 'q'},
         {"clear",  0, NULL, 'C'},
+        {"del",    0, NULL, 'D'},
         {0,0,0,0}
     };
     int opt,opti;
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     double dbltmp;
     int inttmp;
     int quiet=0, clear=0;
-    while ((opt=getopt_long(argc,argv,"k:g:s:f:d:i:qC",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"k:g:s:f:d:i:qCD",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'k':
                 key = optarg;
@@ -69,6 +70,10 @@ int main(int argc, char *argv[]) {
                 inttmp = atoi(optarg);
                 if (key) 
                     hputi4(s.buf, key, inttmp);
+                break;
+            case 'D':
+                if (key)
+                    hdel(s.buf, key);
                 break;
             case 'C':
                 clear=1;
