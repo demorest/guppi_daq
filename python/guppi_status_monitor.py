@@ -92,25 +92,27 @@ def display_status(stdscr,stat,data,client):
             pass
 
         # Print HW values
-        curline += 1 
-        stdscr.addstr(curline,col,"Current GUPPI hardware parameters:",keycol)
-        curline += 1
-        if hw_sw_ok == False:
-            stdscr.addstr(curline, col+5, 
-                    "-- WARNING: Hardware and software values are inconsistent! --", 
-                    errcol)
+        if (curline < ymax-4):
+            curline += 1 
+            stdscr.addstr(curline,col,"Current GUPPI hardware parameters:",
+                    keycol)
             curline += 1
-        stdscr.addstr(curline,col,"%8s : " % "NCHAN", keycol)
-        stdscr.addstr("%s" % hw_nchan, valcol)
-        col = 40
-        stdscr.addstr(curline,col,"%8s : " % "BW", keycol)
-        stdscr.addstr("%s" % hw_bw, valcol)
-        col = 2
-        curline += 1
-        stdscr.addstr(curline,col,"%8s : " % "ACC_LEN", keycol)
-        stdscr.addstr("%s" % hw_acclen, valcol)
-        col = 2
-        curline += 1
+            if hw_sw_ok == False:
+                stdscr.addstr(curline, col+5, 
+                        "-- WARNING: Hardware and software values are inconsistent! --", 
+                        errcol)
+                curline += 1
+            stdscr.addstr(curline,col,"%8s : " % "NCHAN", keycol)
+            stdscr.addstr("%s" % hw_nchan, valcol)
+            col = 40
+            stdscr.addstr(curline,col,"%8s : " % "BW", keycol)
+            stdscr.addstr("%s" % hw_bw, valcol)
+            col = 2
+            curline += 1
+            stdscr.addstr(curline,col,"%8s : " % "ACC_LEN", keycol)
+            stdscr.addstr("%s" % hw_acclen, valcol)
+            col = 2
+            curline += 1
 
         # Refresh current block info
         try:
