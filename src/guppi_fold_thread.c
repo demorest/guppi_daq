@@ -67,6 +67,7 @@ void guppi_fold_thread(void *_args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
     pthread_cleanup_push((void *)guppi_thread_set_finished, args);
 
@@ -82,6 +83,7 @@ void guppi_fold_thread(void *_args) {
     pf.sub.dat_weights = NULL;
     pf.sub.dat_offsets = NULL;
     pf.sub.dat_scales = NULL;
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db_in, *db_out;
@@ -94,6 +96,7 @@ void guppi_fold_thread(void *_args) {
         guppi_error("guppi_fold_thread", errmsg);
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db_in);
     db_out = guppi_databuf_attach(args->output_buffer);
     if (db_out==NULL) {
         sprintf(errmsg,
@@ -102,6 +105,7 @@ void guppi_fold_thread(void *_args) {
         guppi_error("guppi_fold_thread", errmsg);
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db_out);
 
     /* Load polycos */
     int imjd;
@@ -466,5 +470,9 @@ void guppi_fold_thread(void *_args) {
 
     pthread_cleanup_pop(0); /* Closes set_exit_status */
     pthread_cleanup_pop(0); /* Closes set_finished */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
 
 }

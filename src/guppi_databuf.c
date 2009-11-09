@@ -89,6 +89,15 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
     return(d);
 }
 
+int guppi_databuf_detach(struct guppi_databuf *d) {
+    int rv = shmdt(d);
+    if (rv!=0) {
+        guppi_error("guppi_status_detach", "shmdt error");
+        return(GUPPI_ERR_SYS);
+    }
+    return(GUPPI_OK);
+}
+
 void guppi_databuf_clear(struct guppi_databuf *d) {
 
     /* Zero out semaphores */

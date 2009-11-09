@@ -71,6 +71,7 @@ void *guppi_net_thread(void *_args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
 
     /* Init status, read info */
@@ -90,6 +91,7 @@ void *guppi_net_thread(void *_args) {
     memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
     guppi_status_unlock_safe(&st);
     guppi_read_obs_params(status_buf, &gp, &pf);
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
 
     /* Read network params */
     struct guppi_udp_params up;
@@ -103,6 +105,7 @@ void *guppi_net_thread(void *_args) {
                 "Error attaching to databuf shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db);
 
     /* Set up UDP socket */
     rv = guppi_udp_init(&up);
@@ -401,4 +404,7 @@ void *guppi_net_thread(void *_args) {
     /* Have to close all push's */
     pthread_cleanup_pop(0); /* Closes push(guppi_udp_close) */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
 }

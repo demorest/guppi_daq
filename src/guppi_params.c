@@ -355,10 +355,7 @@ void guppi_read_obs_params(char *buf,
                 p->sub.bytes_per_subint;
 
         // Free the old ones in case we've changed the params
-        if (p->sub.dat_freqs) free(p->sub.dat_freqs);
-        if (p->sub.dat_weights) free(p->sub.dat_weights);
-        if (p->sub.dat_offsets) free(p->sub.dat_offsets);
-        if (p->sub.dat_scales) free(p->sub.dat_scales);
+        guppi_free_psrfits(p);
 
         // Allocate the subband arrays
         p->sub.dat_freqs = (float *)malloc(sizeof(float) * p->hdr.nchan);
@@ -398,4 +395,12 @@ void guppi_read_obs_params(char *buf,
     p->hdr.dec2000 = p->sub.dec;
     p->hdr.start_lst = p->sub.lst;
     p->hdr.feed_angle = p->sub.feed_ang;
+}
+
+void guppi_free_psrfits(struct psrfits *p) {
+    // Free any memory allocated in to the psrfits struct
+    if (p->sub.dat_freqs) free(p->sub.dat_freqs);
+    if (p->sub.dat_weights) free(p->sub.dat_weights);
+    if (p->sub.dat_offsets) free(p->sub.dat_offsets);
+    if (p->sub.dat_scales) free(p->sub.dat_scales);
 }

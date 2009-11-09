@@ -35,4 +35,5 @@ void guppi_read_subint_params(char *buf,
 void guppi_read_obs_params(char *buf, 
                            struct guppi_params *g, 
                            struct psrfits *p);
+void guppi_free_psrfits(struct psrfits *p);
 #endif

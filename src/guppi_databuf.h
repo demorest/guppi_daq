@@ -43,6 +43,9 @@ struct guppi_databuf *guppi_databuf_create(int n_block, size_t block_size,
  */
 struct guppi_databuf *guppi_databuf_attach(int databuf_id);
 
+/* Detach from shared mem segment */
+int guppi_databuf_detach(struct guppi_databuf *d);
+
 /* Clear out either the whole databuf (set all sems to 0, 
  * clear all header blocks) or a single FITS-style
  * header block.

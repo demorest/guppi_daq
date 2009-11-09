@@ -87,6 +87,7 @@ void guppi_psrfits_thread(void *_args) {
                     "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
     
     /* Init status */
@@ -102,6 +103,7 @@ void guppi_psrfits_thread(void *_args) {
     pf.sub.dat_offsets = pf.sub.dat_scales = NULL;
     pf.hdr.chan_dm = 0.0;
     pf.filenum = 0; // This is crucial
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
     pthread_cleanup_push((void *)psrfits_close, &pf);
     //pf.multifile = 0;  // Use a single file for fold mode
     pf.multifile = 1;  // Use a multiple files for fold mode
@@ -115,6 +117,7 @@ void guppi_psrfits_thread(void *_args) {
                     "Error attaching to databuf shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db);
     
     /* Loop */
     int curblock=0, total_status=0, firsttime=1, run=1, got_packet_0=0;
@@ -284,14 +287,13 @@ void guppi_psrfits_thread(void *_args) {
     /* Cleanup */
     
     if (fold_output_array!=NULL) free(fold_output_array);
-    free(pf.sub.dat_freqs);
-    free(pf.sub.dat_weights);
-    free(pf.sub.dat_offsets);
-    free(pf.sub.dat_scales);
-    
+
     pthread_exit(NULL);
     
     pthread_cleanup_pop(0); /* Closes psrfits_close */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
     pthread_cleanup_pop(0); /* Closes set_finished */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
 }

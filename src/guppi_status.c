@@ -50,6 +50,16 @@ int guppi_status_attach(struct guppi_status *s) {
     return(GUPPI_OK);
 }
 
+int guppi_status_detach(struct guppi_status *s) {
+    int rv = shmdt(s->buf);
+    if (rv!=0) {
+        guppi_error("guppi_status_detach", "shmdt error");
+        return(GUPPI_ERR_SYS);
+    }
+    s->buf = NULL;
+    return(GUPPI_OK);
+}
+
 /* TODO: put in some (long, ~few sec) timeout */
 int guppi_status_lock(struct guppi_status *s) {
     return(sem_wait(s->lock));

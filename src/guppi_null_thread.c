@@ -67,6 +67,7 @@ void guppi_null_thread(void *_args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
 
     /* Init status */
@@ -82,6 +83,7 @@ void guppi_null_thread(void *_args) {
                 "Error attaching to databuf shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db);
 
     /* Loop */
     char *ptr;
@@ -91,6 +93,7 @@ void guppi_null_thread(void *_args) {
     pf.sub.dat_weights = NULL;
     pf.sub.dat_offsets = NULL;
     pf.sub.dat_scales = NULL;
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
     int curblock=0;
     signal(SIGINT,cc);
     while (run) {
@@ -139,5 +142,8 @@ void guppi_null_thread(void *_args) {
     pthread_exit(NULL);
 
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
 
 }

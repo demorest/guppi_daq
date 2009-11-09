@@ -32,6 +32,9 @@ struct guppi_status {
  */
 int guppi_status_attach(struct guppi_status *s);
 
+/* Detach from shared mem segment */
+int guppi_status_detach(struct guppi_status *s); 
+
 /* Lock/unlock the status buffer.  guppi_status_lock() will wait for
  * the buffer to become unlocked.  Return non-zero on errors.
  */
