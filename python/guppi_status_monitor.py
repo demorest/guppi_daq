@@ -1,9 +1,8 @@
 from guppi_utils import guppi_status, guppi_databuf
-from guppi.client import Client
 import curses, curses.wrapper
 import time
 
-def display_status(stdscr,stat,data,client):
+def display_status(stdscr,stat,data):
     # Set non-blocking input
     stdscr.nodelay(1)
     run = 1
@@ -52,66 +51,6 @@ def display_status(stdscr,stat,data,client):
                 flip = 1
         col = 2
         if (flip and not onecol):
-            curline += 1
-
-        # Get relevant HW values
-        unk = "Unknown"
-        hw_acclen = 0
-        hw_bw = 0
-        try:
-            hw_acclen = int(client.get("BEE2/FPGA2/ACC_LENGTH"),16) + 1
-        except:
-            hw_acclen = unk
-        try:
-            hw_bw = float(client.get("SYNTH/CFRQ/VALUE").strip("MHz"))
-        except:
-            hw_bw = unk
-        hw_nchan1 = 0
-        hw_nchan3 = 0
-        hw_nchan = 0
-        for bof in client.unload():
-            fields = bof.split("_")
-            if fields[1]=="U1":
-                hw_nchan1 = int(fields[2])
-            if fields[1]=="U3":
-                hw_nchan3 = int(fields[2])
-        if hw_nchan1 == hw_nchan3:
-            hw_nchan = hw_nchan1
-        else:
-            hw_nchan = unk
-        if hw_nchan == 0:
-            hw_nchan = unk
-            
-        # Test for consistency
-        hw_sw_ok = True
-        try:
-            if hw_acclen!=unk and hw_acclen!=stat.hdr["ACC_LEN"]: hw_sw_ok = False
-            if hw_nchan!=unk and hw_nchan!=stat.hdr["OBSNCHAN"]: hw_sw_ok = False
-            if hw_bw!=unk and hw_bw!=abs(stat.hdr["OBSBW"]): hw_sw_ok = False
-        except KeyError:
-            pass
-
-        # Print HW values
-        if (curline < ymax-4):
-            curline += 1 
-            stdscr.addstr(curline,col,"Current GUPPI hardware parameters:",
-                    keycol)
-            curline += 1
-            if hw_sw_ok == False:
-                stdscr.addstr(curline, col+5, 
-                        "-- WARNING: Hardware and software values are inconsistent! --", 
-                        errcol)
-                curline += 1
-            stdscr.addstr(curline,col,"%8s : " % "NCHAN", keycol)
-            stdscr.addstr("%s" % hw_nchan, valcol)
-            col = 40
-            stdscr.addstr(curline,col,"%8s : " % "BW", keycol)
-            stdscr.addstr("%s" % hw_bw, valcol)
-            col = 2
-            curline += 1
-            stdscr.addstr(curline,col,"%8s : " % "ACC_LEN", keycol)
-            stdscr.addstr("%s" % hw_acclen, valcol)
-            col = 2
             curline += 1
 
         # Refresh current block info
@@ -179,14 +118,13 @@ def display_status(stdscr,stat,data,client):
                 run = 0
             c = stdscr.getch()
 
-# Connect to guppi status, data bufs, client
+# Connect to guppi status, data bufs
 g = guppi_status()
 d = guppi_databuf()
-c = Client()
 
 # Wrapper calls the main func
 try:
-    curses.wrapper(display_status,g,d,c)
+    curses.wrapper(display_status,g,d)
 except KeyboardInterrupt:
     print "Exiting..."
 
