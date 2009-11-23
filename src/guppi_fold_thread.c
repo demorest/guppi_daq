@@ -35,6 +35,13 @@ extern void guppi_read_subint_params(char *buf,
                                      struct guppi_params *g,
                                      struct psrfits *p);
 
+static const int nthread = 6;
+static void join_all_threads(pthread_t *ids) {
+    int i;
+    for (i=0; i<nthread; i++) 
+        if (ids[i]!=0) 
+            pthread_join(ids[i],NULL);
+}
 
 void guppi_fold_thread(void *_args) {
 
@@ -123,7 +130,6 @@ void guppi_fold_thread(void *_args) {
     fb.count = NULL;
 
     /* Sub-thread management */
-    const int nthread = 6;
     pthread_t thread_id[nthread];
     int input_block_list[nthread];
     struct fold_args fargs[nthread];
@@ -142,6 +148,7 @@ void guppi_fold_thread(void *_args) {
         fargs[i].tsamp = 0.0;
         fargs[i].raw_signed = 1;
     }
+    pthread_cleanup_push((void *)join_all_threads, thread_id);
 
     /* Loop */
     int curblock_in=0, curblock_out=0;
@@ -468,6 +475,7 @@ void guppi_fold_thread(void *_args) {
 
     pthread_exit(NULL);
 
+    pthread_cleanup_pop(0); /* Closes join_all_threads */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
     pthread_cleanup_pop(0); /* Closes set_finished */
     pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
