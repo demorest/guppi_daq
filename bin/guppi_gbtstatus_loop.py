@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import time
-from guppi_utils import *
+from guppi_daq.guppi_utils import *
 
 # Attach to status shared mem
 g = guppi_status()
