@@ -24,7 +24,15 @@ def fft_size_params(rf,bw,nchan,dm,max_databuf_mb=128):
         given the input rf (center of band), bw, nchan, 
         DM, and optional max databuf size in MB.
     """
-    round_fac = 8192 # Overlap rounding factor in samples
+    # Overlap needs to be rounded to a integer number of packets
+    # This assumes 8-bit 2-pol data (4 bytes per samp) and 8
+    # processing nodes.  Also GPU folding requires fftlen-overlap 
+    # to be a multiple of 64.
+    pkt_size = 8192
+    bytes_per_samp = 4
+    node_nchan = nchan / 8
+    round_fac = pkt_size / bytes_per_samp / node_nchan
+    if (round_fac<64):  round_fac=64
     rf_ghz = (rf - abs(bw)/2.0)/1.0e3
     chan_bw = bw / nchan
     overlap_samp = 8.3 * dm * chan_bw**2 / rf_ghz**3
@@ -37,10 +45,7 @@ def fft_size_params(rf,bw,nchan,dm,max_databuf_mb=128):
     elif overlap_r<=64*1024: fftlen=256*1024
     while fftlen<2*overlap_r: fftlen *= 2
     # Calculate blocsize to hold an integer number of FFTs
-    # Assumes 8-bit 2-pol data (4 bytes per sample)
-    # Also assumes total nchan is distributed to 8 nodes
-    node_nchan = nchan / 8
-    bytes_per_samp = 4
+    # Uses same assumptions as above
     max_npts_per_chan = max_databuf_mb*1024*1024/bytes_per_samp/node_nchan
     nfft = (max_npts_per_chan - overlap_r)/(fftlen - overlap_r)
     npts_per_chan = nfft*(fftlen-overlap_r) + overlap_r
