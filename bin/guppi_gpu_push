@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # Pushes all DAQ params from beef to gpu nodes using guppi controller
-import re, time, os
+import re, time, os, sys
 import guppi_daq.guppi2_utils as guppi2
 from guppi.client import Client
 
 # print start message
 print "guppi_gpu_push started at %s" % time.asctime()
+sys.stdout.flush()
 
 # Connection to local controller (on beef)
 g = Client()
@@ -19,7 +20,7 @@ for i in range(1,9):
 # Parameters we don't want to send
 nosend = ['DAQPULSE', 'DAQSTATE', 'DISKSTAT', 'NETSTAT', 'FOLDSTAT',
         'CURBLOCK', 'CURFOLD', 'DROPTOT', 'DROPAVG', 'DROPBLK', 
-        'PKTIDX', 'STT_IMJD', 'STT_SMJD', 'STT_OFFS', 'STTVALID']
+        'PKTIDX', 'STT_IMJD', 'STT_SMJD', 'STT_OFFS', 'STTVALID', 'NULLSTAT']
 
 # GPU setup params:
 # BEE2 IP addrs for each node
@@ -143,3 +144,4 @@ while run:
 t = time.time()
 print "guppi_gpu_push exiting at %s" % time.asctime()
 print "  avg time per iter = %.1f ms" % (1e3*(t-t0)/count)
+sys.stdout.flush()
