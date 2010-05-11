@@ -98,6 +98,11 @@ struct foldinfo {
     double tfold;           // Requested fold integration time
 };
 
+struct dedispersion {
+    int fft_len;            // FFT length for coherent dedisp
+    int overlap;            // overlap length for coherent dedisp
+};
+
 struct psrfits {
     char basefilename[200]; // The base filename from which to build the true filename
     char filename[200];     // Filename of the current PSRFITs file
@@ -115,6 +120,7 @@ struct psrfits {
     struct hdrinfo hdr;
     struct subint sub;
     struct foldinfo fold;   
+    struct dedispersion dedisp;
 };
 
 // In write_psrfits.c

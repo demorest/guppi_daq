@@ -224,7 +224,8 @@ int psrfits_create(struct psrfits *pf) {
         else if (hdr->npol==2)
             strcpy(ctmp, "AABB");
         else if (hdr->npol==4)
-            strcpy(ctmp, "IQUV");
+            //strcpy(ctmp, "IQUV");
+            strcpy(ctmp, "AABBCRCI");
         fits_update_key(pf->fptr, TSTRING, "POL_TYPE", ctmp, NULL, status);
     } else {
         fits_update_key(pf->fptr, TSTRING, "POL_TYPE", "AA+BB", NULL, status);

@@ -126,6 +126,7 @@ void guppi_fold_thread(void *_args) {
     fb.nbin = 0;
     fb.nchan = 0;
     fb.npol = 0;
+    fb.order = chan_pol_bin;
     fb.data = NULL;
     fb.count = NULL;
 
@@ -142,6 +143,7 @@ void guppi_fold_thread(void *_args) {
         fargs[i].fb->nbin = fb.nbin;
         fargs[i].fb->nchan = 0;
         fargs[i].fb->npol = 0;
+        fargs[i].fb->order = fb.order;
         fargs[i].fb->data = NULL;
         fargs[i].fb->count = NULL;
         fargs[i].nsamp = 0;
@@ -362,19 +364,7 @@ void guppi_fold_thread(void *_args) {
             // 3. if mode==psr and no PARFILE, try reading polyco.dat
             if (strncmp(pf.hdr.obs_mode,"CAL",3)==0) {
                 // Cal mode
-                pc = realloc(pc, sizeof(struct polyco));
-                npc = 1;
-                sprintf(pc[0].psr, "CONST");
-                pc[0].mjd = pf.hdr.start_day;
-                pc[0].fmjd = pf.hdr.start_sec/86400.0;
-                pc[0].rphase = 0.0;
-                pc[0].f0 = pf.hdr.cal_freq;
-                pc[0].nsite = 0;
-                pc[0].nmin = 24 * 60;
-                pc[0].nc = 1;
-                pc[0].rf = pf.hdr.fctr;
-                pc[0].c[0] = 0.0;
-                pc[0].used = 0;
+                npc = make_const_polyco(pf.hdr.cal_freq, &pf.hdr, &pc);
             } else {
                 // Psr mode
                 if (pf.fold.parfile[0]=='\0') {

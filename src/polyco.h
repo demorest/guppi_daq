@@ -7,6 +7,10 @@
 
 #include "polyco_struct.h"
 
+#ifdef __cplusplus
+extern"C" {
+#endif
+
 int read_one_pc(FILE *f, struct polyco *pc);
 int read_pc(FILE *f, struct polyco *pc, const char *psr, int mjd, double fmjd);
 int read_all_pc(FILE *f, struct polyco **pc);
@@ -22,8 +26,14 @@ int pc_out_of_range(const struct polyco *pc, int mjd, double fmjd);
 int pc_out_of_range_sloppy(const struct polyco *pc, int mjd, double fmjd, double slop);
 int polycos_differ(const struct polyco *pc1, const struct polyco *pc2);
 
+#ifdef __cplusplus
+}
+#endif
+
 #include "psrfits.h"
 int make_polycos(const char *parfile, struct hdrinfo *hdr, char *src, 
+        struct polyco **pc);
+int make_const_polyco(double freq, const struct hdrinfo *hdr, 
         struct polyco **pc);
 
 #endif

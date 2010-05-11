@@ -117,7 +117,12 @@ unsigned long long change_endian64(const unsigned long long *d) {
 }
 
 unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
-    return(change_endian64((unsigned long long *)(p->data)));
+    // XXX Temp for new baseband mode, blank out top 8 bits which 
+    // contain channel info.
+    unsigned long long tmp = change_endian64((unsigned long long *)p->data);
+    tmp &= 0x00FFFFFFFFFFFFFF;
+    return(tmp);
+    //return(change_endian64((unsigned long long *)(p->data)));
 }
 
 #define PACKET_SIZE_ORIG ((size_t)8208)
@@ -125,6 +130,7 @@ unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
 #define PACKET_SIZE_1SFA ((size_t)8224)
 #define PACKET_SIZE_1SFA_OLD ((size_t)8160)
 #define PACKET_SIZE_FAST4K ((size_t)4128)
+#define PACKET_SIZE_PASP ((size_t)528)
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
     /* Special case for the new "1SFA" packets, which have an extra
@@ -135,8 +141,6 @@ size_t guppi_udp_packet_datasize(size_t packet_size) {
      */
     if (packet_size==PACKET_SIZE_1SFA) // 1SFA packet size
         return((size_t)8192);
-    else if (packet_size==PACKET_SIZE_FAST4K) 
-        return((size_t)4096);
     else if (packet_size==PACKET_SIZE_SHORT) 
         //return((size_t)256);
         return((size_t)512);
@@ -145,7 +149,11 @@ size_t guppi_udp_packet_datasize(size_t packet_size) {
 }
 
 char *guppi_udp_packet_data(const struct guppi_udp_packet *p) {
-    /* This is valid for all guppi packet formats */
+    /* This is valid for all guppi packet formats
+     * PASP has 16 bytes of header rather than 8.
+     */
+    if (p->packet_size==PACKET_SIZE_PASP)
+        return((char *)(p->data) + (size_t)16);
     return((char *)(p->data) + sizeof(unsigned long long));
 }
 
@@ -184,6 +192,46 @@ void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
         memcpy(out, guppi_udp_packet_data(p), 
                 guppi_udp_packet_datasize(p->packet_size));
     }
+}
+
+/* Copy function for baseband data that does a partial
+ * corner turn (or transpose) based on nchan.  In this case
+ * out should point to the beginning of the data buffer.
+ * block_pkt_idx is the seq number of this packet relative
+ * to the beginning of the block.  packets_per_block
+ * is the total number of packets per data block (all channels).
+ */
+void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
+        unsigned block_pkt_idx, unsigned packets_per_block,
+        const struct guppi_udp_packet *p) {
+    const unsigned chan_per_packet = nchan;
+    const size_t bytes_per_sample = 4;
+    const unsigned samp_per_packet = guppi_udp_packet_datasize(p->packet_size) 
+        / bytes_per_sample / chan_per_packet;
+    const unsigned samp_per_block = packets_per_block * samp_per_packet;
+
+    char *iptr, *optr;
+    unsigned isamp,ichan;
+    iptr = guppi_udp_packet_data(p);
+    for (isamp=0; isamp<samp_per_packet; isamp++) {
+        optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
+                + isamp);
+        for (ichan=0; ichan<chan_per_packet; ichan++) {
+            memcpy(optr, iptr, bytes_per_sample);
+            iptr += bytes_per_sample;
+            optr += bytes_per_sample*samp_per_block;
+        }
+    }
+
+#if 0 
+    // Old version...
+    const unsigned pkt_idx = block_pkt_idx / nchan;
+    const unsigned ichan = block_pkt_idx % nchan;
+    const unsigned offset = ichan * packets_per_block / nchan + pkt_idx;
+    memcpy(databuf + offset*guppi_udp_packet_datasize(p->packet_size), 
+            guppi_udp_packet_data(p),
+            guppi_udp_packet_datasize(p->packet_size));
+#endif
 }
 
 size_t parkes_udp_packet_datasize(size_t packet_size) {

@@ -194,6 +194,7 @@ void guppi_psrfits_thread(void *_args) {
                 fb.nchan = pf.hdr.nchan;
                 fb.npol = pf.hdr.npol;
                 fb.nbin = pf.hdr.nbin;
+                fb.order = pol_bin_chan; // XXX fix this!
                 fb.data = (float *)guppi_databuf_data(db, curblock);
                 fb.count = (unsigned *)(guppi_databuf_data(db, curblock)
                         + foldbuf_data_size(&fb));
@@ -209,7 +210,8 @@ void guppi_psrfits_thread(void *_args) {
             /* Set the DC and Nyquist channels explicitly to zero */
             /* because of the "FFT Problem" that splits DC power  */
             /* into those two bins.                               */
-            zero_end_chans(&pf);
+            // XXX why are we doing this? we should just set weight to 0
+            //zero_end_chans(&pf);
 
             /* Output only Stokes I (in place) */
             if (pf.hdr.onlyI && pf.hdr.npol==4)

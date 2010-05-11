@@ -19,7 +19,7 @@ setup(
   , packages    = ['guppi_daq']
   , package_dir = {'guppi_daq' : srcdir}
   , maintainer = "NRAO"
-  , ext_modules=[Extension('guppi_daq._possem',
+  , ext_modules=[Extension('_possem',
                            [os.path.join(srcdir, 'possem.i')])]
   # , maintainer_email = ""
   # , url = ""

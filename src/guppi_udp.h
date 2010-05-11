@@ -70,6 +70,11 @@ void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len,
  */
 void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p);
 
+/* Copy and corner turn for baseband multichannel modes */
+void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
+        unsigned block_pkt_idx, unsigned packets_per_block,
+        const struct guppi_udp_packet *p);
+
 /* Close out socket, etc */
 int guppi_udp_close(struct guppi_udp_params *p);
 

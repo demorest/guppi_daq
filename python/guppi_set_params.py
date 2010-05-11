@@ -43,15 +43,15 @@ par.add_option("-f", "--force", dest="force",
 par.add_option("-c", "--cal", dest="cal", 
                help="Setup for cal scan (folding mode)",
                action="store_true", default=False)
-par.add_option("-m", "--mode", dest="mode",
-        help="Observing mode",
-        action="store", type="string", default="")
 par.add_option("-i", "--increment_scan", dest="inc",
                help="Increment scan num",
                action="store_true", default=False)
 par.add_option("-I", "--onlyI", dest="onlyI",
                help="Only record total intensity",
                action="store_true", default=False)
+par.add_option("--dm", dest="dm", 
+        help="Optimize overlap params using given DM",
+        action="store", type="float", default=None)
 
 # Parameter-setting options
 add_param_option("--scannum", short="-n", 
@@ -111,6 +111,9 @@ add_param_option("--acc_len",
 add_param_option("--packets", 
         name="PKTFMT", type="string",
         help="UDP packet format")
+add_param_option("--host",
+        name="DATAHOST", type="string",
+        help="IP or hostname of data source")
 add_param_option("--datadir", 
         name="DATADIR", type="string",
         help="Data output directory (default: current dir)")
@@ -225,9 +228,11 @@ if (opt.update == False):
     g.update("SCALE0", 1.0)
     g.update("OFFSET1", 0.0)
     g.update("SCALE1", 1.0)
-    g.update("OFFSET2", 0.5)
+    #g.update("OFFSET2", 0.5)
+    g.update("OFFSET2", 0.0)
     g.update("SCALE2", 1.0)
-    g.update("OFFSET3", 0.5)
+    #g.update("OFFSET3", 0.5)
+    g.update("OFFSET3", 0.0)
     g.update("SCALE3", 1.0)
 
     g.update("DATADIR", ".")
@@ -246,6 +251,11 @@ if (opt.update == False):
     g.update("STT_SMJD", MJDs)
     if offs < 2e-6: offs = 0.0
     g.update("STT_OFFS", offs)
+
+    # Misc
+    g.update("LST", 0)
+    g.update("BMAJ", 0.0)
+    g.update("BMIN", 0.0)
 
 
 # Any 43m-specific settings
@@ -270,11 +280,7 @@ if (opt.cal):
     g.update("OBS_MODE", "CAL")
     g.update("CAL_MODE", "ON")
     g.update("TFOLD", 10.0)
-    g.update("SCANLEN", 60.0)
-
-if (opt.mode != ""):
-    g.update("OBS_MODE", opt.mode)
-    g.update("CAL_MODE", "OFF")
+    g.update("SCANLEN", 120.0)
 
 # Scan number
 try:
@@ -307,21 +313,49 @@ g.write()
 
 # Update any derived parameters:
 
+# Base file name
+if (opt.cal):
+    base = "guppi_%5d_%s_%04d_cal" % (g['STT_IMJD'], 
+            g['SRC_NAME'], g['SCANNUM'])
+else:
+    base = "guppi_%5d_%s_%04d" % (g['STT_IMJD'], 
+            g['SRC_NAME'], g['SCANNUM'])
+g.update("BASENAME", base)
+
 # Time res, channel bw
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
 
-# Poln type.  This assumes 1-pol observations are always summed.
-if (g['NPOL']==1):
-    g.update("POL_TYPE", "AA+BB")
-elif (g['NPOL']==2):
-    g.update("POL_TYPE", "AABB")
-else:
-    g.update("POL_TYPE", "IQUV")
-
-
 # Az/el
 g.update_azza()
+
+# Overlap params for coherent dedisp
+if (opt.dm!=None):
+    lofreq_ghz = (g['OBSFREQ']-abs(g['OBSBW']/2.0))/1.0e3
+    overlap_samp = 8.3 * g['CHAN_BW']**2 / lofreq_ghz**3 * opt.dm
+    #round_fac = 128 # XXX this depends on nchan...
+    round_fac = 8192 # XXX this depends on nchan...
+    overlap_r = round_fac * (int(overlap_samp)/round_fac + 1)
+    # Rough optimization for fftlen
+    fftlen = 16*1024
+    if overlap_r<=1024: fftlen=32*1024
+    elif overlap_r<=2048: fftlen=64*1024
+    elif overlap_r<=16*1024: fftlen=128*1024
+    elif overlap_r<=64*1024: fftlen=256*1024
+    while fftlen<2*overlap_r: fftlen *= 2
+    # or, hard-code 128k ffts:
+    #fftlen = 128*1024
+    databuf_mb = 128
+    #databuf_mb = 64
+    #databuf_mb = 32
+    npts_max_per_chan = databuf_mb*1024*1024/4/g['OBSNCHAN']
+    nfft = (npts_max_per_chan - overlap_r)/(fftlen - overlap_r)
+    npts = nfft*(fftlen-overlap_r) + overlap_r
+    blocsize = npts*g['OBSNCHAN']*4
+    g.update("FFTLEN", fftlen)
+    g.update("OVERLAP", overlap_r)
+    g.update("BLOCSIZE", blocsize)
+    g.update("CHAN_DM", opt.dm);
 
 # Apply back to shared mem
 g.write()

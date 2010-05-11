@@ -2,10 +2,20 @@
 #define _FOLD_H
 #include "polyco.h"
 
+/* Defines ordering of fold buf data.
+ * First dim mentioned runs fastest in memory, etc..
+ */
+enum fold_order {
+    chan_pol_bin, // For CPU/SSE folding
+    pol_bin_chan, // For GPU folding
+    bin_chan_pol  // For PSRFITS output
+};
+
 struct foldbuf {
     int nbin;
     int nchan;
     int npol;
+    enum fold_order order;
     float *data;
     unsigned *count;
 };
@@ -18,6 +28,8 @@ void clear_foldbuf(struct foldbuf *f);
 
 size_t foldbuf_data_size(const struct foldbuf *f);
 size_t foldbuf_count_size(const struct foldbuf *f);
+
+void scale_counts(struct foldbuf *f, float fac);
 
 int normalize_transpose_folds(float *out, const struct foldbuf *f);
 

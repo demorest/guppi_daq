@@ -41,7 +41,11 @@ void free_foldbuf(struct foldbuf *f) {
 
 void clear_foldbuf(struct foldbuf *f) {
     memset(f->data, 0, sizeof(float) * f->nbin * f->npol * f->nchan);
-    memset(f->count, 0, sizeof(unsigned) * f->nbin);
+    if (f->order==pol_bin_chan)
+        memset(f->count, 0, sizeof(unsigned) * f->nbin * f->nchan);
+    else
+        memset(f->count, 0, sizeof(unsigned) * f->nbin);
+
 }
 
 size_t foldbuf_data_size(const struct foldbuf *f) {
@@ -51,7 +55,10 @@ size_t foldbuf_data_size(const struct foldbuf *f) {
 
 size_t foldbuf_count_size(const struct foldbuf *f) {
     if (f->count==NULL) return(0);
-    return(sizeof(unsigned) * f->nbin);
+    if (f->order==pol_bin_chan)
+        return(sizeof(unsigned) * f->nbin * f->nchan);
+    else
+        return(sizeof(unsigned) * f->nbin);
 }
 
 /* Combines unpack and accumulate */
@@ -312,27 +319,62 @@ int fold_8bit_power(const struct polyco *pc, int imjd, double fmjd,
 }
 
 int accumulate_folds(struct foldbuf *ftot, const struct foldbuf *f) {
-    if (ftot->nbin!=f->nbin || ftot->nchan!=f->nchan || ftot->npol!=f->npol) {
+    if (ftot->nbin!=f->nbin || ftot->nchan!=f->nchan || ftot->npol!=f->npol 
+            || ftot->order!=f->order) {
         return(-1);
     }
     int i;
-    for (i=0; i<f->nbin; i++) { ftot->count[i] += f->count[i]; }
+    if (f->order==pol_bin_chan)
+        for (i=0; i<f->nbin*f->nchan; i++) { ftot->count[i] += f->count[i]; }
+    else
+        for (i=0; i<f->nbin; i++) { ftot->count[i] += f->count[i]; }
     vector_accumulate(ftot->data, f->data, f->nbin * f->nchan * f->npol);
     return(0);
 }
 
+void scale_counts(struct foldbuf *f, float fac) {
+    int i;
+    if (f->order==pol_bin_chan)
+        for (i=0; i<f->nbin*f->nchan; i++) { f->count[i] *= fac; }
+    else
+        for (i=0; i<f->nbin; i++) { f->count[i] *= fac; }
+}
+
 /* normalize and transpose to psrfits order */
 int normalize_transpose_folds(float *out, const struct foldbuf *f) {
-    int ibin, ii;
-    for (ibin=0; ibin<f->nbin; ibin++) {
-        if (f->count[ibin]==0) {
-            for (ii=0; ii<f->nchan*f->npol; ii++) 
-                out[ibin + ii*f->nbin] = 0.0;
-        } else {
-            for (ii=0; ii<f->nchan*f->npol; ii++) 
-                out[ibin + ii*f->nbin] =
-                    f->data[ii + ibin*f->nchan*f->npol] / (float)f->count[ibin];
+    int ibin, ichan, ipol, ii;
+    if (f->order == chan_pol_bin) {
+        for (ibin=0; ibin<f->nbin; ibin++) {
+            if (f->count[ibin]==0) {
+                for (ii=0; ii<f->nchan*f->npol; ii++) 
+                    out[ibin + ii*f->nbin] = 0.0;
+            } else {
+                for (ii=0; ii<f->nchan*f->npol; ii++) 
+                    out[ibin + ii*f->nbin] =
+                        f->data[ii + ibin*f->nchan*f->npol] 
+                        / (float)f->count[ibin];
+            }
         }
+    } else if (f->order == pol_bin_chan) {
+        for (ichan=0; ichan<f->nchan; ichan++) {
+            for (ibin=0; ibin<f->nbin; ibin++) {
+                unsigned ctmp = f->count[ibin+ichan*f->nbin];
+                if (ctmp==0) {
+                    for (ipol=0; ipol<f->npol; ipol++)
+                        out[ibin + ichan*f->nbin + ipol*f->nbin*f->nchan] = 0.0;
+                } else {
+                    for (ipol=0; ipol<f->npol; ipol++) {
+                        out[ibin + ichan*f->nbin + ipol*f->nbin*f->nchan] = 
+                            f->data[ipol + ibin*f->npol + ichan*f->npol*f->nbin]
+                            / (float)ctmp;
+                    }
+                }
+            }
+        }
+    } else if (f->order == bin_chan_pol) {
+        return(-1);
+    } else {
+        return(-1); 
     }
     return(0);
 }

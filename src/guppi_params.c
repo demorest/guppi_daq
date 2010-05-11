@@ -156,7 +156,13 @@ void guppi_read_subint_params(char *buf,
     get_int("NDROP", g->n_dropped, 0);
     get_dbl("DROPAVG", g->drop_frac_avg, 0.0);
     get_dbl("DROPTOT", g->drop_frac_tot, 0.0);
-    g->drop_frac = (double) g->n_dropped / (double) g->n_packets;
+    get_int("BLOCSIZE", g->packets_per_block, 0);
+    if (g->packetsize>0)
+        g->packets_per_block /= g->packetsize;
+    if (g->n_packets>0)
+        g->drop_frac = (double) g->n_dropped / (double) g->n_packets;
+    else
+        g->drop_frac = 0.0;
 
     // Valid obs start time
     get_int("STTVALID", g->stt_valid, 0);
@@ -284,6 +290,11 @@ void guppi_read_obs_params(char *buf,
         p->hdr.nbin = p->fold.nbin;
     else 
         p->hdr.nbin = 1;
+
+    // Coherent dedispersion params
+    get_int("FFTLEN", p->dedisp.fft_len, 0);
+    get_int("OVERLAP", p->dedisp.overlap, 0);
+    get_dbl("CHAN_DM", p->hdr.chan_dm, 0.0);
     
     { // Start time, MJD
         int mjd_d, mjd_s;
@@ -339,7 +350,7 @@ void guppi_read_obs_params(char *buf,
         p->sub.FITS_typecode = TBYTE;
         p->sub.tsubint = p->hdr.nsblk * p->hdr.dt;
         if (fold) { 
-            p->hdr.nsblk = 1;
+            //p->hdr.nsblk = 1;
             p->sub.FITS_typecode = TFLOAT;
             get_dbl("TSUBINT", p->sub.tsubint, 0.0); 
             p->sub.bytes_per_subint = sizeof(float) * p->hdr.nbin *
@@ -361,15 +372,19 @@ void guppi_read_obs_params(char *buf,
         p->sub.dat_freqs = (float *)malloc(sizeof(float) * p->hdr.nchan);
         p->sub.dat_weights = (float *)malloc(sizeof(float) * p->hdr.nchan);
         // The following correctly accounts for the middle-of-bin FFT offset
+        // XXX This might not be correct for coherent dedisp mode.  Need 
+        //     to determine the right way of denoting which nodes are getting
+        //     which channels
         dtmp = p->hdr.fctr - 0.5 * p->hdr.BW;
         for (ii = 0 ; ii < p->hdr.nchan ; ii++) {
-            p->sub.dat_freqs[ii] = dtmp + ii * p->hdr.df;
+            //p->sub.dat_freqs[ii] = dtmp + ii * p->hdr.df; // Orig version
+            p->sub.dat_freqs[ii] = dtmp + (ii+0.5) * p->hdr.df;
             p->sub.dat_weights[ii] = 1.0;
         }
         // Explicitly weight the DC and Nyquist channels zero
         // because of how power is split between them
-        p->sub.dat_weights[0] = 0.0;
-        p->sub.dat_weights[p->hdr.nchan] = 0.0;
+        // XXX this needs to be changed for coherent dedisp..
+        //p->sub.dat_weights[0] = 0.0;
         
         p->sub.dat_offsets = (float *)malloc(sizeof(float) *  
                                              p->hdr.nchan * p->hdr.npol);

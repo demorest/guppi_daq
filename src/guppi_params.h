@@ -16,6 +16,7 @@ struct guppi_params {
     int packetsize;             // Size in bytes of data portion of each packet
     int n_packets;              // Total number of packets in current block
     int n_dropped;              // Number of packets dropped in current block
+    int packets_per_block;      // Total number of packets per block
     int stt_valid;              // Has an accurate start time been measured
     /* Backend hardware info */
     int decimation_factor;      // Number of raw spectra integrated

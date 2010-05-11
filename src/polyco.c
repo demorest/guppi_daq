@@ -22,6 +22,8 @@ int read_one_pc(FILE *f, struct polyco *pc) {
     strncpy(pc->psr, &buf[0], 10);  pc->psr[10] = '\0';
     pc->mjd = atoi(&buf[31]);
     pc->fmjd = atof(&buf[39]);
+    pc->dm = atof(&buf[51]);
+    pc->earthz4 = atof(&buf[73]);
     if ((rv=strchr(pc->psr, ' '))!=NULL) { *rv='\0'; }
     rv = fgets(buf,90,f);
     if (rv==NULL) { return(-1); }
@@ -62,6 +64,8 @@ int read_pc(FILE *f, struct polyco *pc, const char *psr, int mjd, double fmjd) {
         strncpy(pc->psr, &buf[0], 10);  pc->psr[10] = '\0';
         pc->mjd = atoi(&buf[31]);
         pc->fmjd = atof(&buf[39]);
+        pc->dm = atof(&buf[51]);
+        pc->earthz4 = atof(&buf[73]);
         if ((rv=strchr(pc->psr, ' '))!=NULL) { *rv='\0'; }
         rv = fgets(buf,90,f);
         pc->rphase = fmod(atof(&buf[0]),1.0);
@@ -352,3 +356,19 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     return(npc);
 }
 
+int make_const_polyco(double freq, const struct hdrinfo *hdr, 
+        struct polyco **pc) {
+    *pc = realloc(*pc, sizeof(struct polyco));
+    sprintf((*pc)[0].psr, "CONST");
+    (*pc)[0].mjd = hdr->start_day;
+    (*pc)[0].fmjd = hdr->start_sec/86400.0;
+    (*pc)[0].rphase = 0.0;
+    (*pc)[0].f0 = freq;
+    (*pc)[0].nsite = 0;
+    (*pc)[0].nmin = 24.0*60.0;
+    (*pc)[0].nc = 1;
+    (*pc)[0].rf = hdr->fctr;
+    (*pc)[0].c[0] = 0.0;
+    (*pc)[0].used = 0;
+    return(1);
+}
