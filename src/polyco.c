@@ -277,7 +277,7 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     if (fout==NULL) {
         fprintf(stderr, "make_polycos: Error writing to temp dir.\n");
         fclose(pf);
-        make_polycos_cleanup();
+        //make_polycos_cleanup();
         return(-1);
     }
 
@@ -301,7 +301,7 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     if (parsrc[0]=='\0') {
         fprintf(stderr, "make_polycos: Couldn't find source name in %s\n",
                 parfile);
-        make_polycos_cleanup();
+        //make_polycos_cleanup();
         return(-1);
     }
     if (src!=NULL) { strcpy(src,parsrc); }
@@ -311,7 +311,7 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     if (tcode=='\0') {
         fprintf(stderr, "make_polycos: Unrecognized telescope name (%s)\n",
                 hdr->telescope);
-        make_polycos_cleanup();
+        //make_polycos_cleanup();
         return(-1);
     }
 
@@ -320,7 +320,7 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     fout = fopen(fname, "w");
     if (fout==NULL) { 
         fprintf(stderr, "make_polycos: Error opening tz.in for write.\n");
-        make_polycos_cleanup();
+        //make_polycos_cleanup();
         return(-1);
     }
     fprintf(fout, "%c 12 60 15 %.5f\n\n\n%s\n",
@@ -347,7 +347,7 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     fclose(pcfile);
 
     /* Clean up */
-    make_polycos_cleanup();
+    if (npc>0) make_polycos_cleanup();
 
     return(npc);
 }

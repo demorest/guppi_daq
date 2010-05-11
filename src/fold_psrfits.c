@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
             /* Generate from par file */
             npc = make_polycos(par_file, &pf.hdr, source, &pc);
             if (npc<=0) {
-                fprintf(stderr, "Error generating polycos.\n");
+                fprintf(stderr, "Error generating polycos (rv=%d).\n", npc);
                 exit(1);
             }
             printf("Auto-generated %d polycos, src=%s\n", npc, source);
