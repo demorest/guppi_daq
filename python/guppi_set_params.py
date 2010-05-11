@@ -43,6 +43,9 @@ par.add_option("-f", "--force", dest="force",
 par.add_option("-c", "--cal", dest="cal", 
                help="Setup for cal scan (folding mode)",
                action="store_true", default=False)
+par.add_option("-m", "--mode", dest="mode",
+        help="Observing mode",
+        action="store", type="string", default="")
 par.add_option("-i", "--increment_scan", dest="inc",
                help="Increment scan num",
                action="store_true", default=False)
@@ -268,6 +271,10 @@ if (opt.cal):
     g.update("CAL_MODE", "ON")
     g.update("TFOLD", 10.0)
     g.update("SCANLEN", 60.0)
+
+if (opt.mode != ""):
+    g.update("OBS_MODE", opt.mode)
+    g.update("CAL_MODE", "OFF")
 
 # Scan number
 try:
