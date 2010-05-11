@@ -28,11 +28,14 @@ def fft_size_params(rf,bw,nchan,dm,max_databuf_mb=128):
     # This assumes 8-bit 2-pol data (4 bytes per samp) and 8
     # processing nodes.  Also GPU folding requires fftlen-overlap 
     # to be a multiple of 64.
+    # TODO: figure out best overlap for coherent search mode.  For
+    # now, make it a multiple of 512
     pkt_size = 8192
     bytes_per_samp = 4
     node_nchan = nchan / 8
     round_fac = pkt_size / bytes_per_samp / node_nchan
-    if (round_fac<64):  round_fac=64
+    #if (round_fac<64):  round_fac=64
+    if (round_fac<512):  round_fac=512
     rf_ghz = (rf - abs(bw)/2.0)/1.0e3
     chan_bw = bw / nchan
     overlap_samp = 8.3 * dm * chan_bw**2 / rf_ghz**3
