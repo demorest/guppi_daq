@@ -12,7 +12,7 @@ OBJS  = guppi_status.o guppi_databuf.o guppi_udp.o guppi_error.o \
 	write_psrfits.o read_psrfits.o misc_utils.o \
 	fold.o polyco.o hget.o hput.o sla.o downsample.o \
 	dedisperse_utils.o
-THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold guppi_daq_server 
+THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold 
 THREAD_OBJS  = guppi_net_thread.o guppi_rawdisk_thread.o \
 	       guppi_psrfits_thread.o guppi_fold_thread.o \
 	       guppi_null_thread.o
@@ -21,13 +21,13 @@ CUDA_OBJS = guppi_dedisp_thread.o guppi_dedisp_ds_thread.o \
 LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread
 CUDA_LIBS = -L$(CUDA)/lib64 -lcufft -lcuda -lcudart -lrt -lm
 all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
-	test_dedisp_thread guppi_daq_dedisp
+	test_dedisp_thread guppi_daq_dedisp guppi_daq_server
 clean:
 	rm -f $(PROGS) $(THREAD_PROGS) psrfits.tgz *~ *.o test_psrfits_0*.fits *.ptx
 INSTALL_DIR = ../bin
-install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband test_dedisp_thread guppi_daq_dedisp
+install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server
 	mkdir -p $(INSTALL_DIR) && \
-	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband test_dedisp_thread guppi_daq_dedisp $(INSTALL_DIR)
+	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server $(INSTALL_DIR)
 psrfits.tgz: psrfits.h read_psrfits.c write_psrfits.c polyco.c polyco.h \
 	guppi_PSRFITS_v3.4_fold_template.txt \
 	guppi_PSRFITS_v3.4_search_template.txt
@@ -43,6 +43,9 @@ test_dedisp_thread: test_dedisp_thread.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
 	$(CC) $(CFLAGS) $(CUDA_CFLAGS) $< -o $@ $(THREAD_OBJS) \
 		$(CUDA_OBJS) $(OBJS) $(LIBS) $(CUDA_LIBS)
 guppi_daq_dedisp: guppi_daq_dedisp.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
+	$(CC) $(CFLAGS) $(CUDA_CFLAGS) $< -o $@ $(THREAD_OBJS) \
+		$(CUDA_OBJS) $(OBJS) $(LIBS) $(CUDA_LIBS)
+guppi_daq_server: guppi_daq_server.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
 	$(CC) $(CFLAGS) $(CUDA_CFLAGS) $< -o $@ $(THREAD_OBJS) \
 		$(CUDA_OBJS) $(OBJS) $(LIBS) $(CUDA_LIBS)
 .SECONDEXPANSION:
