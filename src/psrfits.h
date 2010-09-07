@@ -13,7 +13,7 @@
 #define PSRFITS_FOLD_TEMPLATE "src/guppi_PSRFITS_v3.4_fold_template.txt"
 
 struct hdrinfo {
-    char obs_mode[8];       // Observing mode (SEARCH, PSR, CAL)
+    char obs_mode[24];       // Observing mode (SEARCH, PSR, CAL)
     char telescope[24];     // Telescope used
     char observer[24];      // Observer's name
     char source[24];        // Source name

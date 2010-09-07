@@ -175,7 +175,7 @@ void guppi_dedisp_thread(void *_args) {
 
         /* Refresh polycos if needed */
         if (refresh_polycos) {
-            if (strncmp(pf.hdr.obs_mode,"CAL",3)==0) {
+            if (strstr(pf.hdr.obs_mode,"CAL")!=NULL) {
                 npc = make_const_polyco(pf.hdr.cal_freq, &pf.hdr, &pc);
             } else {
                 if (pf.fold.parfile[0]=='\0') {
@@ -226,8 +226,10 @@ void guppi_dedisp_thread(void *_args) {
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
             hputi4(hdr_out, "NBIN", fb.nbin);
-            if (strncmp(pf.hdr.obs_mode,"CAL",3)) 
+            if (strstr(pf.hdr.obs_mode,"CAL")==NULL) 
                 hputs(hdr_out, "OBS_MODE", "PSR");
+            else
+                hputs(hdr_out, "OBS_MODE", "CAL");
 
             /* Output fold bufs */
             fb_tot.data = (float *)guppi_databuf_data(db_out, curblock_out);
@@ -309,8 +311,10 @@ void guppi_dedisp_thread(void *_args) {
             hdr_out = guppi_databuf_header(db_out, curblock_out);
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
-            if (strncmp(pf.hdr.obs_mode,"CAL",3))
+            if (strstr(pf.hdr.obs_mode,"CAL")==NULL)
                 hputs(hdr_out, "OBS_MODE", "PSR");
+            else
+                hputs(hdr_out, "OBS_MODE", "CAL");
             hputi4(hdr_out, "NBIN", fb.nbin);
             hputi4(hdr_out, "PKTIDX", gp.packetindex);
 

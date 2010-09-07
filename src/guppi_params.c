@@ -141,7 +141,7 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
 
 /* Some code just needs a simple way to get the obs mode string */
 void guppi_read_obs_mode(const char *buf, char *mode) {
-    get_str("OBS_MODE", mode, 8, "Unknown");
+    get_str("OBS_MODE", mode, 24, "Unknown");
 }
 
 // Read a status buffer all of the key observation paramters
@@ -181,8 +181,8 @@ void guppi_read_subint_params(char *buf,
 
     // Check fold mode 
     int fold=0;
-    if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
-    if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
+    if (strstr("PSR", p->hdr.obs_mode)!=NULL) { fold=1; }
+    if (strstr("CAL", p->hdr.obs_mode)!=NULL) { fold=1; }
 
     // Fold-specifc stuff
     if (fold) {
@@ -283,9 +283,9 @@ void guppi_read_obs_params(char *buf,
     get_int("NBIN", p->fold.nbin, 256);
     get_dbl("TFOLD", p->fold.tfold, 30.0);
     get_str("PARFILE", p->fold.parfile, 256, "");
-    if (strcmp("FOLD", p->hdr.obs_mode)==0) { fold=1; }
-    if (strcmp("PSR", p->hdr.obs_mode)==0) { fold=1; }
-    if (strcmp("CAL", p->hdr.obs_mode)==0) { fold=1; }
+    if (strstr("FOLD", p->hdr.obs_mode)!=NULL) { fold=1; }
+    if (strstr("PSR", p->hdr.obs_mode)!=NULL) { fold=1; }
+    if (strstr("CAL", p->hdr.obs_mode)!=NULL) { fold=1; }
     if (fold) 
         p->hdr.nbin = p->fold.nbin;
     else 
@@ -316,7 +316,7 @@ void guppi_read_obs_params(char *buf,
         if (backend[i]=='\0') break;
         backend[i] = tolower(backend[i]); 
     }
-    if (strcmp("CAL", p->hdr.obs_mode)==0) { 
+    if (strstr("CAL", p->hdr.obs_mode)!=NULL) { 
         sprintf(base, "%s_%5d_%s_%04d_cal", backend, p->hdr.start_day, 
                 p->hdr.source, p->hdr.scan_number);
     } else {

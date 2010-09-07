@@ -45,6 +45,8 @@ void srv_quit(int sig) { srv_run=0; }
 /* Thread declarations */
 void *guppi_net_thread(void *args);
 void *guppi_fold_thread(void *args);
+void *guppi_dedisp_thread(void *args);
+void *guppi_dedisp_ds_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
 
@@ -99,6 +101,22 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
 }
 
+void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_dedisp_thread, (void*)&args[1]);
+    rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+}
+
+void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_dedisp_ds_thread, (void*)&args[1]);
+    rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+}
+
 void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
@@ -133,7 +151,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* TODO: create FIFO */
+    /* Create FIFO */
+    int rv = mkfifo(GUPPI_DAQ_CONTROL, 0666);
+    if (rv!=0 && errno!=EEXIST) {
+        fprintf(stderr, "guppi_daq_server: Error creating control fifo\n");
+        perror("mkfifo");
+        exit(1);
+    }
 
     /* Open command FIFO for read */
 #define MAX_CMD_LEN 1024
@@ -149,7 +173,7 @@ int main(int argc, char *argv[]) {
     /* Attach to shared memory buffers */
     struct guppi_status stat;
     struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;
-    int rv = guppi_status_attach(&stat);
+    rv = guppi_status_attach(&stat);
     const int netbuf_id = 1;
     const int foldbuf_id = 2;
     if (rv!=GUPPI_OK) {
@@ -300,6 +324,15 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "FOLD", 5)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_fold_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "COHERENT_FOLD", 14)==0) {
+                    init_fold_mode(args, &nthread_cur);
+                    start_coherent_fold_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "COHERENT_CAL", 13)==0) {
+                    init_fold_mode(args, &nthread_cur);
+                    start_coherent_fold_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "COHERENT_SEARCH", 16)==0) {
+                    init_fold_mode(args, &nthread_cur);
+                    start_coherent_search_mode(args, thread_id);
                 } else if (strncasecmp(obs_mode, "CAL", 4)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_fold_mode(args, thread_id);

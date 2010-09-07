@@ -12,10 +12,10 @@
 // Define different obs modes
 static const int search=SEARCH_MODE, fold=FOLD_MODE;
 int psrfits_obs_mode(const char *obs_mode) {
-    if (strncmp("SEARCH", obs_mode, 6)==0) { return(search); }
-    else if (strncmp("FOLD", obs_mode, 4)==0) { return(fold); }
-    else if (strncmp("PSR", obs_mode, 3)==0) { return(fold); }
-    else if (strncmp("CAL", obs_mode, 3)==0) { return(fold); }
+    if (strstr(obs_mode, "SEARCH")!=NULL) { return(search); }
+    else if (strstr(obs_mode, "FOLD")!=NULL) { return(fold); }
+    else if (strstr(obs_mode, "PSR")!=NULL) { return(fold); }
+    else if (strstr(obs_mode, "CAL")!=NULL) { return(fold); }
     else {
         // TODO: what to do here? default to search for now
         printf("Warning: obs_mode '%s' not recognized, defaulting to SEARCH.\n",
