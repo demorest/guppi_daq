@@ -276,7 +276,7 @@ void guppi_read_obs_params(char *buf,
         get_dbl("CAL_DCYC", p->hdr.cal_dcyc, 0.5);
         get_dbl("CAL_PHS", p->hdr.cal_phs, 0.0);
     }
-    get_str("OBS_MODE", p->hdr.obs_mode, 8, "Unknown");
+    get_str("OBS_MODE", p->hdr.obs_mode, 24, "Unknown");
 
     // Fold mode specific stuff
     int fold=0;
