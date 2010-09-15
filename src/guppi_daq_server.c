@@ -49,6 +49,7 @@ void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
+void *guppi_rawdisk_thread(void *args);
 
 /* Useful thread functions */
 
@@ -122,6 +123,13 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     int rv;
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
+}
+
+void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    // TODO error checking...
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
 }
 
 void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
@@ -339,6 +347,9 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "MONITOR", 8)==0) {
                     init_monitor_mode(args, &nthread_cur);
                     start_monitor_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "RAW", 3)==0) {
+                    init_monitor_mode(args, &nthread_cur);
+                    start_raw_mode(args, thread_id);
                 } else {
                     printf("  unrecognized obs_mode!\n");
                 }
