@@ -76,12 +76,21 @@ void guppi_dedisp_ds_thread(void *_args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
+    pthread_cleanup_push((void *)guppi_thread_set_finished, args);
 
     /* Init status */
     guppi_status_lock_safe(&st);
     hputs(st.buf, STATUS_KEY, "init");
     guppi_status_unlock_safe(&st);
+
+    /* Init structs */
+    struct guppi_params gp;
+    struct psrfits pf;
+    pf.sub.dat_freqs = pf.sub.dat_weights =
+        pf.sub.dat_offsets = pf.sub.dat_scales = NULL;
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db_in, *db_out;
@@ -93,6 +102,7 @@ void guppi_dedisp_ds_thread(void *_args) {
         guppi_error("guppi_dedisp_thread", msg);
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db_in);
     db_out = guppi_databuf_attach(args->output_buffer);
     if (db_out==NULL) {
         char msg[256];
@@ -101,11 +111,10 @@ void guppi_dedisp_ds_thread(void *_args) {
         guppi_error("guppi_dedisp_thread", msg);
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db_out);
 
     /* Loop */
     char *hdr_in=NULL, *hdr_out=NULL;
-    struct guppi_params gp;
-    struct psrfits pf;
     struct dedispersion_setup ds;
     char *curdata_out, *dsbuf;
     pthread_cleanup_push((void *)free_dedispersion, &ds);
@@ -311,6 +320,11 @@ void guppi_dedisp_ds_thread(void *_args) {
 
     pthread_cleanup_pop(0); /* Closes print_timing_report */
     pthread_cleanup_pop(0); /* Closes free_dedispersion */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach(out) */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach(in) */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
+    pthread_cleanup_pop(0); /* Closes guppi_thread_set_finished */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
 
 }
