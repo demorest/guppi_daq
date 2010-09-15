@@ -33,6 +33,11 @@ extern void guppi_read_subint_params(char *buf,
                                      struct guppi_params *g,
                                      struct psrfits *p);
 
+int safe_fclose(FILE *f) {
+    if (f==NULL) return 0;
+    sync();
+    return fclose(f);
+}
 
 void guppi_rawdisk_thread(void *_args) {
 
@@ -92,19 +97,14 @@ void guppi_rawdisk_thread(void *_args) {
     }
     pthread_cleanup_push((void *)guppi_databuf_detach, db);
 
-    /* Open output file */
-    FILE *fraw = fopen("guppi_raw.dat", "w");
-    if (fraw==NULL) {
-        guppi_error("guppi_rawdisk_thread",
-                "Error opening output file.");
-        pthread_exit(NULL);
-    }
-    pthread_cleanup_push((void *)fclose, fraw);
+    /* Init output file */
+    FILE *fraw = NULL;
+    pthread_cleanup_push((void *)safe_fclose, fraw);
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
     int curblock=0, total_status=0;
-    int got_packet_0=0;
+    int got_packet_0=0, first=1;
     char *ptr, *hend;
     signal(SIGINT,cc);
     while (run) {
@@ -119,7 +119,12 @@ void guppi_rawdisk_thread(void *_args) {
 
         /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
-        guppi_read_subint_params(ptr, &gp, &pf);
+        if (first) {
+            guppi_read_obs_params(ptr, &gp, &pf);
+            first = 0;
+        } else {
+            guppi_read_subint_params(ptr, &gp, &pf);
+        }
 
         /* Parse packet size, npacket from header */
         hgeti4(ptr, "PKTIDX", &packetidx);
@@ -129,7 +134,19 @@ void guppi_rawdisk_thread(void *_args) {
         hgeti4(ptr, "BLOCSIZE", &blocksize);
 
         /* Wait for packet 0 before starting write */
-        if (got_packet_0==0 && packetidx==0) got_packet_0=1;
+        if (got_packet_0==0 && packetidx==0 && gp.stt_valid==1) {
+            got_packet_0 = 1;
+            guppi_read_obs_params(ptr, &gp, &pf);
+            char fname[256];
+            sprintf(fname, "%s.raw", pf.basefilename);
+            fprintf(stderr, "Opening raw file '%s'\n", fname);
+            // TODO: check for file exist.
+            fraw = fopen(fname, "w");
+            if (fraw==NULL) {
+                guppi_error("guppi_rawdisk_thread", "Error opening file.");
+                pthread_exit(NULL);
+            }
+        }
 
         /* See how full databuf is */
         total_status = guppi_databuf_total_status(db);
@@ -151,7 +168,7 @@ void guppi_rawdisk_thread(void *_args) {
             /* Write data */
             ptr = guppi_databuf_data(db, curblock);
             rv = fwrite(ptr, 1, (size_t)blocksize, fraw);
-            if (rv != npacket) { 
+            if (rv != blocksize) { 
                 guppi_error("guppi_rawdisk_thread", 
                         "Error writing data.");
             }
