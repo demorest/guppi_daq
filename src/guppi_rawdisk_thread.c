@@ -65,6 +65,7 @@ void guppi_rawdisk_thread(void *_args) {
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
 
     /* Init status */
@@ -75,6 +76,11 @@ void guppi_rawdisk_thread(void *_args) {
     /* Read in general parameters */
     struct guppi_params gp;
     struct psrfits pf;
+    pf.sub.dat_freqs = NULL;
+    pf.sub.dat_weights = NULL;
+    pf.sub.dat_offsets = NULL;
+    pf.sub.dat_scales = NULL;
+    pthread_cleanup_push((void *)guppi_free_psrfits, &pf);
 
     /* Attach to databuf shared mem */
     struct guppi_databuf *db;
@@ -84,27 +90,22 @@ void guppi_rawdisk_thread(void *_args) {
                 "Error attaching to databuf shared memory.");
         pthread_exit(NULL);
     }
+    pthread_cleanup_push((void *)guppi_databuf_detach, db);
 
     /* Open output file */
     FILE *fraw = fopen("guppi_raw.dat", "w");
-    FILE *fhdr = fopen("guppi_hdr.dat", "w");
-    if ((fraw==NULL) || (fhdr==NULL)) { 
+    if (fraw==NULL) {
         guppi_error("guppi_rawdisk_thread",
                 "Error opening output file.");
         pthread_exit(NULL);
     }
-    pthread_cleanup_push((void *)fclose, fhdr);
     pthread_cleanup_push((void *)fclose, fraw);
 
-    /* Write header to hdr file */
-    fprintf(fhdr, "# pktidx pktsize npkt ndrop\n");
-
     /* Loop */
-    int packetidx=0, npacket=0, ndrop=0, packetsize=0;
+    int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
     int curblock=0, total_status=0;
     int got_packet_0=0;
-    char *ptr;
-    //char *hend;
+    char *ptr, *hend;
     signal(SIGINT,cc);
     while (run) {
 
@@ -125,6 +126,7 @@ void guppi_rawdisk_thread(void *_args) {
         hgeti4(ptr, "PKTSIZE", &packetsize);
         hgeti4(ptr, "NPKT", &npacket);
         hgeti4(ptr, "NDROP", &ndrop);
+        hgeti4(ptr, "BLOCSIZE", &blocksize);
 
         /* Wait for packet 0 before starting write */
         if (got_packet_0==0 && packetidx==0) got_packet_0=1;
@@ -140,19 +142,15 @@ void guppi_rawdisk_thread(void *_args) {
             hputs(st.buf, STATUS_KEY, "writing");
             guppi_status_unlock_safe(&st);
 
-            /* Write stats to separate file */
-            fprintf(fhdr, "%d %d %d %d %d\n", packetidx, packetsize, npacket,
-                    ndrop, total_status);
-
             /* Write header to file */
-            //hend = ksearch(ptr, "END");
-            //for (ptr=ptr; ptr<hend; ptr+=80) {
-            //    fwrite(ptr, 80, 1, fraw);
-            //}
+            hend = ksearch(ptr, "END");
+            for (ptr=ptr; ptr<=hend; ptr+=80) {
+                fwrite(ptr, 80, 1, fraw);
+            }
 
             /* Write data */
             ptr = guppi_databuf_data(db, curblock);
-            rv = fwrite(ptr, packetsize, npacket, fraw);
+            rv = fwrite(ptr, 1, (size_t)blocksize, fraw);
             if (rv != npacket) { 
                 guppi_error("guppi_rawdisk_thread", 
                         "Error writing data.");
@@ -160,7 +158,6 @@ void guppi_rawdisk_thread(void *_args) {
 
             /* flush output */
             fflush(fraw);
-            fflush(fhdr);
         }
 
         /* Mark as free */
@@ -176,8 +173,10 @@ void guppi_rawdisk_thread(void *_args) {
 
     pthread_exit(NULL);
 
-    pthread_cleanup_pop(0); /* Closes push(fclose) */
-    pthread_cleanup_pop(0); /* Closes push(fclose) */
+    pthread_cleanup_pop(0); /* Closes fclose */
+    pthread_cleanup_pop(0); /* Closes guppi_databuf_detach */
+    pthread_cleanup_pop(0); /* Closes guppi_free_psrfits */
     pthread_cleanup_pop(0); /* Closes set_exit_status */
+    pthread_cleanup_pop(0); /* Closes guppi_status_detach */
 
 }
