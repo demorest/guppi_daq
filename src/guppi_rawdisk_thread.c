@@ -115,7 +115,8 @@ void guppi_rawdisk_thread(void *_args) {
         guppi_status_unlock_safe(&st);
 
         /* Wait for buf to have data */
-        guppi_databuf_wait_filled(db, curblock);
+        rv = guppi_databuf_wait_filled(db, curblock);
+        if (rv!=0) continue;
 
         /* Read param struct for this block */
         ptr = guppi_databuf_header(db, curblock);
@@ -149,7 +150,7 @@ void guppi_rawdisk_thread(void *_args) {
         }
 
         /* See how full databuf is */
-        total_status = guppi_databuf_total_status(db);
+        //total_status = guppi_databuf_total_status(db);
 
         /* If we got packet 0, write data to disk */
         if (got_packet_0) { 
