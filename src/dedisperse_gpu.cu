@@ -485,6 +485,7 @@ void print_timing_report(struct dedispersion_setup *s) {
     print_percent(downsample);
     print_percent(transfer_to_host);
 
+#if 0 
     /* print short version to file */
     FILE *f = fopen("dedisp_timing.dat", "a");
     fprintf(f, "%7d %6d %.4e %.4e ",  s->fft_len, s->overlap,
@@ -502,4 +503,5 @@ void print_timing_report(struct dedispersion_setup *s) {
     print_percent_short(transfer_to_host);
     fprintf(f, "\n");
     fclose(f);
+#endif
 }
