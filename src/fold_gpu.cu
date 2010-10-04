@@ -154,7 +154,7 @@ __global__ void fold_fft_blocks(const float2 *pol0, const float2 *pol1,
     const double bin_samp = step[ifft];   // bins/sample
     const double samp_bin = 1.0/bin_samp; // samples/bin
     const int bin_lo = ibin*BINS_PER_BLOCK + tid; // assumes 1 thread/bin
-    const int nturn = ((double)nvalid*bin_samp)/(double)nbin + 1;
+    const int nturn = ((double)nvalid*bin_samp)/(double)nbin + 2;
 
     // Fold results for this thread
     float4 folddata = make_float4(0,0,0,0);
