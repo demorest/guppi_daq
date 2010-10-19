@@ -6,6 +6,7 @@
 #define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
@@ -103,7 +104,7 @@ void guppi_rawdisk_thread(void *_args) {
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
-    int curblock=0, total_status=0;
+    int curblock=0;
     int got_packet_0=0, first=1;
     char *ptr, *hend;
     signal(SIGINT,cc);
