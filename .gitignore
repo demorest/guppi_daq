@@ -1,4 +1,5 @@
 *.o
+*.pyc
 bin/check_guppi_databuf
 bin/check_guppi_status
 bin/clean_guppi_shmem
