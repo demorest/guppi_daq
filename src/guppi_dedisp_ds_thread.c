@@ -179,8 +179,8 @@ void guppi_dedisp_ds_thread(void *_args) {
             ds.gp = &gp;
 
             /* Downsample params */
-            //ds.dsfac = 16;
             ds.dsfac = pf.hdr.ds_time_fact;
+            ds.npol = pf.hdr.onlyI ? 1 : 4;
 
             /* Set up freqs */
             int i;
@@ -190,18 +190,11 @@ void guppi_dedisp_ds_thread(void *_args) {
                     + ((double)i+0.5)*pf.hdr.df;
 
             /* Buffers to transfer ds results */
-            const int npol = 4;
-            const size_t dsbuf_size = sizeof(char) * npol 
+            const size_t dsbuf_size = sizeof(char) * ds.npol 
                 * ds.npts_per_block / ds.dsfac;
             cudaMallocHost((void**)&dsbuf, dsbuf_size);
 
             /* Init dedispersion on GPU */
-            //ds.dm = pc[0].dm;
-            //ds.earth_z4 = pc[0].earthz4;
-            // TODO get these from somewhere...
-            //ds.dm = 71.025;
-            //ds.dm = 121.0;
-            //ds.dm = 0.0;
             ds.dm = pf.hdr.chan_dm;
             printf("DM is %f\n", ds.dm);
             ds.earth_z4 = 0.0;
@@ -224,14 +217,15 @@ void guppi_dedisp_ds_thread(void *_args) {
         hputs(hdr_out, "OBS_MODE", "SEARCH");
         hputi4(hdr_out, "ACC_LEN", ds.dsfac);
         hputi4(hdr_out, "DS_TIME", 1);
-        hputi4(hdr_out, "BLOCSIZE", 4 * ds.nchan * 
+        hputi4(hdr_out, "NPOL", ds.npol);
+        hputi4(hdr_out, "ONLY_I", 0);
+        if (ds.npol==1) hputs(hdr_out, "POL_TYPE", "AA+BB");
+        hputi4(hdr_out, "BLOCSIZE", ds.npol * ds.nchan * 
                 (pf.hdr.nsblk - pf.dedisp.overlap) / ds.dsfac);
-        //hputi4(hdr_out, "BLOCSIZE", 4 * ds.nchan * 
-        //        (pf.hdr.nsblk) / ds.dsfac);
-        hputr8(hdr_out, "TBIN", pf.hdr.dt * ds.dsfac);
         // These are important since it's how search mode psrfits
         // calculates time... 
-        hputi4(hdr_out, "PKTSIZE", 4*ds.nchan); // Size of 1 spectrum in bytes
+        hputr8(hdr_out, "TBIN", pf.hdr.dt * ds.dsfac);
+        hputi4(hdr_out, "PKTSIZE", ds.npol*ds.nchan); // Spectrum size in bytes
         hputi4(hdr_out, "PKTIDX", 
                 gp.packetsize*gp.packetindex/ds.dsfac/4/ds.nchan); //XXX
 
@@ -269,9 +263,9 @@ void guppi_dedisp_ds_thread(void *_args) {
             unsigned isamp;
             for (isamp=0; isamp<npts_block; isamp++) {
                 unsigned ipol;
-                for (ipol=0; ipol<4; ipol++) {
-                    curdata_out[isamp*ds.nchan*4 + ipol*ds.nchan + ichan] = 
-                        dsbuf[4*isamp+ipol];
+                for (ipol=0; ipol<ds.npol; ipol++) {
+                    curdata_out[isamp*ds.nchan*ds.npol + ipol*ds.nchan + ichan] 
+                        = dsbuf[ds.npol*isamp+ipol];
                 }
             }
 

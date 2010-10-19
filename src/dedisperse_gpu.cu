@@ -181,7 +181,7 @@ void init_chirp(struct dedispersion_setup *s) {
 /* Initialize all necessary memory, etc for doing dedispersion 
  * at the given params.  In the struct, the following MUST be 
  * filled in:
- *   rf, bw, dm, npts_per_block
+ *   rf, bw, dm, npts_per_block, npol
  * Optionally, fft_len and overlap can be specified as well.  If
  * either of these is set to 0, it will be computed automatically
  * from the input params.

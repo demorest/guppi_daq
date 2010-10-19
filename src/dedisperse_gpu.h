@@ -51,6 +51,7 @@ struct dedispersion_setup {
 
     // Info for downsampling
     int dsfac;            // Downsample factor
+    int npol;             // Number of polarizations to save (4 or 1)
 
     // Memory blocks, etc on the host and/or GPU
     unsigned char *tbuf_host;     // host memory for data transfer
@@ -68,7 +69,7 @@ struct dedispersion_setup {
     unsigned *foldbuf_c_gpu;      // Final folded data (counts)
 
     // Memory for downsampling
-    char4 *dsbuf_gpu;             // 8-bit downsampled Stokes data
+    char *dsbuf_gpu;              // 8-bit downsampled data
 
     // GPU control stuff
     cufftHandle plan;           // CUFFT plan
