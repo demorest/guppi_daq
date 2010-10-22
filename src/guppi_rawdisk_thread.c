@@ -105,6 +105,7 @@ void guppi_rawdisk_thread(void *_args) {
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
     int curblock=0;
+    int block_count=0, blocks_per_file=128, filenum=0;
     int got_packet_0=0, first=1;
     char *ptr, *hend;
     signal(SIGINT,cc);
@@ -140,7 +141,7 @@ void guppi_rawdisk_thread(void *_args) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
             char fname[256];
-            sprintf(fname, "%s.raw", pf.basefilename);
+            sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
             // TODO: check for file exist.
             fraw = fopen(fname, "w");
@@ -148,6 +149,21 @@ void guppi_rawdisk_thread(void *_args) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
             }
+        }
+        
+        /* See if we need to open next file */
+        if (block_count >= blocks_per_file) {
+            fclose(fraw);
+            filenum++;
+            char fname[256];
+            sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
+            fprintf(stderr, "Opening raw file '%s'\n", fname);
+            fraw = fopen(fname, "w");
+            if (fraw==NULL) {
+                guppi_error("guppi_rawdisk_thread", "Error opening file.");
+                pthread_exit(NULL);
+            }
+            block_count=0;
         }
 
         /* See how full databuf is */
@@ -174,6 +190,9 @@ void guppi_rawdisk_thread(void *_args) {
                 guppi_error("guppi_rawdisk_thread", 
                         "Error writing data.");
             }
+
+            /* Increment counter */
+            block_count++;
 
             /* flush output */
             fflush(fraw);
