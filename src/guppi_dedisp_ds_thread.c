@@ -226,8 +226,8 @@ void guppi_dedisp_ds_thread(void *_args) {
         // calculates time... 
         hputr8(hdr_out, "TBIN", pf.hdr.dt * ds.dsfac);
         hputi4(hdr_out, "PKTSIZE", ds.npol*ds.nchan); // Spectrum size in bytes
-        hputi4(hdr_out, "PKTIDX", 
-                gp.packetsize*gp.packetindex/ds.dsfac/4/ds.nchan); //XXX
+        hputi8(hdr_out, "PKTIDX", 
+                gp.packetsize*gp.packetindex/ds.dsfac/4/ds.nchan);
 
         /* Set current time (needed?) */
         ds.imjd = imjd;
