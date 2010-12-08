@@ -85,6 +85,19 @@ int ival;               /* int number */
     return (hputc (hstring,keyword,value));
 }
 
+/* HPUTI8 - Set long long keyword in FITS header string.
+ * Added 2010/12/8, PBD */
+int
+hputi8 (hstring, keyword, ival)
+
+char *hstring;          /* Header string */
+const char *keyword;    /* keyword */
+long long ival;         /* long long (8-byte) integer */
+{
+    char value[30];
+    sprintf (value, "%lld", ival);
+    return (hputc (hstring, keyword, value));
+}
 
 /*  HPUTR4 - Set float keyword = rval in FITS header string */
 

@@ -209,6 +209,10 @@ extern "C" {
         char* hstring,          /* FITS header string (modified) */
         const char* keyword,    /* FITS keyword */
         const int ival);        /* int value */
+    int hputi8(         /* Implant long long value into FITS header */
+        char* hstring,          /* FITS header string (modified) */
+        const char* keyword,    /* FITS keyword */
+        const long long ival);  /* long long value */
     int hputr4(         /* Implant float value into FITS header */
         char* hstring,          /* FITS header string (modified) */
         const char* keyword,    /* FITS keyword */
