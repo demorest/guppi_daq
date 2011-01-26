@@ -39,24 +39,24 @@ nosend = ['DAQPULSE', 'DAQSTATE', 'DISKSTAT', 'NETSTAT', 'FOLDSTAT',
 # GPU setup params:
 # BEE2 IP addrs for each node
 #datahost = {
-#        'gpu1': '192.168.3.20',
-#        'gpu2': '192.168.3.21',
-#        'gpu9': '192.168.3.22',
-#        'gpu4': '192.168.3.23',
-#        'gpu5': '192.168.3.20',
-#        'gpu6': '192.168.3.21',
-#        'gpu7': '192.168.3.22',
-#        'gpu8': '192.168.3.23'
+#        'gpu1': '10.17.0.20',
+#        'gpu2': '10.17.0.21',
+#        'gpu9': '10.17.0.22',
+#        'gpu4': '10.17.0.23',
+#        'gpu5': '10.17.0.20',
+#        'gpu6': '10.17.0.21',
+#        'gpu7': '10.17.0.22',
+#        'gpu8': '10.17.0.23'
 #        }
 datahost = {
-        guppi2.node(0): '192.168.3.20',
-        guppi2.node(1): '192.168.3.21',
-        guppi2.node(2): '192.168.3.22',
-        guppi2.node(3): '192.168.3.23',
-        guppi2.node(4): '192.168.3.20',
-        guppi2.node(5): '192.168.3.21',
-        guppi2.node(6): '192.168.3.22',
-        guppi2.node(7): '192.168.3.23'
+        guppi2.node(0): '10.17.0.20',
+        guppi2.node(1): '10.17.0.21',
+        guppi2.node(2): '10.17.0.22',
+        guppi2.node(3): '10.17.0.23',
+        guppi2.node(4): '10.17.0.20',
+        guppi2.node(5): '10.17.0.21',
+        guppi2.node(6): '10.17.0.22',
+        guppi2.node(7): '10.17.0.23'
         }
 # dir for parfiles on cluster
 pardir = "/home/gpu/tzpar"
