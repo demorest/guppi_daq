@@ -1,0 +1,113 @@
+#! /usr/bin/env python
+import os, time
+import curses, curses.wrapper
+import guppi_daq.guppi2_utils as guppi2
+
+def tail(file,nlines=2):
+    if nlines<=0: 
+        return []
+    f = open(file,'r')
+    f.seek(-1024,os.SEEK_END)
+    l = f.readlines()
+    f.close()
+    if len(l) < nlines:
+        return l
+    else:
+        return l[-nlines:]
+
+def do_it(stdscr):
+    # List of gpu nodes
+    #nodes = ['gpu1', 'gpu2', 'gpu9', 'gpu4', 'gpu5', 'gpu6', 'gpu7', 'gpu8']
+    nodes = []
+    for i in range(0,8):
+        nodes += [guppi2.node(i)]
+
+    # Connections to gpu nodes daq servers
+    from guppi.client import Client
+    gpu_g = {}
+    for node in nodes:
+        gpu_g[node] = Client(host=node)
+
+    # Params we want to get
+    par = ['OBSFREQ', 'NETSTAT', 'DISPSTAT', 'CURBLOCK', 'DROPTOT']
+
+    # Curses setup stuff
+    stdscr.nodelay(1)
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_RED)
+    curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    keycol = curses.color_pair(1)
+    valcol = curses.color_pair(2)
+    errcol = curses.color_pair(3)
+    logcol = curses.color_pair(4)
+
+    run = True
+    while run:
+
+        # Set up screen
+        stdscr.erase()
+        stdscr.border()
+        (ymax,xmax) = stdscr.getmaxyx()
+
+        # Some dimensions
+        nnode = len(nodes)
+        nvals = len(par)
+
+        # header line
+        curline = 1
+        stdscr.addstr(curline, 1, "GPU Node Status:", keycol)
+        curline += 1
+        col = 4
+        stdscr.addstr(curline, col, "node  ", keycol)
+        for p in par:
+            stdscr.addstr("%12s " % p, keycol)
+
+        # Get values from each node
+        for node in nodes:
+            stat = {}
+            curline += 1
+            for p in par:
+                try:
+                    stat[p] = gpu_g[node].get(p)
+                except:
+                    stat[p] = 'Unk'
+            stdscr.addstr(curline, col, "%4s: " % node, keycol)
+            for p in par:
+                stdscr.addstr("%12s " % stat[p], valcol)
+
+        # Print last few log lines from each node
+        curline += 2
+        stdscr.addstr(curline, 1, "DAQ Logs:", keycol)
+        nlines = (ymax - 2 - curline) / nnode - 1
+        for node in nodes:
+            curline += 1
+            if curline<ymax-2:
+                stdscr.addstr(curline, col, "%4s: " % node, keycol)
+            try:
+                log = tail("/export/home/gpu/logs/%s.daq.log" % node, nlines)
+                for l in log:
+                    if curline<ymax-2:
+                        stdscr.addstr(curline, col+6, l.rstrip(), valcol)
+                    curline += 1
+            except IOError:
+                pass
+
+        # Timestamp
+        stdscr.addstr(ymax-2, col, "Last update: " + time.asctime() \
+                + " - Press 'q' to quit")
+
+        # Finalize stuff, check for input, etc
+        stdscr.refresh()
+        time.sleep(0.25)
+        c = stdscr.getch()
+        while (c!=curses.ERR):
+            if (c==ord('q')):
+                run = False
+            c = stdscr.getch()
+
+
+try:
+    curses.wrapper(do_it)
+except KeyboardInterrupt:
+    print "Exiting.."
