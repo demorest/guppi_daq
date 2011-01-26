@@ -102,9 +102,6 @@ add_param_option("--nchan",
 add_param_option("--npol", 
         name="NPOL", type="int",
         help="Number of hardware polarizations")
-add_param_option("--dm", 
-        name="CHAN_DM", type="float",
-        help="Dispersion measure for coherent dedisp")
 add_param_option("--feed_pol", 
         name="FD_POLN", type="string",
         help="Feed polarization type (LIN/CIRC)")
@@ -239,8 +236,6 @@ if (opt.update == False):
     g.update("SCALE3", 1.0)
 
     g.update("DATADIR", ".")
-
-    g.update("CHAN_DM", 0.0)
 
     # Pull from gbtstatus if needed
     if (opt.gbt):
