@@ -1,4 +1,4 @@
-#~
+*~
 *.o
 *.pyc
 bin/check_guppi_databuf
