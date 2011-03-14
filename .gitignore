@@ -29,3 +29,6 @@ src/test_net_thread
 src/test_psrfits
 src/test_psrfits_read
 src/test_udp_recv
+src/raw_quant
+src/raw_read
+src/raw_head

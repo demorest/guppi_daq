@@ -205,10 +205,10 @@ int main(int argc, char *argv[]) {
 
 /* optimized 2-bit quantization */
 
-/* applies 2 bit quantization to the data pointed to by pf->sub.data        			*/
-/* mean and std should be formatted as returned by 'compute_stat'         				*/
-/* quantization is performed 'in-place,' overwriting existing contents    				*/
-/* pf->hdr.nbits and pf->sub.bytes_per_subint are updated to reflect changes    		*/
+/* applies 2 bit quantization to the data pointed to by pf->sub.data			*/
+/* mean and std should be formatted as returned by 'compute_stat'				*/
+/* quantization is performed 'in-place,' overwriting existing contents				*/
+/* pf->hdr.nbits and pf->sub.bytes_per_subint are updated to reflect changes		*/
 /* quantization scheme described at http://seti.berkeley.edu/kepler_seti_quantization  	*/
 
 inline int quantize_2bit(struct psrfits *pf, double * mean, double * std) {
@@ -333,11 +333,11 @@ return 1;
 
 /* calculates the mean and sample std dev of the data pointed to by pf->sub.data 	*/
 
-/* mean[0] = mean(chan 0, pol 0)             	*/
-/* mean[1] = mean(chan 0, pol 1)             	*/
-/* mean[n-1] = mean(chan n/2, pol 0)         	*/
-/* mean[n] = mean(chan n/2, pol 1)             	*/
-/* std same as above                			*/
+/* mean[0] = mean(chan 0, pol 0)	*/
+/* mean[1] = mean(chan 0, pol 1)	*/
+/* mean[n-1] = mean(chan n/2, pol 0)	*/
+/* mean[n] = mean(chan n/2, pol 1)	*/
+/* std same as above			*/
 
 
 int compute_stat(struct psrfits *pf, double *mean, double *std){
