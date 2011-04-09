@@ -109,6 +109,7 @@ void guppi_rawdisk_thread(void *_args) {
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
+    int orig_blocksize=0;
     int curblock=0;
     int block_count=0, blocks_per_file=128, filenum=0;
     int got_packet_0=0, first=1;
@@ -159,10 +160,14 @@ void guppi_rawdisk_thread(void *_args) {
                 requantize = 0;
         }
 
+        /* Set up data ptr for quant routines */
+        pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
+
         /* Wait for packet 0 before starting write */
         if (got_packet_0==0 && packetidx==0 && gp.stt_valid==1) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
+            orig_blocksize = pf.sub.bytes_per_subint;
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
@@ -179,6 +184,7 @@ void guppi_rawdisk_thread(void *_args) {
                 std  = (double *)realloc(std,  
                         pf.hdr.rcvr_polns * pf.hdr.nchan * sizeof(double));
                 compute_stat(&pf, mean, std);
+                fprintf(stderr, "Computed 2-bit stats\n");
             }
         }
         
@@ -203,7 +209,8 @@ void guppi_rawdisk_thread(void *_args) {
         /* Requantize from 8 bits to 2 bits if necessary.
          * See raw_quant.c for more usage examples.
          */
-        if (requantize) {
+        if (requantize && got_packet_0) {
+            pf.sub.bytes_per_subint = orig_blocksize;
             /* Does the quantization in-place */
             quantize_2bit(&pf, mean, std);
             /* Update some parameters for output */
