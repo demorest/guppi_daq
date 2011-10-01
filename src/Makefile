@@ -1,5 +1,6 @@
 OPT64 = /home/pulsar64
-CFLAGS = -O3 -Wall -DFOLD_USE_INTRINSICS -I$(OPT64)/include
+CFLAGS = -O3 -Wall -DFOLD_USE_INTRINSICS -I$(OPT64)/include \
+	 -I/usr/include/cfitsio
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \
 	test_udp_recv test_psrfits test_psrfits_read fold_psrfits \
 	fix_psrfits_polyco psrfits_singlepulse
@@ -11,7 +12,7 @@ THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold guppi_daq_server
 THREAD_OBJS  = guppi_net_thread.o guppi_rawdisk_thread.o \
 	       guppi_psrfits_thread.o guppi_fold_thread.o \
 	       guppi_null_thread.o
-LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread
+LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lvdifio -lm -lpthread
 all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband
 clean:
 	rm -f $(PROGS) $(THREAD_PROGS) psrfits.tgz *~ *.o test_psrfits_0*.fits

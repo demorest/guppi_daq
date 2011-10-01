@@ -122,8 +122,10 @@ void *guppi_net_thread(void *_args) {
 
     /* See which packet format to use */
     int use_parkes_packets=0;
+    int use_vdif_packets=0;
     int nchan=0, npol=0, acclen=0;
     if (strncmp(up.packet_format, "PARKES", 6)==0) { use_parkes_packets=1; }
+    if (strncmp(up.packet_format, "VDIF", 6)==0) { use_vdif_packets=1; }
     if (use_parkes_packets) {
         printf("guppi_net_thread: Using Parkes UDP packet format.\n");
         nchan = pf.hdr.nchan;
@@ -152,7 +154,7 @@ void *guppi_net_thread(void *_args) {
      * TODO : Figure out how/if to deal with packet size changing.
      */
     int block_size;
-    struct guppi_udp_packet p;
+    struct guppi_udp_packet p, p0;
     size_t packet_data_size = guppi_udp_packet_datasize(up.packet_size); 
     if (use_parkes_packets) 
         packet_data_size = parkes_udp_packet_datasize(up.packet_size);
@@ -169,12 +171,19 @@ void *guppi_net_thread(void *_args) {
     }
     packets_per_block = block_size / packet_data_size;
 
+    /* For VDIF, we need to calculate packets per second */
+    int vdif_packets_per_second = 0;
+    if (use_vdif_packets) {
+        vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 / packet_data_size;
+    }
+
     /* Counters */
     unsigned long long npacket_total=0, npacket_block=0;
     unsigned long long ndropped_total=0, ndropped_block=0;
     unsigned long long nbogus_total=0, nbogus_block=0;
     unsigned long long curblock_seq_num=0, nextblock_seq_num=0;
     unsigned long long seq_num, last_seq_num=2048;
+    int first=1;
     int curblock=-1;
     char *curheader=NULL, *curdata=NULL;
     unsigned block_packet_idx=0, last_block_packet_idx=0;
@@ -236,11 +245,25 @@ void *guppi_net_thread(void *_args) {
         if (use_parkes_packets) 
             parkes_to_guppi(&p, acclen, npol, nchan);
 
+        /* Grab some necessary info from the first vdif packet */
+        if (first && use_vdif_packets) {
+            memcpy(&p0, &p, sizeof(struct guppi_udp_packet));
+            // TODO could figure out frame size etc here, instead of
+            // assuming it above?
+            mjd_from_vdif(p0.data, vdif_packets_per_second, 
+                    &stt_imjd, &stt_smjd, &stt_offs);
+            first=0;
+        }
+
         /* Check seq num diff */
-        seq_num = guppi_udp_packet_seq_num(&p);
+        if (use_vdif_packets)
+            seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
+        else
+            seq_num = guppi_udp_packet_seq_num(&p);
         seq_num_diff = seq_num - last_seq_num;
         if (seq_num_diff<=0 && curblock>=0) { 
             if (seq_num_diff<-128) { 
+                // XXX: use this test for vdif?
                 printf("guppi_net_thread:  Packet sequence number reset\n");
                 force_new_block=1; 
             } else if (seq_num_diff==0) {

@@ -16,4 +16,8 @@ int datetime_from_mjd(long double MJD, int *YYYY, int *MM, int *DD,
 /* Return the LST (in sec) for the GBT at a specific MJD (UTC) */
 int get_current_lst(double mjd, int *lst_secs);
 
+/* Return the MJD from a VDIF packet */
+int mjd_from_vdif(char *pkt, int packets_per_second, 
+        int *stt_imjd, int *stt_smjd, double *stt_offs);
+
 #endif

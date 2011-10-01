@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "slalib.h"
+#include "vdifio.h"
 #include "guppi_error.h"
 
 int get_current_mjd(int *stt_imjd, int *stt_smjd, double *stt_offs) {
@@ -76,3 +77,10 @@ int get_current_lst(double mjd, int *lst_secs) {
     return(GUPPI_OK);
 }
 
+int mjd_from_vdif(char *pkt, int packets_per_second,
+        int *stt_imjd, int *stt_smjd, double *stt_offs) {
+    *stt_imjd = getVDIFFrameMJD(pkt);
+    *stt_smjd = getVDIFFrameSecond(pkt);
+    *stt_offs = (double)getVDIFFrameNumber(pkt) / (double)packets_per_second;
+    return(GUPPI_OK);
+}

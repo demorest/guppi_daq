@@ -13,9 +13,12 @@
 #include <fcntl.h>
 #include <poll.h>
 
+#include "vdifio.h"
+
 #include "guppi_udp.h"
 #include "guppi_databuf.h"
 #include "guppi_error.h"
+
 
 int guppi_udp_init(struct guppi_udp_params *p) {
 
@@ -120,11 +123,25 @@ unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
     return(change_endian64((unsigned long long *)(p->data)));
 }
 
+unsigned long long guppi_vdif_packet_seq_num(const struct guppi_udp_packet *p,
+        const struct guppi_udp_packet *p0, unsigned packets_per_sec) {
+    /* Compute an equivalent seq num for vdif packets with respect to
+     * a reference packet */
+    const char *d = p->data;
+    const char *d0 = p0->data;
+    long long mjd_diff = getVDIFFrameMJD(d) - getVDIFFrameMJD(d0);
+    long long sec_diff = getVDIFFrameSecond(d) - getVDIFFrameSecond(d0);
+    long long num_diff = getVDIFFrameNumber(d) - getVDIFFrameNumber(d0);
+    long long seq = (mjd_diff*86400 + sec_diff)*packets_per_sec + num_diff;
+    return seq;
+}
+
 #define PACKET_SIZE_ORIG ((size_t)8208)
 #define PACKET_SIZE_SHORT ((size_t)544)
 #define PACKET_SIZE_1SFA ((size_t)8224)
 #define PACKET_SIZE_1SFA_OLD ((size_t)8160)
 #define PACKET_SIZE_FAST4K ((size_t)4128)
+#define PACKET_SIZE_VDIF ((size_t)8032)
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
     /* Special case for the new "1SFA" packets, which have an extra
@@ -140,11 +157,15 @@ size_t guppi_udp_packet_datasize(size_t packet_size) {
     else if (packet_size==PACKET_SIZE_SHORT) 
         //return((size_t)256);
         return((size_t)512);
+    else if (packet_size==PACKET_SIZE_VDIF)
+        return(packet_size - (size_t)VDIF_HEADER_BYTES);
     else              
         return(packet_size - 2*sizeof(unsigned long long));
 }
 
 char *guppi_udp_packet_data(const struct guppi_udp_packet *p) {
+    if (p->packet_size==PACKET_SIZE_VDIF)
+        return((char *)(p->data) + (size_t)VDIF_HEADER_BYTES);
     /* This is valid for all guppi packet formats */
     return((char *)(p->data) + sizeof(unsigned long long));
 }

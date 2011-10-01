@@ -135,6 +135,8 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
         u->packet_size = 4128;
     else if (strncmp(u->packet_format, "SHORT", 5)==0)
         u->packet_size = 544;
+    else if (strncmp(u->packet_format, "VDIF", 4)==0)
+        u->packet_size = 8032;  // XXX can we assume this is true??
     else
         u->packet_size = 8208;
 }
