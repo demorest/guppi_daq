@@ -175,6 +175,8 @@ void *guppi_net_thread(void *_args) {
     int vdif_packets_per_second = 0;
     if (use_vdif_packets) {
         vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 / packet_data_size;
+        printf("guppi_net_thread: VDIF packets per sec = %d\n",
+                vdif_packets_per_second);
     }
 
     /* Counters */
