@@ -10,6 +10,10 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct guppi_databuf {
     char data_type[64]; /* Type of data in buffer */
     size_t struct_size; /* Size alloced for this struct (bytes) */
@@ -76,5 +80,8 @@ int guppi_databuf_set_filled(struct guppi_databuf *d, int block_id);
 int guppi_databuf_wait_free(struct guppi_databuf *d, int block_id);
 int guppi_databuf_set_free(struct guppi_databuf *d, int block_id);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
