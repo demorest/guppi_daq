@@ -22,23 +22,29 @@
 
 int guppi_udp_init(struct guppi_udp_params *p) {
 
+    /* Check for special "any" sender addr */
+    int rv, use_sender=1;
+    if (strncmp(p->sender,"any",4)==0) { use_sender=0; }
+
     /* Resolve sender hostname */
     struct addrinfo hints;
-    struct addrinfo *result, *rp;
+    struct addrinfo *result=NULL, *rp;
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
-    int rv = getaddrinfo(p->sender, NULL, &hints, &result);
-    if (rv!=0) { 
-        guppi_error("guppi_udp_init", "getaddrinfo failed");
-        return(GUPPI_ERR_SYS);
+    if (use_sender) {
+        rv = getaddrinfo(p->sender, NULL, &hints, &result);
+        if (rv!=0) { 
+            guppi_error("guppi_udp_init", "getaddrinfo failed");
+            return(GUPPI_ERR_SYS);
+        }
     }
 
     /* Set up socket */
     p->sock = socket(PF_INET, SOCK_DGRAM, 0);
     if (p->sock==-1) { 
         guppi_error("guppi_udp_init", "socket error");
-        freeaddrinfo(result);
+        if (result!=NULL) freeaddrinfo(result);
         return(GUPPI_ERR_SYS);
     }
 
@@ -54,17 +60,19 @@ int guppi_udp_init(struct guppi_udp_params *p) {
     }
 
     /* Set up socket to recv only from sender */
-    for (rp=result; rp!=NULL; rp=rp->ai_next) {
-        if (connect(p->sock, rp->ai_addr, rp->ai_addrlen)==0) { break; }
+    if (use_sender) {
+        for (rp=result; rp!=NULL; rp=rp->ai_next) {
+            if (connect(p->sock, rp->ai_addr, rp->ai_addrlen)==0) { break; }
+        }
+        if (rp==NULL) { 
+            guppi_error("guppi_udp_init", "connect error");
+            close(p->sock); 
+            if (result!=NULL) freeaddrinfo(result);
+            return(GUPPI_ERR_SYS);
+        }
+        memcpy(&p->sender_addr, rp, sizeof(struct addrinfo));
+        if (result!=NULL) freeaddrinfo(result);
     }
-    if (rp==NULL) { 
-        guppi_error("guppi_udp_init", "connect error");
-        close(p->sock); 
-        freeaddrinfo(result);
-        return(GUPPI_ERR_SYS);
-    }
-    memcpy(&p->sender_addr, rp, sizeof(struct addrinfo));
-    freeaddrinfo(result);
 
     /* Non-blocking recv */
     fcntl(p->sock, F_SETFL, O_NONBLOCK);
@@ -141,7 +149,7 @@ unsigned long long guppi_vdif_packet_seq_num(const struct guppi_udp_packet *p,
 #define PACKET_SIZE_1SFA ((size_t)8224)
 #define PACKET_SIZE_1SFA_OLD ((size_t)8160)
 #define PACKET_SIZE_FAST4K ((size_t)4128)
-#define PACKET_SIZE_VDIF ((size_t)8032)
+#define PACKET_SIZE_VDIF ((size_t)1032)
 
 size_t guppi_udp_packet_datasize(size_t packet_size) {
     /* Special case for the new "1SFA" packets, which have an extra
