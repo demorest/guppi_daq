@@ -30,10 +30,77 @@
 #define STATUS_KEY "NETSTAT"  /* Define before guppi_threads.h */
 #include "guppi_threads.h"
 
+#include "vdifio.h"
+
 // Read a status buffer all of the key observation paramters
 extern void guppi_read_obs_params(char *buf, 
                                   struct guppi_params *g, 
                                   struct psrfits *p);
+
+/* Struct with per-stream counters, info */
+struct vdif_stream {
+    int thread_id; // Expected thread id
+    int curblock;  // Block that data will go to
+    long long curblock_seq_num;   // Starting seq num of the current block
+    long long nextblock_seq_num;  // Starting seq num of the next block
+    long long seq_num; // Seq num of current packet
+    long long last_seq_num;  // Previous seq num
+    long long npacket_block; // # of packets this block
+    long long npacket_total; // # of packets total
+    long long ndropped_block; // # of missed packets this block
+    long long ndropped_total; // # of missed packets total
+};
+
+void init_stream(struct vdif_stream *v, int thread_id) {
+    v->thread_id = thread_id;
+    v->curblock = -1;
+    v->curblock_seq_num = 0;
+    v->nextblock_seq_num = 0;
+    v->seq_num = 0;
+    v->last_seq_num = -1;
+    v->npacket_block = 0;
+    v->npacket_total = 0;
+    v->ndropped_block = 0;
+    v->ndropped_total = 0;
+}
+
+/* Check whether the specified block is active in any of the streams */
+int check_block_active(const struct vdif_stream *stream, 
+        int nstream, int block) {
+    int i, result=0;
+    for (i=0; i<nstream; i++)
+        if (stream[i].curblock == block) 
+            result=1;
+    return result;
+}
+
+/* Copy the latest packet belonging to vdif stream into the data block
+ * area.  This interleaves samples depending on index and nstream.
+ */
+void packet_data_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
+        int index, int nstream, char *block_data) {
+    long long block_idx = v->seq_num - v->curblock_seq_num;
+    const int bps = 2; // 8-bit complex data
+    const int nbytes = p->packet_size - VDIF_HEADER_BYTES;
+    const int nsamp = nbytes / bps;
+
+    char *optr = block_data + block_idx*nbytes*nstream + index*bps;
+    char *iptr = p->data + VDIF_HEADER_BYTES;
+
+    int i;
+    for (i=0; i<nsamp; i++) {
+        memcpy(optr, iptr, bps);
+        iptr += bps;
+        optr += nstream*bps;
+    }
+
+    /* update counters */
+    v->ndropped_block += (v->seq_num - v->last_seq_num - 1);
+    v->ndropped_total += (v->seq_num - v->last_seq_num - 1);
+    v->npacket_total++;
+    v->npacket_block++;
+    v->last_seq_num = v->seq_num;
+}
 
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
@@ -123,19 +190,30 @@ void *guppi_vdif_thread(void *_args) {
 
     /* See which packet format to use */
     int use_vdif_packets=0;
-    int nchan=0, npol=0;
     if (strncmp(up.packet_format, "VDIF", 6)==0) { use_vdif_packets=1; }
     else {
         guppi_error("guppi_vdif_thread", "packet format is not VDIF");
         pthread_exit(NULL);
     }
 
+    /* Set up VDIF stream info */
+    unsigned i;
+    const unsigned nstream = 2;
+    struct vdif_stream stream[nstream];
+    struct vdif_stream *cs; // Use for pointer to active stream each time
+    for (i=0; i<nstream; i++) init_stream(&stream[i], 0);
+    // TODO don't hard-code these:
+    stream[0].thread_id = 0;
+    stream[1].thread_id = 896;
+
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
+     * TODO round down to an integer # of packets per block?
      */
     int block_size;
     struct guppi_udp_packet p, p0;
-    size_t packet_data_size = guppi_udp_packet_datasize(up.packet_size); 
+    //size_t packet_data_size = guppi_udp_packet_datasize(up.packet_size); 
+    size_t packet_data_size = up.packet_size - VDIF_HEADER_BYTES; 
     unsigned packets_per_block; 
     if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
             block_size = db->block_size;
@@ -147,8 +225,7 @@ void *guppi_vdif_thread(void *_args) {
             hputi4(status_buf, "BLOCSIZE", block_size);
         }
     }
-    packets_per_block = block_size / packet_data_size;
-    // XXX make sure we have integer packets per block??
+    packets_per_block = block_size / nstream / packet_data_size;
 
     /* For VDIF, we need to calculate packets per second */
     int vdif_packets_per_second = 0;
@@ -160,21 +237,15 @@ void *guppi_vdif_thread(void *_args) {
     }
 
     /* Counters */
-    unsigned long long npacket_total=0, npacket_block=0;
-    unsigned long long ndropped_total=0, ndropped_block=0;
-    unsigned long long nbogus_total=0, nbogus_block=0;
-    unsigned long long curblock_seq_num=0, nextblock_seq_num=0;
-    unsigned long long seq_num, last_seq_num=2048;
     int first=1;
-    int curblock=-1;
-    char *curheader=NULL, *curdata=NULL;
-    unsigned block_packet_idx=0, last_block_packet_idx=0;
+    char *curheader=NULL;
+    long long nbogus_total=0, nbogus_block=0;
     double drop_frac_avg=0.0;
     const double drop_lpf = 0.25;
 
     /* Main loop */
-    unsigned i, force_new_block=0, waiting=-1;
-    char *dataptr;
+    int istream, thread_id;
+    unsigned force_new_block=0, waiting=-1;
     long long seq_num_diff;
     signal(SIGINT,cc);
     while (run) {
@@ -203,7 +274,7 @@ void *guppi_vdif_thread(void *_args) {
         rv = guppi_udp_recv(&up, &p);
         if (rv!=GUPPI_OK) {
             if (rv==GUPPI_ERR_PACKET) {
-                /* Unexpected packet size, ignore? */
+                /* Unexpected packet size, ignore */
                 nbogus_total++;
                 nbogus_block++;
                 continue; 
@@ -213,6 +284,19 @@ void *guppi_vdif_thread(void *_args) {
                 perror("guppi_udp_recv");
                 pthread_exit(NULL);
             }
+        }
+
+        /* Figure out which stream this packet is in */
+        thread_id = getVDIFThreadID(p.data);
+        for (istream=0; istream<nstream; istream++) {
+            if (thread_id == stream[istream].thread_id) 
+                cs = &stream[istream];
+        }
+        if (istream==nstream) {
+            // Did not match any expected thread ids
+            nbogus_total++;
+            nbogus_block++;
+            continue;
         }
 
         /* Update status if needed */
@@ -232,20 +316,13 @@ void *guppi_vdif_thread(void *_args) {
         }
 
         /* Check seq num diff */
-        if (use_vdif_packets)
-            seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
-        else
-            seq_num = guppi_udp_packet_seq_num(&p);
-        seq_num_diff = seq_num - last_seq_num;
-        if (seq_num_diff<=0 && curblock>=0) { 
-            if (seq_num_diff<-128) { 
-                // XXX: use this test for vdif?
-                printf("guppi_net_thread:  Packet sequence number reset\n");
-                force_new_block=1; 
-            } else if (seq_num_diff==0) {
+        cs->seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
+        seq_num_diff = cs->seq_num - cs->last_seq_num;
+        if (seq_num_diff<=0 && cs->curblock>=0) { 
+            if (seq_num_diff==0) {
                 char msg[256];
                 sprintf(msg, "Received duplicate packet (seq_num=%lld)", 
-                        seq_num);
+                        cs->seq_num);
                 guppi_warn("guppi_net_thread", msg);
             }
             else  { 
@@ -253,30 +330,31 @@ void *guppi_vdif_thread(void *_args) {
                 char msg[256];
                 sprintf(msg, 
                         "Received out-of-order packet (seq_num=%lld, diff=%lld)",
-                        seq_num, seq_num_diff);
+                        cs->seq_num, seq_num_diff);
                 guppi_warn("guppi_net_thread", msg);
                 continue; 
             } 
         } else { force_new_block=0; }
 
         /* Determine if we go to next block */
-        if ((seq_num>=nextblock_seq_num) || force_new_block) {
+        if ((cs->seq_num>=cs->nextblock_seq_num) || force_new_block) {
 
-            if (curblock>=0) { 
+            if (cs->curblock>=0) { 
+                /* TODO: check if all streams are done with this yet */
                 /* Close out current block */
-                hputi4(curheader, "PKTIDX", curblock_seq_num);
-                hputi4(curheader, "PKTSIZE", packet_data_size);
-                hputi4(curheader, "NPKT", npacket_block);
-                hputi4(curheader, "NDROP", ndropped_block);
-                guppi_databuf_set_filled(db, curblock);
+                hputi4(curheader, "NPKT", cs->npacket_block);
+                hputi4(curheader, "NDROP", cs->ndropped_block);
+                guppi_databuf_set_filled(db, cs->curblock);
             }
 
-            if (npacket_block) { 
+            if (cs->npacket_block) { 
                 drop_frac_avg = (1.0-drop_lpf)*drop_frac_avg 
-                    + drop_lpf*(double)ndropped_block/(double)npacket_block;
+                    + drop_lpf*(double)cs->ndropped_block/(double)cs->npacket_block;
             }
 
             /* Put drop stats in general status area */
+            /* How to merge the different stream info.. */
+#if 0 
             guppi_status_lock_safe(&st);
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
@@ -288,23 +366,12 @@ void *guppi_vdif_thread(void *_args) {
                     (double)ndropped_block/(double)npacket_block 
                     : 0.0);
             guppi_status_unlock_safe(&st);
+#endif
 
             /* Reset block counters */
-            npacket_block=0;
-            ndropped_block=0;
+            cs->npacket_block=0;
+            cs->ndropped_block=0;
             nbogus_block=0;
-
-#if 0 
-            /* If new obs started, reset total counters, get start
-             * time.  Start time is rounded to nearest integer
-             * second, with warning if we're off that by more
-             * than 100ms. */
-            if (force_new_block) {
-                npacket_total=0;
-                ndropped_total=0;
-                nbogus_total=0;
-            }
-#endif
 
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
@@ -319,29 +386,16 @@ void *guppi_vdif_thread(void *_args) {
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
 
-            /* block size possibly changed on new obs */
-            if (force_new_block) {
-                if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
-                        block_size = db->block_size;
-                } else {
-                    if (block_size > db->block_size) {
-                        guppi_error("guppi_net_thread", 
-                                "BLOCSIZE > databuf block_size");
-                        block_size = db->block_size;
-                    }
-                }
-                packets_per_block = block_size / packet_data_size;
-            }
-            hputi4(status_buf, "BLOCSIZE", block_size);
-
-            /* Advance to next block when free, update its header */
-            curblock = (curblock + 1) % db->n_block;
-            curheader = guppi_databuf_header(db, curblock);
-            curdata = guppi_databuf_data(db, curblock);
-            last_block_packet_idx = 0;
-            curblock_seq_num = seq_num - (seq_num % packets_per_block);
-            nextblock_seq_num = curblock_seq_num + packets_per_block;
-            while ((rv=guppi_databuf_wait_free(db,curblock)) != GUPPI_OK) {
+            /* Advance to next block when free */
+            int next_block = (cs->curblock + 1) % db->n_block;
+            int next_block_active = check_block_active(stream, nstream,
+                    next_block);
+            cs->curblock = next_block;
+            curheader = guppi_databuf_header(db, cs->curblock);
+            cs->curblock_seq_num = cs->seq_num 
+                - (cs->seq_num % packets_per_block);
+            cs->nextblock_seq_num = cs->curblock_seq_num + packets_per_block;
+            while ((rv=guppi_databuf_wait_free(db,cs->curblock)) != GUPPI_OK) {
                 if (rv==GUPPI_TIMEOUT) {
                     waiting=1;
                     guppi_status_lock_safe(&st);
@@ -356,26 +410,23 @@ void *guppi_vdif_thread(void *_args) {
                     break;
                 }
             }
-            memcpy(curheader, status_buf, GUPPI_STATUS_SIZE);
+
+            /* If this block has not been updated yet, zero its
+             * data area and update the header.
+             */
+            if (next_block_active == 0) {
+                memset(guppi_databuf_data(db, cs->curblock), 0, block_size);
+                memcpy(curheader, status_buf, GUPPI_STATUS_SIZE);
+                hputi4(curheader, "PKTIDX", cs->curblock_seq_num);
+                hputi4(curheader, "PKTSIZE", packet_data_size);
+            }
         }
 
-        /* Skip dropped blocks, put packet in right spot */
-        block_packet_idx = seq_num - curblock_seq_num;
-        dataptr = curdata + last_block_packet_idx*packet_data_size;
-        for (i=last_block_packet_idx; i<block_packet_idx; i++) {
-            memset(dataptr, 0, packet_data_size);
-            dataptr += packet_data_size;
-            ndropped_block++;
-            ndropped_total++;
-            npacket_total++;
-            npacket_block++;
-        }
-        // TODO interleave vdif streams
-        guppi_udp_packet_data_copy(dataptr, &p);
-        npacket_total++;
-        npacket_block++;
-        last_block_packet_idx = block_packet_idx + 1;
-        last_seq_num = seq_num;
+        /* Copy the packet data into the right place, interleaving 
+         * streams.
+         */
+        packet_data_copy(cs, &p, istream, nstream,
+                guppi_databuf_data(db, cs->curblock));
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();
