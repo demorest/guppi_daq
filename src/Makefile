@@ -1,5 +1,5 @@
 OPT64 = /home/pulsar64
-CFLAGS = -O3 -Wall -DFOLD_USE_INTRINSICS -I$(OPT64)/include \
+CFLAGS = -O3 -Wall -fPIC -DFOLD_USE_INTRINSICS -I$(OPT64)/include \
 	 -I/usr/include/cfitsio
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \
 	test_udp_recv test_psrfits test_psrfits_read fold_psrfits \
@@ -28,6 +28,8 @@ find_dropped_blocks: find_dropped_blocks.o
 	$(CC) $(CFLAGS) $< -o $@ -L$(OPT64)/lib -lcfitsio -lm
 psrfits_subband: psrfits_subband.c psrfits_subband_cmd.o $(OBJS)
 	$(CC) $(CFLAGS) $< -o $@ psrfits_subband_cmd.o $(OBJS) $(LIBS)
+libguppi_daq.so: $(OBJS)
+	$(CC) -shared -o $@ $(OBJS)
 .SECONDEXPANSION:
 $(PROGS): $$@.c $(OBJS)
 	$(CC) $(CFLAGS) $< -o $@ $(OBJS) $(LIBS) $(THREAD_LIBS)
