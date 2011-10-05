@@ -126,6 +126,9 @@ par.add_option("--nogbt", dest="gbt",
 par.add_option("--gb43m", dest="gb43m", 
                help="Set params for 43m observing",
                action="store_true", default=False)
+par.add_option("--evla", dest="evla",
+               help="Set params for EVLA",
+               action="store_true", default=False)
 par.add_option("--fake", dest="fake",
                help="Set params for fake psr",
                action="store_true", default=False)
@@ -171,6 +174,10 @@ if (opt.gb43m):
 if (opt.fake):
     opt.gbt = False
 
+# EVLA implies nogbt
+if (opt.evla):
+    opt.gbt = False
+
 # Attach to status shared mem
 g = guppi_status()
 
@@ -213,29 +220,31 @@ if (opt.update == False):
     g.update("NBITS", 8)
     g.update("PFB_OVER", 4)
     g.update("NBITSADC", 8)
-    g.update("ACC_LEN", 16)
     g.update("NRCVR", 2)
+    g.update("ACC_LEN", 16)
 
-    g.update("ONLY_I", 0)
-    g.update("DS_TIME", 1)
-    g.update("DS_FREQ", 1)
+    if (not opt.evla):
 
-    g.update("TFOLD", 30.0)
-    g.update("NBIN", 256)
-    g.update("PARFILE", "")
+        g.update("ONLY_I", 0)
+        g.update("DS_TIME", 1)
+        g.update("DS_FREQ", 1)
 
-    g.update("OFFSET0", 0.0)
-    g.update("SCALE0", 1.0)
-    g.update("OFFSET1", 0.0)
-    g.update("SCALE1", 1.0)
-    g.update("OFFSET2", 0.5)
-    g.update("SCALE2", 1.0)
-    g.update("OFFSET3", 0.5)
-    g.update("SCALE3", 1.0)
+        g.update("TFOLD", 30.0)
+        g.update("NBIN", 256)
+        g.update("PARFILE", "")
 
-    g.update("DATADIR", ".")
+        g.update("OFFSET0", 0.0)
+        g.update("SCALE0", 1.0)
+        g.update("OFFSET1", 0.0)
+        g.update("SCALE1", 1.0)
+        g.update("OFFSET2", 0.5)
+        g.update("SCALE2", 1.0)
+        g.update("OFFSET3", 0.5)
+        g.update("SCALE3", 1.0)
 
-    g.update("CHAN_DM", 0.0)
+        g.update("DATADIR", ".")
+
+        g.update("CHAN_DM", 0.0)
 
     # Pull from gbtstatus if needed
     if (opt.gbt):
@@ -265,6 +274,22 @@ if (opt.fake):
     g.update("FRONTEND", "none")
     g.update("OBSFREQ", 1000.0)
     g.update("FD_POLN", "LIN")
+
+# EVLA-specific settings
+if (opt.evla):
+    g.update("TELESCOP", "VLA")
+    g.update("BACKEND", "YUPPI")
+    g.update("PKTFMT", "VDIF")
+    g.update("PKTSIZE", 1032)
+    g.update("DATAHOST", "any")
+    g.update("OBSNCHAN", 1)
+    g.update("OBS_MODE", "RAW")
+    g.update("ACC_LEN", 1)
+    g.update("POL_TYPE", "AABBCRCI")
+    g.update("FD_POLN", "CIRC")
+    g.update("OBSBW", 32.0)
+    g.update("OVERLAP", 0)
+    g.update("BLOCSIZE", 32000000)
 
 # Total intensity mode
 if (opt.onlyI):
@@ -321,12 +346,13 @@ if (g['NPOL']==1):
     g.update("POL_TYPE", "AA+BB")
 elif (g['NPOL']==2):
     g.update("POL_TYPE", "AABB")
-else:
-    g.update("POL_TYPE", "IQUV")
+#else:
+#    g.update("POL_TYPE", "IQUV")
 
 
 # Az/el
-g.update_azza()
+if (not opt.evla):
+    g.update_azza()
 
 # Apply back to shared mem
 g.write()
