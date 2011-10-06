@@ -393,7 +393,7 @@ void *guppi_vdif_thread(void *_args) {
             if (stt_imjd!=0) {
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
-                hputr8(st.buf, "STT_OFFS", stt_offs);
+                hputnr8(st.buf, "STT_OFFS", 15, stt_offs);
                 hputi4(st.buf, "STTVALID", 1);
             } else {
                 hputi4(st.buf, "STTVALID", 0);
