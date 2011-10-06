@@ -80,7 +80,8 @@ int check_block_active(const struct vdif_stream *stream,
 void packet_data_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
         int index, int nstream, char *block_data) {
     long long block_idx = v->seq_num - v->curblock_seq_num;
-    const int bps = 2; // 8-bit complex data
+    //const int bps = 2; // 8-bit complex data
+    const int bps = 1; // 8-bit real data
     const int nbytes = p->packet_size - VDIF_HEADER_BYTES;
     const int nsamp = nbytes / bps;
 
@@ -112,17 +113,20 @@ void *guppi_vdif_thread(void *_args) {
     /* Get arguments */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
+    int rv;
+#if 0 
     /* Set cpu affinity */
     cpu_set_t cpuset, cpuset_orig;
     sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
     CPU_ZERO(&cpuset);
     //CPU_SET(2, &cpuset);
     CPU_SET(3, &cpuset); // TODO figure out if this even makes sense
-    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
     if (rv<0) { 
         guppi_error("guppi_net_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
+#endif
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, args->priority);
@@ -277,6 +281,7 @@ void *guppi_vdif_thread(void *_args) {
                 /* Unexpected packet size, ignore */
                 nbogus_total++;
                 nbogus_block++;
+                //printf("Bad pkt size\n");
                 continue; 
             } else {
                 guppi_error("guppi_net_thread", 
@@ -289,13 +294,16 @@ void *guppi_vdif_thread(void *_args) {
         /* Figure out which stream this packet is in */
         thread_id = getVDIFThreadID(p.data);
         for (istream=0; istream<nstream; istream++) {
-            if (thread_id == stream[istream].thread_id) 
+            if (thread_id == stream[istream].thread_id) {
                 cs = &stream[istream];
+                break;
+            }
         }
         if (istream==nstream) {
             // Did not match any expected thread ids
             nbogus_total++;
             nbogus_block++;
+            //printf("Bad pkt stream (thread_id=%d)\n", thread_id);
             continue;
         }
 
@@ -339,12 +347,19 @@ void *guppi_vdif_thread(void *_args) {
         /* Determine if we go to next block */
         if ((cs->seq_num>=cs->nextblock_seq_num) || force_new_block) {
 
+            /* Debug info */
+            printf("New Block(%2d):", cs->curblock);
+            printf("  istream=%d", istream);
+            printf("  seq_num=%lld", cs->seq_num);
+            printf("  npacket=%lld", cs->npacket_block);
+            printf("  ndrop=%lld", cs->ndropped_block);
+            printf("\n");
+
             if (cs->curblock>=0) { 
                 /* TODO: check if all streams are done with this yet */
                 /* Close out current block */
                 hputi4(curheader, "NPKT", cs->npacket_block);
                 hputi4(curheader, "NDROP", cs->ndropped_block);
-                guppi_databuf_set_filled(db, cs->curblock);
             }
 
             if (cs->npacket_block) { 
@@ -354,16 +369,16 @@ void *guppi_vdif_thread(void *_args) {
 
             /* Put drop stats in general status area */
             /* How to merge the different stream info.. */
-#if 0 
+#if 1 
             guppi_status_lock_safe(&st);
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
-                    npacket_total ? 
-                    (double)ndropped_total/(double)npacket_total 
+                    cs->npacket_total ? 
+                    (double)cs->ndropped_total/(double)cs->npacket_total 
                     : 0.0);
             hputr8(st.buf, "DROPBLK", 
-                    npacket_block ? 
-                    (double)ndropped_block/(double)npacket_block 
+                    cs->npacket_block ? 
+                    (double)cs->ndropped_block/(double)cs->npacket_block 
                     : 0.0);
             guppi_status_unlock_safe(&st);
 #endif
@@ -386,7 +401,8 @@ void *guppi_vdif_thread(void *_args) {
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
 
-            /* Advance to next block when free */
+            /* Advance to next block when it's free */
+            int last_block = cs->curblock;
             int next_block = (cs->curblock + 1) % db->n_block;
             int next_block_active = check_block_active(stream, nstream,
                     next_block);
@@ -395,6 +411,9 @@ void *guppi_vdif_thread(void *_args) {
             cs->curblock_seq_num = cs->seq_num 
                 - (cs->seq_num % packets_per_block);
             cs->nextblock_seq_num = cs->curblock_seq_num + packets_per_block;
+            if (last_block>=0 &&
+                    check_block_active(stream, nstream,last_block)==0)
+                guppi_databuf_set_filled(db, last_block);
             while ((rv=guppi_databuf_wait_free(db,cs->curblock)) != GUPPI_OK) {
                 if (rv==GUPPI_TIMEOUT) {
                     waiting=1;
