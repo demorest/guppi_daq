@@ -29,11 +29,13 @@ void usage() {
             "  -h, --help        This message\n"
             "  -d, --disk        Write raw data to disk (default no)\n"
             "  -o, --only_net    Run only guppi_net_thread\n"
+            "  -v, --vdif        Run multi-stream VDIF thread\n"
            );
 }
 
 /* Thread declarations */
 void *guppi_net_thread(void *_up);
+void *guppi_vdif_thread(void *_up);
 void *guppi_rawdisk_thread(void *args);
 void *guppi_null_thread(void *args);
 
@@ -43,17 +45,21 @@ int main(int argc, char *argv[]) {
         {"help",    0, NULL, 'h'},
         {"disk",    0, NULL, 'd'},
         {"only_net",0, NULL, 'o'},
+        {"vdif",    0, NULL, 'v'},
         {0,0,0,0}
     };
     int opt, opti;
-    int disk=0, only_net=0;
-    while ((opt=getopt_long(argc,argv,"hdo",long_opts,&opti))!=-1) {
+    int disk=0, only_net=0, vdif=0;
+    while ((opt=getopt_long(argc,argv,"hdov",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'd':
                 disk=1;
                 break;
             case 'o':
                 only_net=1;
+                break;
+            case 'v':
+                vdif=1;
                 break;
             default:
             case 'h':
@@ -90,10 +96,14 @@ int main(int argc, char *argv[]) {
     run=1;
     signal(SIGINT, cc);
 
-    /* Launch net thread */
+    /* Launch net (or vdif) thread */
     pthread_t net_thread_id;
-    rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
-            (void *)&net_args);
+    if (vdif)
+        rv = pthread_create(&net_thread_id, NULL, guppi_vdif_thread,
+                (void *)&net_args);
+    else
+        rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
+                (void *)&net_args);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
         perror("pthread_create");
