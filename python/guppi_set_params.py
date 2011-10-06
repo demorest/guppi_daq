@@ -280,14 +280,14 @@ if (opt.evla):
     g.update("TELESCOP", "VLA")
     g.update("BACKEND", "YUPPI")
     g.update("PKTFMT", "VDIF")
-    g.update("PKTSIZE", 1032)
+    g.update("PKTSIZE", 4032)
     g.update("DATAHOST", "any")
     g.update("OBSNCHAN", 1)
     g.update("OBS_MODE", "RAW")
     g.update("ACC_LEN", 1)
     g.update("POL_TYPE", "AABBCRCI")
     g.update("FD_POLN", "CIRC")
-    g.update("OBSBW", 32.0)
+    g.update("OBSBW", 128.0)
     g.update("OVERLAP", 0)
     g.update("BLOCSIZE", 32000000)
 
@@ -338,7 +338,11 @@ g.write()
 # Update any derived parameters:
 
 # Time res, channel bw
-g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
+# TODO hacky
+if (opt.evla):
+    g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6)/2.0)
+else:
+    g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])
 
 # Poln type.  This assumes 1-pol observations are always summed.
