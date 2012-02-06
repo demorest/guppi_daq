@@ -370,5 +370,6 @@ int make_const_polyco(double freq, const struct hdrinfo *hdr,
     (*pc)[0].rf = hdr->fctr;
     (*pc)[0].c[0] = 0.0;
     (*pc)[0].used = 0;
+    (*pc)[0].dm = 0.0;
     return(1);
 }
