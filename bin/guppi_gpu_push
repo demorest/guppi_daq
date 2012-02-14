@@ -84,6 +84,9 @@ while run:
         rf = float(daqparam['DAQ/OBSFREQ'])
         bw = float(daqparam['DAQ/OBSBW'])
         nchan = int(daqparam['DAQ/OBSNCHAN'])
+        # NOTE this is a hack to enable 400 MHz observing
+        if (bw==400.0):
+            rf -= 200.0
         chan_bw = bw/nchan
         node_bw = bw / 8.0
         node_nchan = nchan/8

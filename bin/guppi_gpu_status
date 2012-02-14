@@ -85,10 +85,16 @@ def do_it(stdscr):
             if curline<ymax-2:
                 stdscr.addstr(curline, col, "%4s: " % node, keycol)
             try:
-                log = tail("/export/home/gpu/logs/%s.daq.log" % node, nlines)
+                log = tail("/export/home/gpu/logs/guppi_daq_server.%s.log" % node, nlines)
                 for l in log:
                     if curline<ymax-2:
-                        stdscr.addstr(curline, col+6, l.rstrip(), valcol)
+                        if 'no error' in l.lower():
+                            color = valcol
+                        elif 'error' in l.lower():
+                            color = errcol
+                        else:
+                            color = valcol
+                        stdscr.addstr(curline, col+6, l.rstrip(), color)
                     curline += 1
             except IOError:
                 pass

@@ -241,16 +241,16 @@ if (opt.update == False):
     if (opt.gbt):
         g.update_with_gbtstatus()
 
-    # Current time
-    MJD = current_MJD()
-    MJDd = int(MJD)
-    MJDf = MJD - MJDd
-    MJDs = int(MJDf * 86400 + 1e-6)
-    offs = (MJD - MJDd - MJDs/86400.0) * 86400.0
-    g.update("STT_IMJD", MJDd)
-    g.update("STT_SMJD", MJDs)
-    if offs < 2e-6: offs = 0.0
-    g.update("STT_OFFS", offs)
+# Current time
+MJD = current_MJD()
+MJDd = int(MJD)
+MJDf = MJD - MJDd
+MJDs = int(MJDf * 86400 + 1e-6)
+offs = (MJD - MJDd - MJDs/86400.0) * 86400.0
+g.update("STT_IMJD", MJDd)
+g.update("STT_SMJD", MJDs)
+if offs < 2e-6: offs = 0.0
+g.update("STT_OFFS", offs)
 
 
 # Any 43m-specific settings
@@ -297,10 +297,12 @@ except KeyError:
 
 if (obsname=="unknown"):
     try:
-        username = os.environ["LOGNAME"]
+        obsname = os.environ["LOGNAME"]
     except KeyError:
-        username = os.getlogin()
-    g.update("OBSERVER", username)
+        obsname = os.getlogin()
+    except:
+        pass
+    g.update("OBSERVER", obsname)
 
 # Apply explicit command line values
 # These will always take precedence over defaults now

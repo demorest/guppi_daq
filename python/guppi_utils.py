@@ -107,6 +107,8 @@ class guppi_status:
         else:
             self.update("FD_POLN", 'CIRC')
         freq = float(g['freq'])
+        if (g['receiver']=='Rcvr26_40'):
+            freq = float(g['if_rest_freq'])
         self.update("OBSFREQ", freq)
         self.update("SRC_NAME", g['source'])
         if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':
