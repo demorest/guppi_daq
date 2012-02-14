@@ -237,6 +237,8 @@ if (opt.update == False):
 
     g.update("DATADIR", ".")
 
+    g.update("NBITSREQ", 8)
+
     # Pull from gbtstatus if needed
     if (opt.gbt):
         g.update_with_gbtstatus()
