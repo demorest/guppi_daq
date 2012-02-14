@@ -104,8 +104,10 @@ void guppi_rawdisk_thread(void *_args) {
     pthread_cleanup_push((void *)safe_fclose, fraw);
 
     /* Pointers for quantization params */
-    double *mean = NULL;
-    double *std = NULL;
+    //double *mean = NULL;
+    //double *std = NULL;
+    double mean[2*256];
+    double std[2*256];
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
@@ -113,6 +115,7 @@ void guppi_rawdisk_thread(void *_args) {
     int curblock=0;
     int block_count=0, blocks_per_file=128, filenum=0;
     int got_packet_0=0, first=1;
+    int first_block = 0;
     int requantize = 0;
     char *ptr, *hend;
     signal(SIGINT,cc);
@@ -179,12 +182,23 @@ void guppi_rawdisk_thread(void *_args) {
             }
             /* Determine scaling factors for quantization if appropriate */
             if (requantize) {
+#if 0 
                 mean = (double *)realloc(mean, 
                         pf.hdr.rcvr_polns * pf.hdr.nchan * sizeof(double));
                 std  = (double *)realloc(std,  
                         pf.hdr.rcvr_polns * pf.hdr.nchan * sizeof(double));
+                fprintf(stderr, "Alloced 2-bit arrays\n"); fflush(stderr);
+                if (mean==NULL) {
+                    fprintf(stderr, "mean is null\n"); fflush(stderr);
+                }
+                if (std==NULL) {
+                    fprintf(stderr, "std is null\n"); fflush(stderr);
+                }
+#endif
+                fprintf(stderr, "curblock=%d\n", curblock); fflush(stderr);
                 compute_stat(&pf, mean, std);
-                fprintf(stderr, "Computed 2-bit stats\n");
+                fprintf(stderr, "Computed 2-bit stats\n"); fflush(stderr);
+                first_block = 1;
             }
         }
         
@@ -209,7 +223,8 @@ void guppi_rawdisk_thread(void *_args) {
         /* Requantize from 8 bits to 2 bits if necessary.
          * See raw_quant.c for more usage examples.
          */
-        if (requantize && got_packet_0) {
+        if (requantize && got_packet_0 && !first_block) {
+        //if (requantize && got_packet_0) {
             pf.sub.bytes_per_subint = orig_blocksize;
             /* Does the quantization in-place */
             quantize_2bit(&pf, mean, std);
@@ -245,6 +260,7 @@ void guppi_rawdisk_thread(void *_args) {
 
             /* Increment counter */
             block_count++;
+            first_block = 0;
 
             /* flush output */
             fflush(fraw);
