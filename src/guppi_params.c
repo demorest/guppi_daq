@@ -355,7 +355,8 @@ void guppi_read_obs_params(char *buf,
             get_dbl("TSUBINT", p->sub.tsubint, 0.0); 
             p->sub.bytes_per_subint = sizeof(float) * p->hdr.nbin *
                 p->hdr.nchan * p->hdr.npol;
-            max_bytes_per_file = PSRFITS_MAXFILELEN_FOLD * 1073741824L;
+            //max_bytes_per_file = PSRFITS_MAXFILELEN_FOLD * 1073741824L;
+            max_bytes_per_file = PSRFITS_MAXFILELEN_FOLD * 1073741824L / 8L;
         } else {
             max_bytes_per_file = PSRFITS_MAXFILELEN_SEARCH * 1073741824L;
         }
