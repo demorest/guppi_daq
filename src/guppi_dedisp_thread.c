@@ -185,9 +185,11 @@ void guppi_dedisp_thread(void *_args) {
             if (strstr(pf.hdr.obs_mode,"CAL")!=NULL) {
                 npc = make_const_polyco(pf.hdr.cal_freq, &pf.hdr, &pc);
             } else {
-                if (pf.fold.parfile[0]=='\0') {
+                if (pf.fold.parfile[0]=='\0' 
+                        || strcmp(pf.fold.parfile,"None")==0) {
                     /* If no parfile, read polyco.dat */
-                    FILE *pcf = fopen("polyco.dat", "r");
+                    //FILE *pcf = fopen("polyco.dat", "r");
+                    FILE *pcf = fopen("/home/gpu/polyco.dat", "r");
                     if (pcf==NULL) { 
                         guppi_error("guppi_dedisp_thread", 
                                 "Couldn't open polyco.dat");
