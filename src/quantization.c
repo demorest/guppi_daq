@@ -165,40 +165,48 @@ int sample;
 
 /* This code is much slower than it needs to be, but it doesn't run very often */
 
+fprintf(stderr,"in compute_stat:\n");
+fprintf(stderr,"  nchan=%d\n  rcvr_polns=%d\n  bytes_per_subint=%d\n",
+        pf->hdr.nchan, pf->hdr.rcvr_polns, pf->sub.bytes_per_subint);
+fprintf(stderr,"  data=%llx\n", (unsigned long long)pf->sub.data);
+fflush(stderr);
+
+int bytes_per_chan = pf->sub.bytes_per_subint/pf->hdr.nchan;
+
  for(x=0;x < pf->hdr.nchan; x = x + 1)   {
 		for(y=0;y<pf->hdr.rcvr_polns;y=y+1) {
 			 running_sum = 0;
 			 running_sum_sq = 0;
 			 
-			 for(z=0;z < pf->sub.bytes_per_subint/pf->hdr.nchan; z = z + (pf->hdr.rcvr_polns * 2)){
+			 for(z=0;z < bytes_per_chan; z = z + (pf->hdr.rcvr_polns * 2)){
 				 //pol 0, real imag
 
 				 //real
-				 sample = (int) ((signed char) pf->sub.data[(x * pf->sub.bytes_per_subint/pf->hdr.nchan) + z + (y * 2)]);
+				 sample = (int) ((signed char) pf->sub.data[(x * bytes_per_chan) + z + (y * 2)]);
 				 running_sum = running_sum + (double) sample;
 
 				 //imag
-				 sample = (int) ((signed char) pf->sub.data[(x * pf->sub.bytes_per_subint/pf->hdr.nchan) + z + (y * 2) + 1]);
+				 sample = (int) ((signed char) pf->sub.data[(x * bytes_per_chan) + z + (y * 2) + 1]);
 				 running_sum = running_sum + (double) sample;
 
 			 }
 
-			 mean[(x*pf->hdr.rcvr_polns) + y] =  running_sum / (double) (pf->sub.bytes_per_subint/(pf->hdr.nchan * pf->hdr.rcvr_polns) );
+			 mean[(x*pf->hdr.rcvr_polns) + y] =  running_sum / (double) (bytes_per_chan/ pf->hdr.rcvr_polns );
 
-			 for(z=0;z < pf->sub.bytes_per_subint/pf->hdr.nchan; z = z + (pf->hdr.rcvr_polns * 2)){
+			 for(z=0;z < bytes_per_chan; z = z + (pf->hdr.rcvr_polns * 2)){
 					 //sample = (int) ((signed char) pf.sub.data[(x * pf.sub.bytes_per_subint/pf.hdr.nchan) + z]);
 
 					 //real
-					 sample = (int) ((signed char) pf->sub.data[(x * pf->sub.bytes_per_subint/pf->hdr.nchan) + z + (y * 2)]);
+					 sample = (int) ((signed char) pf->sub.data[(x * bytes_per_chan) + z + (y * 2)]);
 					 running_sum_sq = running_sum_sq + pow( ((double) sample - mean[(x*pf->hdr.rcvr_polns) + y]) , 2);
 
 					 //imag
-					 sample = (int) ((signed char) pf->sub.data[(x * pf->sub.bytes_per_subint/pf->hdr.nchan) + z + (y * 2) + 1]);
+					 sample = (int) ((signed char) pf->sub.data[(x * bytes_per_chan) + z + (y * 2) + 1]);
 					 running_sum_sq = running_sum_sq + pow( ((double) sample - mean[(x*pf->hdr.rcvr_polns) + y]) , 2);
 
 			 }
 
-			 std[(x*pf->hdr.rcvr_polns) + y] = pow(running_sum_sq / ((double) (pf->sub.bytes_per_subint/(pf->hdr.nchan*pf->hdr.rcvr_polns)) - 1), 0.5);
+			 std[(x*pf->hdr.rcvr_polns) + y] = pow(running_sum_sq / ((double) (bytes_per_chan/pf->hdr.rcvr_polns) - 1), 0.5);
 									 
 			 
 		}			
