@@ -117,6 +117,9 @@ add_param_option("--packets",
 add_param_option("--datadir", 
         name="DATADIR", type="string",
         help="Data output directory (default: current dir)")
+add_param_option("--nbits",
+        name="NBITSREQ", type="int",
+        help="Number of bits for baseband recording (2 or 8)")
 
 
 # non-parameter options
@@ -236,6 +239,7 @@ if (opt.update == False):
     g.update("DATADIR", ".")
 
     g.update("CHAN_DM", 0.0)
+    g.update("NBITSREQ", 8)
 
     # Pull from gbtstatus if needed
     if (opt.gbt):
@@ -289,6 +293,11 @@ try:
 except KeyError:
     g.update("SCANNUM", 1)
 
+# Apply explicit command line values
+# These will always take precedence over defaults now
+for (k,v) in update_list.items():
+    g.update(k,v)
+
 # Observer name
 try:
     obsname = g["OBSERVER"]
@@ -299,15 +308,13 @@ if (obsname=="unknown"):
     try:
         obsname = os.environ["LOGNAME"]
     except KeyError:
-        obsname = os.getlogin()
+        try:
+            obsname = os.getlogin()
+        except:
+            pass
     except:
         pass
     g.update("OBSERVER", obsname)
-
-# Apply explicit command line values
-# These will always take precedence over defaults now
-for (k,v) in update_list.items():
-    g.update(k,v)
 
 # Apply to shared mem
 g.write()
