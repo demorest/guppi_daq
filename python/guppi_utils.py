@@ -74,15 +74,15 @@ class guppi_status:
     def unlock(self):
         return possem.sem_post(self.sem)
 
-    def read(self):
-        self.lock()
+    def read(self,lock=True):
+        if lock: self.lock()
         self.hdr = header_from_string(self.stat_buf.read())
-        self.unlock()
+        if lock: self.unlock()
 
-    def write(self):
-        self.lock()
+    def write(self,lock=True):
+        if lock: self.lock()
         self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
-        self.unlock()
+        if lock: self.unlock()
 
     def update(self, key, value, comment=None):
         self.hdr.update(key, value, comment)
