@@ -13,5 +13,5 @@ while (1):
         g.write(lock=False)
         g.unlock()
     except:
-        pass
+        g.unlock()
     time.sleep(1)
