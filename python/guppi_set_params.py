@@ -292,6 +292,11 @@ try:
 except KeyError:
     g.update("SCANNUM", 1)
 
+# Apply explicit command line values
+# These will always take precedence over defaults now
+for (k,v) in update_list.items():
+    g.update(k,v)
+
 # Observer name
 try:
     obsname = g["OBSERVER"]
@@ -302,13 +307,13 @@ if (obsname=="unknown"):
     try:
         username = os.environ["LOGNAME"]
     except KeyError:
-        username = os.getlogin()
+        try:
+            username = os.getlogin()
+        except:
+            pass
+    except:
+        pass
     g.update("OBSERVER", username)
-
-# Apply explicit command line values
-# These will always take precedence over defaults now
-for (k,v) in update_list.items():
-    g.update(k,v)
 
 # Apply to shared mem
 g.write()
