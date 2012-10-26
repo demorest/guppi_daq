@@ -283,7 +283,7 @@ if (opt.evla):
     g.update("PKTSIZE", 4032)
     g.update("DATAHOST", "any")
     g.update("OBSNCHAN", 1)
-    g.update("OBS_MODE", "RAW")
+    g.update("OBS_MODE", "VDIF")
     g.update("ACC_LEN", 1)
     g.update("POL_TYPE", "AABBCRCI")
     g.update("FD_POLN", "CIRC")
