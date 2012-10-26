@@ -133,7 +133,43 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* TODO: create FIFO */
+    /* create FIFO */
+    int ierr;
+    struct stat daq_buf;
+
+    errno = 0;
+
+    ierr = stat(GUPPI_DAQ_CONTROL, &daq_buf);
+    if ( ierr == 0 ) /* FIFO exists.  Can we get rid of it? */
+    {
+        /* Hope that the following does the sensible thing */
+        /* for a FIFO.                                     */
+        ierr = unlink(GUPPI_DAQ_CONTROL);
+        if ( ierr != 0)
+        {
+            perror(GUPPI_DAQ_CONTROL);
+            exit(errno);
+        }
+    }
+    else if ( errno == EACCES ) /* Can't even get to the directory! */
+    {
+        perror(GUPPI_DAQ_CONTROL);
+        exit(errno);
+    }
+
+    ierr = mkfifo(GUPPI_DAQ_CONTROL, O_CREAT | O_NONBLOCK | O_RDWR );
+    if ( ierr != 0 )
+    {
+        perror(GUPPI_DAQ_CONTROL);
+        exit(errno);
+    }
+
+    ierr = chmod(GUPPI_DAQ_CONTROL, S_IRUSR | S_IWUSR | S_IRGRP);
+    if ( ierr != 0 )
+    {
+        perror(GUPPI_DAQ_CONTROL);
+        exit(errno);
+    }
 
     /* Open command FIFO for read */
 #define MAX_CMD_LEN 1024
@@ -344,7 +380,8 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
     fflush(stderr);
 
-    /* TODO: remove FIFO */
+    /* remove FIFO */
+    ierr = unlink(GUPPI_DAQ_CONTROL);
 
     exit(0);
 }
