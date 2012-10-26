@@ -44,6 +44,7 @@ void srv_quit(int sig) { srv_run=0; }
 
 /* Thread declarations */
 void *guppi_net_thread(void *args);
+void *guppi_vdif_thread(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
@@ -84,6 +85,12 @@ void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
     *nthread = 2;
 }
 
+void init_vdif_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]);
+    args[0].output_buffer = 1;
+    *nthread = 1;
+}
+
 void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
@@ -104,6 +111,11 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     int rv;
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
+}
+
+void start_vdif_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_vdif_thread, (void*)&args[0]);
 }
 
 void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
@@ -187,7 +199,8 @@ int main(int argc, char *argv[]) {
     struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;
     int rv = guppi_status_attach(&stat);
     const int netbuf_id = 1;
-    const int foldbuf_id = 2;
+    // XXX we don't need a foldbuf at VLA...
+    //const int foldbuf_id = 2;
     if (rv!=GUPPI_OK) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
@@ -198,12 +211,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     guppi_databuf_clear(dbuf_net);
-    dbuf_fold = guppi_databuf_attach(foldbuf_id);
-    if (dbuf_fold==NULL) {
-        fprintf(stderr, "Error connecting to guppi_databuf\n");
-        exit(1);
-    }
-    guppi_databuf_clear(dbuf_fold);
+    //dbuf_fold = guppi_databuf_attach(foldbuf_id);
+    //if (dbuf_fold==NULL) {
+    //    fprintf(stderr, "Error connecting to guppi_databuf\n");
+    //    exit(1);
+    //}
+    //guppi_databuf_clear(dbuf_fold);
 
     /* Thread setup */
 #define MAX_THREAD 8
@@ -342,6 +355,9 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "MONITOR", 8)==0) {
                     init_monitor_mode(args, &nthread_cur);
                     start_monitor_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "VDIF", 5)==0) {
+                    init_vdif_mode(args, &nthread_cur);
+                    start_vdif_mode(args, thread_id);
                 } else {
                     printf("  unrecognized obs_mode!\n");
                 }
