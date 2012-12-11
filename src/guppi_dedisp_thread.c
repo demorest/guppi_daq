@@ -135,7 +135,7 @@ void guppi_dedisp_thread(void *_args) {
     double fmjd0, fmjd_next=0.0, fmjd, offset;
     struct polyco *pc=NULL;
     int npc=0, ipc;
-    int first=1, next_integration=0, refresh_polycos=1;
+    int first=1, next_integration=0, refresh_polycos=1, do_processing=1;
     int nblock_int=0, npacket=0, ndrop=0;
     double tsubint=0.0, suboffs=0.0;
     signal(SIGINT,cc);
@@ -170,6 +170,12 @@ void guppi_dedisp_thread(void *_args) {
             if (!first) next_integration=1;
             refresh_polycos=1;
         }
+
+        /* Figure out whether to actually call the gpu routines */
+        if (got_packet_0 || first) 
+            do_processing=1;
+        else
+            do_processing=0;
 
         /* Get current time */
         //offset = pf.hdr.dt * gp.packetindex * gp.packetsize 
@@ -352,38 +358,39 @@ void guppi_dedisp_thread(void *_args) {
         pc[ipc].used = 1;
 
         /* Loop over channels in the block */
-        unsigned ichan;
-        for (ichan=0; ichan<ds.nchan; ichan++) {
+        if (do_processing) {
+            unsigned ichan;
+            for (ichan=0; ichan<ds.nchan; ichan++) {
 
-            /* Pointer to raw data
-             * 4 bytes per sample for 8-bit/2-pol/complex data
-             */
-            rawdata = (unsigned char *)guppi_databuf_data(db_in, curblock_in) 
-                + (size_t)4 * pf.hdr.nsblk * ichan;
+                /* Pointer to raw data
+                 * 4 bytes per sample for 8-bit/2-pol/complex data
+                 */
+                rawdata = 
+                    (unsigned char *)guppi_databuf_data(db_in, curblock_in) 
+                    + (size_t)4 * pf.hdr.nsblk * ichan;
 
-            /* Call dedisp fn */
-            dedisperse(&ds, ichan, rawdata, outdata);
+                /* Call dedisp fn */
+                dedisperse(&ds, ichan, rawdata, outdata);
 
-            /* call fold function */
-            fold(&ds, ichan, &fb);
+                /* call fold function */
+                fold(&ds, ichan, &fb);
 
 #if 0 
-            float nn = fb.count[ichan*fb.nbin];
-            printf("%d %e %e %e %e %d\n", ichan, 
-                    fb.data[ichan*fb.nbin*fb.npol + 0]/nn,
-                    fb.data[ichan*fb.nbin*fb.npol + 1]/nn,
-                    fb.data[ichan*fb.nbin*fb.npol + 2]/nn,
-                    fb.data[ichan*fb.nbin*fb.npol + 3]/nn,
-                    fb.count[ichan*fb.nbin]);
+                float nn = fb.count[ichan*fb.nbin];
+                printf("%d %e %e %e %e %d\n", ichan, 
+                        fb.data[ichan*fb.nbin*fb.npol + 0]/nn,
+                        fb.data[ichan*fb.nbin*fb.npol + 1]/nn,
+                        fb.data[ichan*fb.nbin*fb.npol + 2]/nn,
+                        fb.data[ichan*fb.nbin*fb.npol + 3]/nn,
+                        fb.count[ichan*fb.nbin]);
 
-            int ii;
-            for (ii=0; ii<fb.nbin; ii++) {
-                printf("%4d %e %d\n", ii, fb.data[4*ii], fb.count[ii]);
-            }
-            printf("\n");
+                int ii;
+                for (ii=0; ii<fb.nbin; ii++) {
+                    printf("%4d %e %d\n", ii, fb.data[4*ii], fb.count[ii]);
+                }
+                printf("\n");
 #endif
-
-
+            }
         }
 
         /* Add into total foldbuf */
