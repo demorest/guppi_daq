@@ -73,8 +73,21 @@ __global__ void detect_downsample_4pol(const float2 *pol0, const float2 *pol1,
             otmp.z += p0.x*p1.x + p0.y*p1.y;
             otmp.w += p0.x*p1.y - p0.y*p1.x;
         }
-        optr[iout].x = __float2int_rn(otmp.x/scale);
-        optr[iout].y = __float2int_rn(otmp.y/scale);
+        // The __float2int_rn function appears to not saturate, so if otmp.x/scale > 255, it will wrap
+        // so large spikes in the data (giant pulses!) could be lost
+        // This code saturates to 255 so that the value 255 in the PP or QQ terms indicates that some 
+        // clipping has occured, in which case the cross terms should not be trusted.
+        otmp.x = otmp.x/scale;
+        if (otmp.x > 254) {
+            otmp.x = 255;
+        }
+        otmp.y = otmp.y/scale;
+        if (otmp.y > 254) {
+            otmp.y = 255;
+        }
+        optr[iout].x = __float2int_rn(otmp.x);
+        optr[iout].y = __float2int_rn(otmp.y);
+    
         optr[iout].z = __float2int_rn(otmp.z/scale);
         optr[iout].w = __float2int_rn(otmp.w/scale);
     }
