@@ -154,6 +154,7 @@ int main(int argc, char *argv[]) {
     ierr = stat(GUPPI_DAQ_CONTROL, &daq_buf);
     if ( ierr == 0 ) /* FIFO exists.  Can we get rid of it? */
     {
+#if 0 
         /* Hope that the following does the sensible thing */
         /* for a FIFO.                                     */
         ierr = unlink(GUPPI_DAQ_CONTROL);
@@ -162,25 +163,30 @@ int main(int argc, char *argv[]) {
             perror(GUPPI_DAQ_CONTROL);
             exit(errno);
         }
+#endif
     }
     else if ( errno == EACCES ) /* Can't even get to the directory! */
     {
         perror(GUPPI_DAQ_CONTROL);
         exit(errno);
     }
-
-    ierr = mkfifo(GUPPI_DAQ_CONTROL, O_CREAT | O_NONBLOCK | O_RDWR );
-    if ( ierr != 0 )
+    else
     {
-        perror(GUPPI_DAQ_CONTROL);
-        exit(errno);
-    }
 
-    ierr = chmod(GUPPI_DAQ_CONTROL, S_IRUSR | S_IWUSR | S_IRGRP);
-    if ( ierr != 0 )
-    {
-        perror(GUPPI_DAQ_CONTROL);
-        exit(errno);
+        ierr = mkfifo(GUPPI_DAQ_CONTROL, O_CREAT | O_NONBLOCK | O_RDWR );
+        if ( ierr != 0 )
+        {
+            perror(GUPPI_DAQ_CONTROL);
+            exit(errno);
+        }
+
+        ierr = chmod(GUPPI_DAQ_CONTROL, 00666);
+        if ( ierr != 0 )
+        {
+            perror(GUPPI_DAQ_CONTROL);
+            exit(errno);
+        }
+
     }
 
     /* Open command FIFO for read */
