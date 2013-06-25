@@ -7,9 +7,11 @@ g = guppi_status()
 
 while (1):
     try:
-        g.read()
+        g.lock()
+        g.read(lock=False)
         g.update_with_gbtstatus()
-        g.write()
+        g.write(lock=False)
+        g.unlock()
     except:
-        pass
+        g.unlock()
     time.sleep(1)

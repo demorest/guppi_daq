@@ -1,0 +1,60 @@
+#! /usr/bin/env python
+
+# Calculates the time offset due to the coherent search
+# mode overlap problem.
+
+import guppi2_utils
+from optparse import OptionParser
+
+par = OptionParser()
+par.add_option("-f", "--freq", action="store", type="float",
+        dest="rf", help="Center frequency (MHz)", default=1500.0)
+par.add_option("-b", "--bw", action="store", type="float",
+        dest="bw", help="Bandwidth (MHz)", default=800.0)
+par.add_option("-c", "--nchan", action="store", type="int",
+        dest="nchan", help="Number of channels", default=512)
+par.add_option("-d", "--dm", action="store", type="float",
+        dest="dm", help="Dispersion measure", default=71.0)
+par.add_option("-m", "--mode", action="store",
+        dest="mode", default="csearch", 
+        help="Obs mode (csearch, cfold, or incoh)")
+(opt,args) = par.parse_args()
+
+# Overlap is returned in number of single-channel samples
+(fftlen, overlap, blocsize) = \
+        guppi2_utils.fft_size_params(opt.rf,opt.bw,opt.nchan,opt.dm)
+
+# Covert it to us
+overlap_us = float(overlap) * float(opt.nchan) / abs(opt.bw)
+
+# Output timing correction (half overlap)
+print "At freq = %.1f MHz, BW = %.1f MHz, Nchan = %d, DM = %.1f" % \
+        (opt.rf, opt.bw, opt.nchan, opt.dm)
+
+pfb_fac = 2.0
+
+if (opt.mode=="csearch" or opt.mode=="cfold"):
+    if (opt.nchan==2048):
+        pfb_fac = 2.0
+    else:
+        pfb_fac = 6.0
+
+pfb_corr_us = pfb_fac * float(opt.nchan) / abs(opt.bw)
+
+if opt.mode=="incoh":
+    print "For incoherent modes:"
+    print "  PFB correction is %+.3f us" % (pfb_corr_us)
+elif opt.mode=="cfold":
+    print "For coherent fold mode:"
+    print "  PFB correction is %+.3f us" % (pfb_corr_us)
+elif opt.mode=="csearch":
+    print "For coherent search mode:"
+    print "  FFT len is %d samples" % (fftlen)
+    print "  Overlap is %d samples" % (overlap)
+    print "  Overlap correction is %+.3f us" % (0.5*overlap_us)
+    print "  PFB correction is %+.3f us" % (pfb_corr_us)
+    print "  Total correction is %+.3f us" % (pfb_corr_us+0.5*overlap_us)
+else:
+    print "Unknown 'mode' params (%s)" % (opt.mode)
+
+

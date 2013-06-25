@@ -52,6 +52,7 @@ class guppi_status:
     def __init__(self):
         self.stat_buf = shm.SharedMemoryHandle(GUPPI_STATUS_KEY)
         self.sem = possem.sem_open(GUPPI_STATUS_SEMID, possem.O_CREAT, 00644, 1)
+        self.locked = False
         self.hdr = None
         self.gbtstat = None
         self.read()
@@ -69,20 +70,26 @@ class guppi_status:
         return self.hdr.items()
 
     def lock(self):
-        return possem.sem_wait(self.sem)
+        if self.locked: return 0
+        rv = possem.sem_wait(self.sem)
+        if rv==0: self.locked=True
+        return rv
 
     def unlock(self):
-        return possem.sem_post(self.sem)
+        if self.locked==False: return 0
+        rv = possem.sem_post(self.sem)
+        if rv==0: self.locked=False
+        return rv
 
-    def read(self):
-        self.lock()
+    def read(self,lock=True):
+        if lock: self.lock()
         self.hdr = header_from_string(self.stat_buf.read())
-        self.unlock()
+        if lock: self.unlock()
 
-    def write(self):
-        self.lock()
+    def write(self,lock=True):
+        if lock: self.lock()
         self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
-        self.unlock()
+        if lock: self.unlock()
 
     def update(self, key, value, comment=None):
         self.hdr.update(key, value, comment)
@@ -107,6 +114,8 @@ class guppi_status:
         else:
             self.update("FD_POLN", 'CIRC')
         freq = float(g['freq'])
+        if (g['receiver']=='Rcvr26_40'):
+            freq = float(g['if_rest_freq'])
         self.update("OBSFREQ", freq)
         self.update("SRC_NAME", g['source'])
         if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':

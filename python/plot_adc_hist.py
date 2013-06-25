@@ -6,8 +6,10 @@ import guppi.interpreter
 # Check to see if observations are running
 do_arm = False
 daqstate = cicada.get("DAQ/DAQSTATE")
+gpudaqstate = cicada.get("GPU1/DAQ/DAQSTATE")
 print "DAQ state = %s" % daqstate
-if (daqstate=="stopped"):
+print "GPU DAQ state = %s" % gpudaqstate
+if (daqstate=="stopped" and gpudaqstate=="stopped"):
     do_arm = True
 
 if (do_arm==False):

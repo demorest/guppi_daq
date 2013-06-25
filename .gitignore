@@ -34,6 +34,7 @@ src/test_net_thread
 src/test_psrfits
 src/test_psrfits_read
 src/test_udp_recv
+src/unlock_guppi_status
 src/guppi_daq_dedisp
 src/test_dedisp_thread
 src/raw_quant
