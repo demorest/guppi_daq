@@ -1,7 +1,11 @@
-/* guppi_net_thread.c
+/* guppi_net_thread_codd.c
  *
  * Routine to read packets from network and put them
  * into shared memory blocks.
+ *
+ * This one is specific to coherent dedispersion mode because
+ * it has the capability to overlap the output data blocks
+ * and also performs a transpose on the input.
  */
 
 #define _GNU_SOURCE 1
@@ -167,7 +171,7 @@ void write_baseband_packet_to_block(struct datablock_stats *d,
  * be cancelled and restarted if any hardware params
  * change, as this potentially affects packet size, etc.
  */
-void *guppi_net_thread(void *_args) {
+void *guppi_net_thread_codd(void *_args) {
 
     /* Get arguments */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
@@ -180,14 +184,14 @@ void *guppi_net_thread(void *_args) {
     CPU_SET(3, &cpuset);
     int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
     if (rv<0) { 
-        guppi_error("guppi_net_thread", "Error setting cpu affinity.");
+        guppi_error("guppi_net_thread_codd", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, args->priority);
     if (rv<0) {
-        guppi_error("guppi_net_thread", "Error setting priority level.");
+        guppi_error("guppi_net_thread_codd", "Error setting priority level.");
         perror("set_priority");
     }
 
@@ -195,7 +199,7 @@ void *guppi_net_thread(void *_args) {
     struct guppi_status st;
     rv = guppi_status_attach(&st);
     if (rv!=GUPPI_OK) {
-        guppi_error("guppi_net_thread", 
+        guppi_error("guppi_net_thread_codd", 
                 "Error attaching to status shared memory.");
         pthread_exit(NULL);
     }
@@ -229,7 +233,7 @@ void *guppi_net_thread(void *_args) {
     struct guppi_databuf *db;
     db = guppi_databuf_attach(args->output_buffer); 
     if (db==NULL) {
-        guppi_error("guppi_net_thread",
+        guppi_error("guppi_net_thread_codd",
                 "Error attaching to databuf shared memory.");
         pthread_exit(NULL);
     }
@@ -238,7 +242,7 @@ void *guppi_net_thread(void *_args) {
     /* Set up UDP socket */
     rv = guppi_udp_init(&up);
     if (rv!=GUPPI_OK) {
-        guppi_error("guppi_net_thread",
+        guppi_error("guppi_net_thread_codd",
                 "Error opening UDP socket.");
         pthread_exit(NULL);
     }
@@ -255,10 +259,10 @@ void *guppi_net_thread(void *_args) {
     npol = pf.hdr.npol;
     if (strncmp(up.packet_format, "PARKES", 6)==0) { use_parkes_packets=1; }
     if (use_parkes_packets) {
-        printf("guppi_net_thread: Using Parkes UDP packet format.\n");
+        printf("guppi_net_thread_codd: Using Parkes UDP packet format.\n");
         acclen = gp.decimation_factor;
         if (acclen==0) { 
-            guppi_error("guppi_net_thread", 
+            guppi_error("guppi_net_thread_codd", 
                     "ACC_LEN must be set to use Parkes format");
             pthread_exit(NULL);
         }
@@ -279,7 +283,7 @@ void *guppi_net_thread(void *_args) {
             hputi4(status_buf, "BLOCSIZE", block_size);
     } else {
         if (block_size > db->block_size) {
-            guppi_error("guppi_net_thread", "BLOCSIZE > databuf block_size");
+            guppi_error("guppi_net_thread_codd", "BLOCSIZE > databuf block_size");
             block_size = db->block_size;
             hputi4(status_buf, "BLOCSIZE", block_size);
         }
@@ -297,7 +301,7 @@ void *guppi_net_thread(void *_args) {
             // XXX This is only true for 8-bit, 2-pol data:
             int samples_per_packet = packet_data_size / nchan / (size_t)4;
             if (overlap_packets % samples_per_packet) {
-                guppi_error("guppi_net_thread", 
+                guppi_error("guppi_net_thread_codd", 
                         "Overlap is not an integer number of packets");
                 overlap_packets = (overlap_packets/samples_per_packet+1);
                 hputi4(status_buf, "OVERLAP", 
@@ -346,7 +350,7 @@ void *guppi_net_thread(void *_args) {
                 }
                 continue; 
             } else {
-                guppi_error("guppi_net_thread", 
+                guppi_error("guppi_net_thread_codd", 
                         "guppi_udp_wait returned error");
                 perror("guppi_udp_wait");
                 pthread_exit(NULL);
@@ -361,7 +365,7 @@ void *guppi_net_thread(void *_args) {
                 nbogus_total++;
                 continue; 
             } else {
-                guppi_error("guppi_net_thread", 
+                guppi_error("guppi_net_thread_codd", 
                         "guppi_udp_recv returned error");
                 perror("guppi_udp_recv");
                 pthread_exit(NULL);
@@ -389,7 +393,7 @@ void *guppi_net_thread(void *_args) {
                 char msg[256];
                 sprintf(msg, "Received duplicate packet (seq_num=%lld)", 
                         seq_num);
-                guppi_warn("guppi_net_thread", msg);
+                guppi_warn("guppi_net_thread_codd", msg);
             }
             else  { continue; } /* No going backwards */
         } else { 
@@ -452,7 +456,7 @@ void *guppi_net_thread(void *_args) {
                     sprintf(msg, 
                             "Second fraction = %3.1f ms > +/-100 ms",
                             stt_offs*1e3);
-                    guppi_warn("guppi_net_thread", msg);
+                    guppi_warn("guppi_net_thread_codd", msg);
                 }
                 stt_offs = 0.0;
 
@@ -461,7 +465,7 @@ void *guppi_net_thread(void *_args) {
                     char msg[256];
                     sprintf(msg, "First packet number is not 0 (seq_num=%lld)",
                             seq_num);
-                    guppi_warn("guppi_net_thread", msg);
+                    guppi_warn("guppi_net_thread_codd", msg);
                 }
 
                 /* Flush any current buffers */
@@ -506,7 +510,7 @@ void *guppi_net_thread(void *_args) {
                         block_size = db->block_size;
                 } else {
                     if (block_size > db->block_size) {
-                        guppi_error("guppi_net_thread", 
+                        guppi_error("guppi_net_thread_codd", 
                                 "BLOCSIZE > databuf block_size");
                         block_size = db->block_size;
                     }
@@ -527,7 +531,7 @@ void *guppi_net_thread(void *_args) {
                     guppi_status_unlock_safe(&st);
                     continue;
                 } else {
-                    guppi_error("guppi_net_thread", 
+                    guppi_error("guppi_net_thread_codd", 
                             "error waiting for free databuf");
                     run=0;
                     pthread_exit(NULL);

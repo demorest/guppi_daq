@@ -44,6 +44,7 @@ void srv_quit(int sig) { srv_run=0; }
 
 /* Thread declarations */
 void *guppi_net_thread(void *args);
+void *guppi_net_thread_codd(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
@@ -105,7 +106,7 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_thread, (void*)&args[1]);
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
 }
@@ -113,7 +114,7 @@ void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_ds_thread, (void*)&args[1]);
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
 }
@@ -128,7 +129,7 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
 }
 

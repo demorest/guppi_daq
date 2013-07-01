@@ -14,7 +14,8 @@ OBJS  = guppi_status.o guppi_databuf.o guppi_udp.o guppi_error.o \
 	fold.o polyco.o hget.o hput.o sla.o downsample.o \
 	dedisperse_utils.o quantization.o
 THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold 
-THREAD_OBJS  = guppi_net_thread.o guppi_rawdisk_thread.o \
+THREAD_OBJS  = guppi_net_thread.o guppi_net_thread_codd.o \
+	       guppi_rawdisk_thread.o \
 	       guppi_psrfits_thread.o guppi_fold_thread.o \
 	       guppi_null_thread.o
 CUDA_OBJS = guppi_dedisp_thread.o guppi_dedisp_ds_thread.o \
