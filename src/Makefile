@@ -2,6 +2,7 @@ OPT64 = /home/pulsar64
 CUDA = /home/apps/cuda50
 #CFLAGS = -g -O3 -Wall -DFOLD_USE_INTRINSICS -I$(OPT64)/include -I$(CUDA)/include
 CFLAGS = -g -O3 -Wall -I$(OPT64)/include -I$(CUDA)/include
+CFLAGS+= -DUSE_VEGAS_STATUSID
 NVCCFLAGS = -g -arch sm_30 -I$(CUDA)/include -I$(OPT64)/include
 #NVCCFLAGS = -g -ccbin $(CUDA)/gcc -I$(CUDA)/include -I$(OPT64)/include
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \

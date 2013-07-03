@@ -11,8 +11,15 @@
 
 #include "guppi_params.h"
 
+#ifdef USE_VEGAS_STATUSID
+#define VEGAS_STATUS_KEY 0x01001840
+#define VEGAS_STATUS_SEMID "/vegas_status"
+#define GUPPI_STATUS_KEY VEGAS_STATUS_KEY
+#define GUPPI_STATUS_SEMID VEGAS_STATUS_SEMID
+#else
 #define GUPPI_STATUS_KEY 16783408
 #define GUPPI_STATUS_SEMID "/guppi_status"
+#endif
 #define GUPPI_STATUS_SIZE (2880*64) // FITS-style buffer
 #define GUPPI_STATUS_CARD 80 // Size of each FITS "card"
 
