@@ -36,6 +36,7 @@ void usage() {
 void *guppi_net_thread(void *_up);
 void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
+void *guppi_null_thread(void *args);
 
 int main(int argc, char *argv[]) {
 
@@ -133,16 +134,35 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    /* Launch null thread */
+    struct guppi_thread_args null_args;
+    guppi_thread_args_init(&null_args);
+    null_args.input_buffer = dedisp_args.output_buffer;
+    pthread_t null_thread_id = 0;
+    rv = pthread_create(&null_thread_id, NULL, guppi_null_thread,
+            (void *)&null_args);
+    if (rv) { 
+        fprintf(stderr, "Error creating null thread.\n");
+        perror("pthread_create");
+        exit(1);
+    }
+
     /* Wait for end */
-    while (run) { sleep(1); }
+    //while (run) { sleep(1); }
+    int isec;
+    for (isec=0; isec<20; isec++) { sleep(1); }
     pthread_cancel(dedisp_thread_id);
     pthread_cancel(net_thread_id);
+    pthread_cancel(null_thread_id);
     pthread_kill(dedisp_thread_id,SIGINT);
     pthread_kill(net_thread_id,SIGINT);
+    pthread_kill(null_thread_id,SIGINT);
     pthread_join(net_thread_id,NULL);
     printf("Joined net thread\n"); fflush(stdout); fflush(stderr);
     pthread_join(dedisp_thread_id,NULL);
     printf("Joined dedisp thread\n"); fflush(stdout); fflush(stderr);
+    pthread_join(null_thread_id,NULL);
+    printf("Joined null thread\n"); fflush(stdout); fflush(stderr);
 
     guppi_thread_args_destroy(&dedisp_args);
 
