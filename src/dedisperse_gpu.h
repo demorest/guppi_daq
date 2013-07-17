@@ -9,6 +9,7 @@
 #include "guppi_params.h"
 
 /* Time different operations for benchmarks */
+#define NTIMERS 32
 struct dedispersion_times {
     double transfer_to_gpu;
     double overlap;
@@ -24,6 +25,7 @@ struct dedispersion_times {
     double total;
     double total2;
     unsigned long long nsamp_tot;
+    cudaEvent_t t[NTIMERS];
 };
 
 /* Describes dedispersion params */
@@ -89,6 +91,9 @@ void init_dedispersion(struct dedispersion_setup *s);
 void dedisperse(struct dedispersion_setup *s, int ichan,
         const unsigned char *in, float *out);
 void free_dedispersion(struct dedispersion_setup *s);
+void init_timers(struct dedispersion_times *t);
+void accumulate_timers(struct dedispersion_times *t);
+void free_timers(struct dedispersion_times *t);
 void print_timing_report(struct dedispersion_setup *s);
 #ifdef __cplusplus
 }

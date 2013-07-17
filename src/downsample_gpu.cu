@@ -144,15 +144,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     /* Sizes */
     const size_t ds_bytes = get_ds_bytes(s);
 
-    /* Benchmark */
-#define NT 5
-    cudaEvent_t t[NT];
-    int it;
-    for (it=0; it<NT; it++) cudaEventCreate(&t[it]);
-    it=0;
-
-    cudaEventRecord(t[it], 0); it++;
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[8]); // Start downsamp
 
     /* Clear out data buf */
     cudaMemset(s->dsbuf_gpu, 0, ds_bytes);
@@ -165,35 +157,10 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     else
         detect_downsample_4pol<<<gd, 64>>>(s->databuf0_gpu, s->databuf1_gpu,
                 s->dsfac, s->fft_len, s->overlap, (char4 *)s->dsbuf_gpu);
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[9]); // Finish downsamp
 
     /* Transfer data back to CPU */
     cudaMemcpy(ds_out, s->dsbuf_gpu, ds_bytes, cudaMemcpyDeviceToHost);
-    cudaEventRecord(t[it], 0); it++;
-
-    /* Final timer */
-    cudaEventRecord(t[it], 0);
-    cudaEventSynchronize(t[it]);
-    cudaThreadSynchronize();
-
-    /* Add up timers */
-    float ttmp;
-    it=1;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.downsample += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.transfer_to_host += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[0], t[it+1]);
-    s->time.total += ttmp;
-
-    /* Cleanup */
-    for (it=0; it<NT; it++) cudaEventDestroy(t[it]);
+    cudaEventRecord(s->time.t[10]); // Finish transfer
 
 }

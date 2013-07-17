@@ -225,21 +225,11 @@ void fold(struct dedispersion_setup *s, int chan, struct foldbuf *fb) {
     const size_t bytes_per_profile = sizeof(float) * npol * s->nbins_fold;
     const size_t bytes_per_count = sizeof(unsigned) * s->nbins_fold;
 
-    /* Benchmarking */
-#define NT 8
-    cudaEvent_t t[NT];
-    int it;
-    for (it=0; it<NT; it++) cudaEventCreate(&t[it]);
-    it=0;
-
-    cudaEventRecord(t[it], 0); it++;
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[12]); // Start fold
 
     /* Zero out memory */
     zero_fold_buffers(s);
-    cudaEventRecord(t[it], 0); it++;
-    //cudaThreadSynchronize();
-    //printf("fold cuda_err=\'%s\'\n", cudaGetErrorString(cudaGetLastError()));
+    cudaEventRecord(s->time.t[13]); // zero buffers
 
     /* Fold FFT blocks */
     dim3 gd(s->nfft_per_block, s->nbins_fold/BINS_PER_BLOCK, 1);
@@ -247,18 +237,14 @@ void fold(struct dedispersion_setup *s, int chan, struct foldbuf *fb) {
             s->databuf0_gpu, s->databuf1_gpu, s->fold_phase, 
             s->fold_step, s->fft_len, s->overlap, s->nbins_fold,
             (float4 *)s->foldtmp_gpu, s->foldtmp_c_gpu);
-    cudaEventRecord(t[it], 0); it++;
-    //cudaThreadSynchronize();
-    //printf("fold cuda_err=\'%s\'\n", cudaGetErrorString(cudaGetLastError()));
+    cudaEventRecord(s->time.t[14]); // do the fold
 
     /* Combine folds */
     combine_folds<<<s->nbins_fold/64,64>>>(
             (float4 *)s->foldtmp_gpu, s->foldtmp_c_gpu,
             (float4 *)s->foldbuf_gpu, s->foldbuf_c_gpu,
             s->nfft_per_block);
-    cudaEventRecord(t[it], 0); it++;
-    //cudaThreadSynchronize();
-    //printf("fold cuda_err=\'%s\'\n", cudaGetErrorString(cudaGetLastError()));
+    cudaEventRecord(s->time.t[15]); // combine folds
 
     /* Transfer result to host */
     cudaMemcpy(fb->data + chan*fb->npol*fb->nbin,
@@ -267,44 +253,6 @@ void fold(struct dedispersion_setup *s, int chan, struct foldbuf *fb) {
     cudaMemcpy(fb->count + chan*fb->nbin,
             s->foldbuf_c_gpu, bytes_per_count, 
             cudaMemcpyDeviceToHost);
-    cudaEventRecord(t[it], 0); it++;
-    //cudaThreadSynchronize();
-    //printf("fold cuda_err=\'%s\'\n", cudaGetErrorString(cudaGetLastError()));
-
-    /* Final timer */
-    cudaEventRecord(t[it], 0);
-    cudaEventSynchronize(t[it]);
-    cudaThreadSynchronize();
-    //printf("fold cuda_err=\'%s\'\n", cudaGetErrorString(cudaGetLastError()));
-
-    /* Add up timers */
-    float ttmp;
-    it=1;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.fold_mem += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.fold_blocks += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.fold_combine += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.transfer_to_host += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[0], t[it+1]);
-    s->time.total += ttmp;
-
-    /* Benchmark cleanup */
-    for (it=0; it<NT; it++) cudaEventDestroy(t[it]);
+    cudaEventRecord(s->time.t[16]); // transfer results
 
 }

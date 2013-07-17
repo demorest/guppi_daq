@@ -251,6 +251,9 @@ void guppi_dedisp_ds_thread(void *_args) {
             /* call downsample */
             downsample(&ds, dsbuf);
 
+            /* Collect cuda timing info */
+            accumulate_timers(&ds.time);
+
             //printf("%d %d\n", ichan, dsbuf[32]);
 
             // Arrange data into output array in chan, pol, samp order

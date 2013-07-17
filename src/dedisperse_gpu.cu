@@ -300,8 +300,8 @@ void init_dedispersion(struct dedispersion_setup *s) {
     // Zero out ds buffer
     s->dsbuf_gpu = NULL;
 
-    // Zero out timers
-    memset(&s->time, 0, sizeof(struct dedispersion_times));
+    // Init timers
+    init_timers(&s->time);
 
     // Check errors
     cudaThreadSynchronize();
@@ -309,8 +309,53 @@ void init_dedispersion(struct dedispersion_setup *s) {
 
 }
 
+/* Init the set of timers */
+void init_timers(struct dedispersion_times *t) {
+    int it;
+    memset(t,0,sizeof(struct dedispersion_times));
+    for (it=0; it<NTIMERS; it++) cudaEventCreate(&(t->t[it]));
+}
+
+/* Free the set of timers */
+void free_timers(struct dedispersion_times *t) {
+    int it;
+    for (it=0; it<NTIMERS; it++) cudaEventDestroy(t->t[it]); 
+}
+
+/* Accumulate times into appropriate places */
+#define get_time(idx0,idx1,step) do { \
+    rv = cudaEventElapsedTime(&ttmp, t->t[idx0], t->t[idx1]); \
+    if (rv==cudaSuccess) t->step += ttmp; \
+} while (0)
+void accumulate_timers(struct dedispersion_times *t) {
+    // Note, needs to be consistent with markers in processing fns
+   
+    float ttmp; 
+    cudaError_t rv;
+
+    // Wait for the final event, it's either 10 or 16 depending on mode
+    cudaEventSynchronize(t->t[10]);
+    cudaEventSynchronize(t->t[16]);
+
+    get_time(0,1,transfer_to_gpu);
+    get_time(1,2,overlap);
+    get_time(2,3,bit_to_float);
+    get_time(3,4,fft);
+    get_time(4,5,xmult);
+    get_time(5,6,fft);
+    get_time(8,9,downsample);
+    get_time(9,10,transfer_to_host);
+    get_time(12,13,fold_mem);
+    get_time(13,14,fold_blocks);
+    get_time(14,15,fold_combine);
+    get_time(15,16,transfer_to_host);
+
+    // Only one of these two will succeed
+    get_time(0,10,total);
+    get_time(0,16,total);
+}
+
 /* Actually do the dedispersion */
-/* TODO: add benchmarking info */
 extern "C"
 void dedisperse(struct dedispersion_setup *s, int ichan,
         const unsigned char *in, float *out) {
@@ -323,122 +368,44 @@ void dedisperse(struct dedispersion_setup *s, int ichan,
     const size_t bytes_in = bytes_per_sample * s->npts_per_block;
     const size_t npts_tot = s->fft_len*s->nfft_per_block;
 
-    /* Benchmarking stuff 
-     * Do we want to create these each time?
-     */
-#define NT 12
-    cudaEvent_t t[NT];
-    int it;
-    for (it=0; it<NT; it++) cudaEventCreate(&t[it]);
-    it=0;
-
     /* copy input data to transfer buffer */
     memcpy(s->tbuf_host, in, bytes_in);
 
-    cudaEventRecord(t[it], 0); it++;
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[0]); // Start
 
     /* Copy data to GPU */
     cudaMemcpy(s->tbuf_gpu, s->tbuf_host, bytes_in, cudaMemcpyHostToDevice);
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[1]); // Finish HtoD
 
     /* Expand overlap */
     expand_overlap(s);
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[2]); // Finish overlap
 
     /* Convert to floating point */
     byte_to_float_2pol_complex<<<16,128>>>((unsigned short *)s->overlap_gpu, 
             s->databuf0_gpu, s->databuf1_gpu, npts_tot);
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[3]); // Finish covert
 
     /* Forward FFT */
     fft_rv = cufftExecC2C(s->plan, s->databuf0_gpu, s->databuf0_gpu, 
             CUFFT_FORWARD);
-    cudaEventRecord(t[it], 0); it++;
-    //printf("fft1 = %d\n", fft_rv);
+    cudaEventRecord(s->time.t[4]); // Finish FFT
 
     /* Multiply by chirp */
     dim3 gd(2*s->nfft_per_block, s->fft_len/4096, 1);
     //dim3 gd(2*s->nfft_per_block, 1, 1);
     vector_multiply_complex<<<gd,64>>>(s->databuf0_gpu,
             s->chirp_gpu[ichan], s->fft_len);
-    cudaEventRecord(t[it], 0); it++;
+    cudaEventRecord(s->time.t[5]); // Finish xmult
 
     /* Inverse FFT */
     fft_rv = cufftExecC2C(s->plan, s->databuf0_gpu, s->databuf0_gpu, 
             CUFFT_INVERSE);
-    cudaEventRecord(t[it], 0); it++;
-    //printf("fft2 = %d\n", fft_rv);
-
-#define DETECT_AND_TRANSFER 0
-#if DETECT_AND_TRANSFER
-    /* Detect */
-    detect_4pol<<<32,64>>>(s->databuf0_gpu, s->databuf1_gpu, npts_tot);
-    cudaEventRecord(t[it], 0); it++;
-
-    /* Re-quantize to 8 bit?? */
-     
-    /* Transfer data back, removing non-valid (overlapped) FFT edges */
-    transfer_collapse_overlap(s);
-    cudaEventRecord(t[it], 0); it++;
-#endif
-
-    cudaEventRecord(t[it], 0);
-    cudaEventSynchronize(t[it]);
-
-    /* Compute timers */
-    float ttmp;
-    it=1;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.transfer_to_gpu += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.overlap += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.bit_to_float += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.fft += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.xmult += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.fft += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-#if DETECT_AND_TRANSFER
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.detect += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-
-    cudaEventElapsedTime(&ttmp, t[it], t[it+1]);
-    s->time.transfer_to_host += ttmp;
-    s->time.total2 += ttmp;
-    it++;
-#endif
-
-    cudaEventElapsedTime(&ttmp, t[0], t[it+1]);
-    s->time.total += ttmp;
+    cudaEventRecord(s->time.t[6]); // Finish IFFT
 
     int nvalid = s->nfft_per_block*(s->fft_len-s->overlap);
     s->time.nsamp_tot += nvalid;
 
-    for (it=0; it<NT; it++) cudaEventDestroy(t[it]); 
 }
 
 /* Free any resources associated with dedispersion */
@@ -446,6 +413,8 @@ extern "C"
 void free_dedispersion(struct dedispersion_setup *s) {
 
     cudaThreadSynchronize(); // Need?
+
+    free_timers(&s->time);
 
     cudaFreeHost(s->tbuf_host);
     cudaFree(s->tbuf_gpu);
@@ -470,15 +439,11 @@ void print_timing_report(struct dedispersion_setup *s) {
             s->time.total/1e3, 1e6*s->time.total/(double)s->time.nsamp_tot);
     printf("Total2 time = %6.1f s (%.4f ns/samp)\n", 
             s->time.total2/1e3, 1e6*s->time.total2/(double)s->time.nsamp_tot);
-    //printf("  %f ns/sample\n", 1e6*s->time.total/(double)s->time.nsamp_tot);
     print_percent(transfer_to_gpu);
     print_percent(overlap);
     print_percent(bit_to_float);
     print_percent(fft);
     print_percent(xmult);
-#if DETECT_AND_TRANSFER
-    print_percent(detect);
-#endif
     print_percent(fold_mem);
     print_percent(fold_blocks);
     print_percent(fold_combine);
