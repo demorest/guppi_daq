@@ -33,7 +33,7 @@ void usage() {
 }
 
 /* Thread declarations */
-void *guppi_net_thread(void *_up);
+void *guppi_net_thread_codd(void *_up);
 void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
 void *guppi_null_thread(void *args);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
     /* Launch net thread */
     pthread_t net_thread_id;
-    rv = pthread_create(&net_thread_id, NULL, guppi_net_thread,
+    rv = pthread_create(&net_thread_id, NULL, guppi_net_thread_codd,
             (void *)&net_args);
     if (rv) { 
         fprintf(stderr, "Error creating net thread.\n");
