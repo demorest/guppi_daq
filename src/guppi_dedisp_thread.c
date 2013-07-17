@@ -375,6 +375,9 @@ void guppi_dedisp_thread(void *_args) {
                 /* call fold function */
                 fold(&ds, ichan, &fb);
 
+                /* Collect cuda timing info */
+                accumulate_timers(&ds.time);
+
 #if 0 
                 float nn = fb.count[ichan*fb.nbin];
                 printf("%d %e %e %e %e %d\n", ichan, 

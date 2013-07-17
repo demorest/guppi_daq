@@ -324,7 +324,8 @@ void free_timers(struct dedispersion_times *t) {
 
 /* Accumulate times into appropriate places */
 #define get_time(idx0,idx1,step) do { \
-    rv = cudaEventElapsedTime(&ttmp, t->t[idx0], t->t[idx1]); \
+    cudaEventElapsedTime(&ttmp, t->t[idx0], t->t[idx1]); \
+    rv = cudaGetLastError(); \
     if (rv==cudaSuccess) t->step += ttmp; \
 } while (0)
 void accumulate_timers(struct dedispersion_times *t) {
