@@ -109,7 +109,8 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    //rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[0], NULL, guppi_vdif_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
 }
 
@@ -345,7 +346,7 @@ int main(int argc, char *argv[]) {
 
                 // Clear out data bufs
                 guppi_databuf_clear(dbuf_net);
-                guppi_databuf_clear(dbuf_fold);
+                //guppi_databuf_clear(dbuf_fold);
 
                 // Do it
                 run = 1;
@@ -378,6 +379,7 @@ int main(int argc, char *argv[]) {
             run = 0;
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
+            guppi_databuf_clear(dbuf_net);
         } 
         
         else {
