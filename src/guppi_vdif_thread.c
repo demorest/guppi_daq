@@ -206,9 +206,13 @@ void *guppi_vdif_thread(void *_args) {
     struct vdif_stream stream[nstream];
     struct vdif_stream *cs; // Use for pointer to active stream each time
     for (i=0; i<nstream; i++) init_stream(&stream[i], 0);
-    // TODO don't hard-code these:
-    stream[0].thread_id = 0;
-    stream[1].thread_id = 896;
+    // old values
+    //stream[0].thread_id = 0;
+    //stream[1].thread_id = 896;
+    if (hgeti4(status_buf, "VDIFTIDA", &stream[0].thread_id)==0) 
+        stream[0].thread_id=2;
+    if (hgeti4(status_buf, "VDIFTIDB", &stream[1].thread_id)==0) 
+        stream[1].thread_id=3;
 
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
@@ -281,7 +285,8 @@ void *guppi_vdif_thread(void *_args) {
                 /* Unexpected packet size, ignore */
                 nbogus_total++;
                 nbogus_block++;
-                //printf("Bad pkt size\n");
+                printf("Bad pkt size (want=%d got=%d)\n",up.packet_size, 
+                        p.packet_size);
                 continue; 
             } else {
                 guppi_error("guppi_net_thread", 
@@ -303,7 +308,7 @@ void *guppi_vdif_thread(void *_args) {
             // Did not match any expected thread ids
             nbogus_total++;
             nbogus_block++;
-            //printf("Bad pkt stream (thread_id=%d)\n", thread_id);
+            printf("Bad pkt stream (thread_id=%d)\n", thread_id);
             continue;
         }
 
@@ -337,8 +342,8 @@ void *guppi_vdif_thread(void *_args) {
                 /* No going backwards */
                 char msg[256];
                 sprintf(msg, 
-                        "Received out-of-order packet (seq_num=%lld, diff=%lld)",
-                        cs->seq_num, seq_num_diff);
+                        "Received out-of-order packet (thread=%d, seq_num=%lld, diff=%lld)",
+                        cs->thread_id, cs->seq_num, seq_num_diff);
                 guppi_warn("guppi_net_thread", msg);
                 continue; 
             } 
