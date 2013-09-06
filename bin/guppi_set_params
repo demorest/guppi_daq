@@ -4,4 +4,4 @@ if test "${GUPPI_DIR}zz" = zz; then
 	exit 1
 fi
 echo "`date` `whoami`: `basename $0` $*" >> /tmp/guppi_set_params.log
-python2.7 $GUPPI_DIR/python/guppi_set_params.py $@
+python $GUPPI_DIR/python/guppi_set_params.py $@
