@@ -81,11 +81,13 @@ class guppi_status:
 
     def write(self):
         self.lock()
-        self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
+        #self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
+        self.stat_buf.write(self.hdr.tostring()) # pyfits 3.1
         self.unlock()
 
     def update(self, key, value, comment=None):
-        self.hdr.update(key, value, comment)
+        #self.hdr.update(key, value, comment)
+        self.hdr[key] = (value, comment) # for pyfits 3.1.2
 
     def show(self):
         for k, v in self.hdr.items():
