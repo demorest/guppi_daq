@@ -81,6 +81,10 @@ def sem_wait(*args):
   return _possem.sem_wait(*args)
 sem_wait = _possem.sem_wait
 
+def sem_trywait(*args):
+  return _possem.sem_trywait(*args)
+sem_trywait = _possem.sem_trywait
+
 def sem_close(*args):
   return _possem.sem_close(*args)
 sem_close = _possem.sem_close

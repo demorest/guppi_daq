@@ -3102,6 +3102,28 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_sem_trywait(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sem_t *arg1 = (sem_t *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  int result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:sem_trywait",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_sem_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "sem_trywait" "', argument " "1"" of type '" "sem_t *""'"); 
+  }
+  arg1 = (sem_t *)(argp1);
+  result = (int)sem_trywait(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_sem_close(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sem_t *arg1 = (sem_t *) 0 ;
@@ -3129,6 +3151,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"sem_open", _wrap_sem_open, METH_VARARGS, NULL},
 	 { (char *)"sem_post", _wrap_sem_post, METH_VARARGS, NULL},
 	 { (char *)"sem_wait", _wrap_sem_wait, METH_VARARGS, NULL},
+	 { (char *)"sem_trywait", _wrap_sem_trywait, METH_VARARGS, NULL},
 	 { (char *)"sem_close", _wrap_sem_close, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };

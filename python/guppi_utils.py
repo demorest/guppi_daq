@@ -49,12 +49,13 @@ GUPPI_STATUS_SEMID = "/guppi_status"
 
 class guppi_status:
 
-    def __init__(self):
+    def __init__(self,doread=True):
         self.stat_buf = shm.SharedMemoryHandle(GUPPI_STATUS_KEY)
         self.sem = possem.sem_open(GUPPI_STATUS_SEMID, possem.O_CREAT, 00644, 1)
         self.hdr = None
         self.gbtstat = None
-        self.read()
+        if doread:
+            self.read()
 
     def __getitem__(self, key):
         return self.hdr[key]
@@ -68,11 +69,19 @@ class guppi_status:
     def items(self):
         return self.hdr.items()
 
-    def lock(self):
-        return possem.sem_wait(self.sem)
+    def lock(self,block=True):
+        if block:
+            return possem.sem_wait(self.sem)
+        else:
+            return possem.sem_trywait(self.sem)
 
     def unlock(self):
         return possem.sem_post(self.sem)
+
+    def tryread(self):
+        if self.lock(block=False) < 0: return
+        self.hdr = header_from_string(self.stat_buf.read())
+        self.unlock()
 
     def read(self):
         self.lock()
