@@ -1,5 +1,5 @@
-OPT64 = /home/pulsar64
-CFLAGS = -O3 -Wall -fPIC -DFOLD_USE_INTRINSICS -I$(OPT64)/include \
+OPT64 = /opt/cbe-local/yuppi
+CFLAGS = -g -O3 -Wall -fPIC -DFOLD_USE_INTRINSICS -I$(OPT64)/include \
 	 -I/usr/include/cfitsio
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \
 	test_udp_recv test_psrfits test_psrfits_read fold_psrfits \
