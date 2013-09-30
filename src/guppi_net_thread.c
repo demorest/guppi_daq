@@ -259,7 +259,7 @@ void *guppi_net_thread(void *_args) {
 
         /* Check seq num diff */
         if (use_vdif_packets)
-            seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
+            seq_num = guppi_vdif_packet_seq_num(&p,stt_imjd,stt_smjd,vdif_packets_per_second);
         else
             seq_num = guppi_udp_packet_seq_num(&p);
         seq_num_diff = seq_num - last_seq_num;

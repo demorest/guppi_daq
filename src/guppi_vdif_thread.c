@@ -325,11 +325,21 @@ void *guppi_vdif_thread(void *_args) {
             memcpy(&p0, &p, sizeof(struct guppi_udp_packet));
             mjd_from_vdif(p0.data, vdif_packets_per_second, 
                     &stt_imjd, &stt_smjd, &stt_offs);
+            // Make start time the next integer second
+            stt_smjd++;
+            if (stt_smjd>=86400) { stt_imjd++; stt_smjd-=86400; }
+            stt_offs=0.0;
             first=0;
         }
 
+        /* Skip if we haven't reached start time yet */
+        if (getVDIFFrameMJD(p.data) < stt_imjd) { continue; }
+        if (getVDIFFrameSecond(p.data) < stt_smjd) { continue; }
+
         /* Check seq num diff */
-        cs->seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
+        //cs->seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
+        cs->seq_num = guppi_vdif_packet_seq_num(&p, stt_imjd, stt_smjd,
+                vdif_packets_per_second);
         seq_num_diff = cs->seq_num - cs->last_seq_num;
         if (seq_num_diff<=0 && cs->curblock>=0) { 
             if (seq_num_diff==0) {

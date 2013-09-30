@@ -131,15 +131,22 @@ unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
     return(change_endian64((unsigned long long *)(p->data)));
 }
 
+//unsigned long long guppi_vdif_packet_seq_num(const struct guppi_udp_packet *p,
+//        const struct guppi_udp_packet *p0, unsigned packets_per_sec) {
+//    /* Compute an equivalent seq num for vdif packets with respect to
+//     * a reference packet */
 unsigned long long guppi_vdif_packet_seq_num(const struct guppi_udp_packet *p,
-        const struct guppi_udp_packet *p0, unsigned packets_per_sec) {
+        int imjd0, int smjd0, unsigned packets_per_sec) {
     /* Compute an equivalent seq num for vdif packets with respect to
-     * a reference packet */
+     * a MJD start */
     const char *d = p->data;
-    const char *d0 = p0->data;
-    long long mjd_diff = getVDIFFrameMJD(d) - getVDIFFrameMJD(d0);
-    long long sec_diff = getVDIFFrameSecond(d) - getVDIFFrameSecond(d0);
-    long long num_diff = getVDIFFrameNumber(d) - getVDIFFrameNumber(d0);
+    //const char *d0 = p0->data;
+    //long long mjd_diff = getVDIFFrameMJD(d) - getVDIFFrameMJD(d0);
+    //long long sec_diff = getVDIFFrameSecond(d) - getVDIFFrameSecond(d0);
+    //long long num_diff = getVDIFFrameNumber(d) - getVDIFFrameNumber(d0);
+    long long mjd_diff = getVDIFFrameMJD(d) - imjd0;
+    long long sec_diff = getVDIFFrameSecond(d) - smjd0;
+    long long num_diff = getVDIFFrameNumber(d);
     long long seq = (mjd_diff*86400 + sec_diff)*packets_per_sec + num_diff;
     return seq;
 }
