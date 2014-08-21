@@ -80,6 +80,11 @@ int check_block_active(const struct vdif_stream *stream,
 void packet_data_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
         int index, int nstream, char *block_data) {
     long long block_idx = v->seq_num - v->curblock_seq_num;
+    /* NOTE, we will use bps=1 here even for 2-bit data, to avoid
+     * having to do any sub-byte data rearranging.  The relevant
+     * code (dspsr) will need to know that each byte contains 4
+     * samples from a single polarization.
+     */
     //const int bps = 2; // 8-bit complex data
     const int bps = 1; // 8-bit real data
     const int nbytes = p->packet_size - VDIF_HEADER_BYTES;
@@ -235,11 +240,17 @@ void *guppi_vdif_thread(void *_args) {
     }
     packets_per_block = block_size / nstream / packet_data_size;
 
+    /* Get number of bits */
+    int nbit;
+    if (hgeti4(status_buf, "NBITS", &nbit)==0) nbit=8;
+
     /* For VDIF, we need to calculate packets per second */
     int vdif_packets_per_second = 0;
     if (use_vdif_packets) {
         /* This assumes single-pol per VDIF thread */
-        vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 / packet_data_size;
+        //vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 / packet_data_size;
+        vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 
+            / (packet_data_size * 8 / nbit);
         printf("guppi_net_thread: VDIF packets per sec = %d\n",
                 vdif_packets_per_second);
     }
