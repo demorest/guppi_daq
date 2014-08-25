@@ -248,8 +248,8 @@ void *guppi_vdif_thread(void *_args) {
     int vdif_packets_per_second = 0;
     if (use_vdif_packets) {
         /* This assumes single-pol per VDIF thread */
-        //vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 / packet_data_size;
-        vdif_packets_per_second = pf.hdr.BW * 1e6 * 2 
+        //vdif_packets_per_second = fabs(pf.hdr.BW) * 1e6 * 2 / packet_data_size;
+        vdif_packets_per_second = fabs(pf.hdr.BW) * 1e6 * 2 
             / (packet_data_size * 8 / nbit);
         printf("guppi_net_thread: VDIF packets per sec = %d\n",
                 vdif_packets_per_second);
