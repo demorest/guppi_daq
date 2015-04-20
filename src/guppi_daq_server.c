@@ -37,6 +37,9 @@ void usage() {
            );
 }
 
+// Index of this instance, if multiple copies are running
+int daq_idx=0;
+
 /* Override "usual" SIGINT stuff */
 int srv_run=1;
 void srv_cc(int sig) { srv_run=0; run=0; }
@@ -61,7 +64,9 @@ int check_thread_exit(struct guppi_thread_args *args, int nthread) {
 void init_search_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]); // net
     guppi_thread_args_init(&args[1]); // disk
-    args[0].output_buffer = 1;
+    args[0].daq_idx = daq_idx;
+    args[1].daq_idx = daq_idx;
+    args[0].output_buffer = 10*daq_idx+1;
     args[1].input_buffer = args[0].output_buffer;
     *nthread = 2;
 }
@@ -70,9 +75,12 @@ void init_fold_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]); // net
     guppi_thread_args_init(&args[1]); // fold
     guppi_thread_args_init(&args[2]); // disk
-    args[0].output_buffer = 1;
+    args[0].daq_idx = daq_idx;
+    args[1].daq_idx = daq_idx;
+    args[2].daq_idx = daq_idx;
+    args[0].output_buffer = 10*daq_idx+1;
     args[1].input_buffer = args[0].output_buffer;
-    args[1].output_buffer = 2;
+    args[1].output_buffer = 10*daq_idx+2;
     args[2].input_buffer = args[1].output_buffer;
     *nthread = 3;
 }
@@ -80,14 +88,17 @@ void init_fold_mode(struct guppi_thread_args *args, int *nthread) {
 void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]); // net
     guppi_thread_args_init(&args[1]); // null
-    args[0].output_buffer = 1;
+    args[0].daq_idx = daq_idx;
+    args[1].daq_idx = daq_idx;
+    args[0].output_buffer = 10*daq_idx+1;
     args[1].input_buffer = args[0].output_buffer;
     *nthread = 2;
 }
 
 void init_vdif_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]);
-    args[0].output_buffer = 1;
+    args[0].daq_idx = daq_idx;
+    args[0].output_buffer = 10*daq_idx+1;
     *nthread = 1;
 }
 
@@ -132,16 +143,20 @@ void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
 int main(int argc, char *argv[]) {
 
     static struct option long_opts[] = {
-        {"help",   0, NULL, 'h'},
+        {"help", 0, NULL, 'h'},
+        {"idx",  1, NULL, 'i'},
         {0,0,0,0}
     };
     int opt, opti;
-    while ((opt=getopt_long(argc,argv,"h",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"hi:",long_opts,&opti))!=-1) {
         switch (opt) {
             default:
             case 'h':
                 usage();
                 exit(0);
+                break;
+            case 'i':
+                daq_idx = atoi(optarg);
                 break;
         }
     }
@@ -152,39 +167,42 @@ int main(int argc, char *argv[]) {
 
     errno = 0;
 
-    ierr = stat(GUPPI_DAQ_CONTROL, &daq_buf);
+    char guppi_daq_control[256];
+    sprintf(guppi_daq_control, "%s_%d", GUPPI_DAQ_CONTROL, daq_idx);
+
+    ierr = stat(guppi_daq_control, &daq_buf);
     if ( ierr == 0 ) /* FIFO exists.  Can we get rid of it? */
     {
 #if 0 
         /* Hope that the following does the sensible thing */
         /* for a FIFO.                                     */
-        ierr = unlink(GUPPI_DAQ_CONTROL);
+        ierr = unlink(guppi_daq_control);
         if ( ierr != 0)
         {
-            perror(GUPPI_DAQ_CONTROL);
+            perror(guppi_daq_control);
             exit(errno);
         }
 #endif
     }
     else if ( errno == EACCES ) /* Can't even get to the directory! */
     {
-        perror(GUPPI_DAQ_CONTROL);
+        perror(guppi_daq_control);
         exit(errno);
     }
     else
     {
 
-        ierr = mkfifo(GUPPI_DAQ_CONTROL, O_CREAT | O_NONBLOCK | O_RDWR );
+        ierr = mkfifo(guppi_daq_control, O_CREAT | O_NONBLOCK | O_RDWR );
         if ( ierr != 0 )
         {
-            perror(GUPPI_DAQ_CONTROL);
+            perror(guppi_daq_control);
             exit(errno);
         }
 
-        ierr = chmod(GUPPI_DAQ_CONTROL, 00666);
+        ierr = chmod(guppi_daq_control, 00666);
         if ( ierr != 0 )
         {
-            perror(GUPPI_DAQ_CONTROL);
+            perror(guppi_daq_control);
             exit(errno);
         }
 
@@ -194,7 +212,7 @@ int main(int argc, char *argv[]) {
 #define MAX_CMD_LEN 1024
     char cmd[MAX_CMD_LEN];
     int command_fifo;
-    command_fifo = open(GUPPI_DAQ_CONTROL, O_RDONLY | O_NONBLOCK);
+    command_fifo = open(guppi_daq_control, O_RDONLY | O_NONBLOCK);
     if (command_fifo<0) {
         fprintf(stderr, "guppi_daq_server: Error opening control fifo\n");
         perror("open");
@@ -204,18 +222,22 @@ int main(int argc, char *argv[]) {
     /* Attach to shared memory buffers */
     struct guppi_status stat;
     struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;
+    stat.idx = daq_idx;
     int rv = guppi_status_attach(&stat);
-    const int netbuf_id = 1;
+    const int netbuf_id = 10*daq_idx+1;
     // XXX we don't need a foldbuf at VLA...
-    //const int foldbuf_id = 2;
+    //const int foldbuf_id = 10*daq_idx+2;
     if (rv!=GUPPI_OK) {
         fprintf(stderr, "Error connecting to guppi_status\n");
         exit(1);
     }
     dbuf_net = guppi_databuf_attach(netbuf_id);
     if (dbuf_net==NULL) {
-        fprintf(stderr, "Error connecting to guppi_databuf\n");
-        exit(1);
+        dbuf_net = guppi_databuf_create(8,128*1024*1024,netbuf_id);
+        if (dbuf_net==NULL) {
+            fprintf(stderr, "Error creating guppi_databuf\n");
+            exit(1);
+        }
     }
     guppi_databuf_clear(dbuf_net);
     //dbuf_fold = guppi_databuf_attach(foldbuf_id);
@@ -289,7 +311,7 @@ int main(int argc, char *argv[]) {
         // condition.  Is there a better/recommended way to do this?
         if (pfd.revents==POLLHUP) { 
             close(command_fifo);
-            command_fifo = open(GUPPI_DAQ_CONTROL, O_RDONLY | O_NONBLOCK);
+            command_fifo = open(guppi_daq_control, O_RDONLY | O_NONBLOCK);
             if (command_fifo<0) {
                 fprintf(stderr, 
                         "guppi_daq_server: Error opening control fifo\n");
@@ -405,7 +427,7 @@ int main(int argc, char *argv[]) {
     fflush(stderr);
 
     /* remove FIFO */
-    ierr = unlink(GUPPI_DAQ_CONTROL);
+    ierr = unlink(guppi_daq_control);
 
     exit(0);
 }

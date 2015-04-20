@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <math.h>
 struct guppi_thread_args {
+    int daq_idx;
     int input_buffer;
     int output_buffer;
     int priority;

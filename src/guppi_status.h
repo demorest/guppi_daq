@@ -21,7 +21,9 @@
 
 /* Structure describes status memory area */
 struct guppi_status {
+    int idx;     /* Index of this status area (for multiple procs) */
     int shmid;   /* Shared memory segment id */
+    char semid[256]; /* Semaphore ID */
     sem_t *lock; /* POSIX semaphore descriptor for locking */
     char *buf;   /* Pointer to data area */
 };

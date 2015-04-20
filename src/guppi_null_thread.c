@@ -61,6 +61,7 @@ void guppi_null_thread(void *_args) {
 
     /* Attach to status shared mem area */
     struct guppi_status st;
+    st.idx = args->daq_idx;
     rv = guppi_status_attach(&st);
     if (rv!=GUPPI_OK) {
         guppi_error("guppi_null_thread", 

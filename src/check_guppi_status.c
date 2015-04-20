@@ -14,6 +14,7 @@ int main(int argc, char *argv[]) {
 
     int rv;
     struct guppi_status s;
+    s.idx = 0;
 
     rv = guppi_status_attach(&s);
     if (rv!=GUPPI_OK) {
