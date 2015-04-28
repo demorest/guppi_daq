@@ -1,6 +1,12 @@
+import sys
 from guppi_utils import guppi_status, guppi_databuf
 import curses, curses.wrapper
 import time
+
+try:
+    daqidx = int(sys.argv[1])
+except IndexError:
+    daqidx = 0
 
 def display_status(stdscr,stat,data):
     # Set non-blocking input
@@ -33,7 +39,8 @@ def display_status(stdscr,stat,data):
         onecol = False # Set True for one-column format
         col = 2
         curline = 0
-        stdscr.addstr(curline,col,"Current GUPPI status:", keycol);
+        stdscr.addstr(curline,col,"Current GUPPI status (idx=%d):" % daqidx, 
+            keycol);
         curline += 2
         flip=0
         for k,v in stat.hdr.items():
@@ -119,7 +126,7 @@ def display_status(stdscr,stat,data):
             c = stdscr.getch()
 
 # Connect to guppi status, data bufs
-g = guppi_status()
+g = guppi_status(idx=daqidx)
 d = guppi_databuf()
 
 # Wrapper calls the main func
