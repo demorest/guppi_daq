@@ -42,8 +42,8 @@ int daq_idx=0;
 
 /* Override "usual" SIGINT stuff */
 int srv_run=1;
-void srv_cc(int sig) { srv_run=0; run=0; }
-void srv_quit(int sig) { srv_run=0; }
+void srv_cc(int sig) { printf("guppi_daq_server: srv_cc\n"); fflush(stdout);srv_run=0; run=0; }
+void srv_quit(int sig) { printf("guppi_daq_server: srv_quit\n"); fflush(stdout); srv_run=0; }
 
 /* Thread declarations */
 void *guppi_net_thread(void *args);
