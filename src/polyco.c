@@ -361,7 +361,10 @@ int make_const_polyco(double freq, const struct hdrinfo *hdr,
     *pc = realloc(*pc, sizeof(struct polyco));
     sprintf((*pc)[0].psr, "CONST");
     (*pc)[0].mjd = hdr->start_day;
-    (*pc)[0].fmjd = hdr->start_sec/86400.0;
+    // NOTE, tempo always rounds reference MJD to exactly 1e-10 days, so
+    // we will do that here for consistency.
+    double fmjd = hdr->start_sec/86400.0;
+    (*pc)[0].fmjd = floor(fmjd*1e10)*1e-10;
     (*pc)[0].rphase = 0.0;
     (*pc)[0].f0 = freq;
     (*pc)[0].nsite = 0;
