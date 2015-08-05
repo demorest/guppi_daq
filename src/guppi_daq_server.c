@@ -50,6 +50,7 @@ void *guppi_net_thread(void *args);
 void *guppi_vdif_thread(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_psrfits_thread(void *args);
+void *guppi_rawdisk_thread(void *args);
 void *guppi_null_thread(void *args);
 
 /* Useful thread functions */

@@ -115,7 +115,7 @@ void packet_full_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
         int index, int nstream, char *block_data) {
 
     long long block_idx = v->seq_num - v->curblock_seq_num;
-    const int nbytes = p->packet_size
+    const int nbytes = p->packet_size;
 
     char *optr = block_data + block_idx*nbytes*nstream + index*nbytes;
     char *iptr = p->data;
@@ -264,7 +264,7 @@ void *guppi_vdif_thread(void *_args) {
         }
     }
     int block_size_rounded;
-    if (copy_full_data) {
+    if (copy_full_packet) {
         packets_per_block = block_size / nstream / up.packet_size;
         block_size_rounded = packets_per_block * nstream * up.packet_size;
     } else {
