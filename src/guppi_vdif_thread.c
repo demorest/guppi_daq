@@ -108,6 +108,27 @@ void packet_data_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
     v->last_seq_num = v->seq_num;
 }
 
+/* Copy the entire VDIF packet (including headers) into the data
+ * block.  Packets are interleaved by stream.
+ */
+void packet_full_copy(struct vdif_stream *v, struct guppi_udp_packet *p,
+        int index, int nstream, char *block_data) {
+
+    long long block_idx = v->seq_num - v->curblock_seq_num;
+    const int nbytes = p->packet_size
+
+    char *optr = block_data + block_idx*nbytes*nstream + index*nbytes;
+    char *iptr = p->data;
+    memcpy(optr, iptr, nbytes);
+
+    /* update counters */
+    v->ndropped_block += (v->seq_num - v->last_seq_num - 1);
+    v->ndropped_total += (v->seq_num - v->last_seq_num - 1);
+    v->npacket_total++;
+    v->npacket_block++;
+    v->last_seq_num = v->seq_num;
+}
+
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
  * be cancelled and restarted if any hardware params
@@ -206,6 +227,9 @@ void *guppi_vdif_thread(void *_args) {
         pthread_exit(NULL);
     }
 
+    /* Do we copy the packet headers (for raw VDIF writing)? */
+    unsigned copy_full_packet = 0; // TODO need a config setting for this
+
     /* Set up VDIF stream info */
     unsigned i;
     const unsigned nstream = 2;
@@ -222,7 +246,7 @@ void *guppi_vdif_thread(void *_args) {
 
     /* Figure out size of data in each packet, number of packets
      * per block, etc.
-     * TODO round down to an integer # of packets per block?
+     * Round down to an integer # of packets per block if necessary.
      */
     int block_size;
     struct guppi_udp_packet p, p0;
@@ -239,7 +263,22 @@ void *guppi_vdif_thread(void *_args) {
             hputi4(status_buf, "BLOCSIZE", block_size);
         }
     }
-    packets_per_block = block_size / nstream / packet_data_size;
+    int block_size_rounded;
+    if (copy_full_data) {
+        packets_per_block = block_size / nstream / up.packet_size;
+        block_size_rounded = packets_per_block * nstream * up.packet_size;
+    } else {
+        packets_per_block = block_size / nstream / packet_data_size;
+        block_size_rounded = packets_per_block * nstream * packet_data_size;
+    }
+    if (block_size_rounded != block_size) {
+        char msg[256];
+        sprintf(msg, "Rounding BLOCSIZE from %d to %d", block_size, 
+                block_size_rounded);
+        guppi_warn("guppi_net_thread", msg);
+        block_size = block_size_rounded;
+        hputi4(status_buf, "BLOCSIZE", block_size);
+    }
 
     /* Get number of bits */
     int nbit;
@@ -471,8 +510,13 @@ void *guppi_vdif_thread(void *_args) {
         /* Copy the packet data into the right place, interleaving 
          * streams.
          */
-        packet_data_copy(cs, &p, istream, nstream,
-                guppi_databuf_data(db, cs->curblock));
+        if (copy_full_packet) {
+            packet_full_copy(cs, &p, istream, nstream,
+                    guppi_databuf_data(db, cs->curblock));
+        } else {
+            packet_data_copy(cs, &p, istream, nstream,
+                    guppi_databuf_data(db, cs->curblock));
+        }
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();

@@ -102,6 +102,16 @@ void init_vdif_mode(struct guppi_thread_args *args, int *nthread) {
     *nthread = 1;
 }
 
+void init_raw_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]); // vdif
+    guppi_thread_args_init(&args[1]); // disk
+    args[0].daq_idx = daq_idx;
+    args[1].daq_idx = daq_idx;
+    args[0].output_buffer = 10*daq_idx+1;
+    args[1].input_buffer = args[0].output_buffer;
+    *nthread = 2;
+}
+
 void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
@@ -128,6 +138,12 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_vdif_mode(struct guppi_thread_args *args, pthread_t *ids) {
     int rv;
     rv = pthread_create(&ids[0], NULL, guppi_vdif_thread, (void*)&args[0]);
+}
+
+void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
+    int rv;
+    rv = pthread_create(&ids[0], NULL, guppi_vdif_thread, (void*)&args[0]);
+    rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
 }
 
 void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
@@ -387,6 +403,9 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "VDIF", 5)==0) {
                     init_vdif_mode(args, &nthread_cur);
                     start_vdif_mode(args, thread_id);
+                } else if (strncasecmp(obs_mode, "RAW", 5)==0) {
+                    init_raw_mode(args, &nthread_cur);
+                    start_raw_mode(args, thread_id);
                 } else {
                     printf("  unrecognized obs_mode!\n");
                 }
