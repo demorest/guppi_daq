@@ -107,6 +107,8 @@ void guppi_rawdisk_thread(void *_args) {
     int curblock=0;
     int block_count=0, blocks_per_file=128, filenum=0;
     int got_packet_0=0, first=1;
+    // Header modes: 0 = no headers; 1 = start of file; 2 = every block
+    int header_mode=2, write_header=1;
     char *ptr, *hend;
     signal(SIGINT,cc);
     while (run) {
@@ -140,6 +142,11 @@ void guppi_rawdisk_thread(void *_args) {
         if (got_packet_0==0 && packetidx==0 && gp.stt_valid==1) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
+            // Check what output format is
+            char raw_mode[8];
+            guppi_read_raw_mode(ptr, raw_mode);
+            if (strncmp(raw_mode,"VDIF",8)==0) { header_mode=0; }
+            if (strncmp(raw_mode,"VDIFHDR",8)==0) { header_mode=1; }
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
@@ -149,6 +156,8 @@ void guppi_rawdisk_thread(void *_args) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
             }
+            if (header_mode>0) { write_header=1; }
+            else { write_header=0; }
         }
         
         /* See if we need to open next file */
@@ -164,6 +173,8 @@ void guppi_rawdisk_thread(void *_args) {
                 pthread_exit(NULL);
             }
             block_count=0;
+            if (header_mode>0) { write_header=1; }
+            else { write_header=0; }
         }
 
         /* See how full databuf is */
@@ -178,9 +189,12 @@ void guppi_rawdisk_thread(void *_args) {
             guppi_status_unlock_safe(&st);
 
             /* Write header to file */
-            hend = ksearch(ptr, "END");
-            for (ptr=ptr; ptr<=hend; ptr+=80) {
-                fwrite(ptr, 80, 1, fraw);
+            if (write_header) {
+                hend = ksearch(ptr, "END");
+                for (ptr=ptr; ptr<=hend; ptr+=80) {
+                    fwrite(ptr, 80, 1, fraw);
+                }
+                if (header_mode==1) { write_header=0; }
             }
 
             /* Write data */

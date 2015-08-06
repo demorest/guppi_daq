@@ -228,7 +228,10 @@ void *guppi_vdif_thread(void *_args) {
     }
 
     /* Do we copy the packet headers (for raw VDIF writing)? */
-    unsigned copy_full_packet = 0; // TODO need a config setting for this
+    unsigned copy_full_packet = 0;
+    char raw_fmt[8];
+    guppi_read_raw_mode(status_buf, raw_fmt);
+    if (strncmp(raw_fmt,"VDIF",4)==0) { copy_full_packet=1; }
 
     /* Set up VDIF stream info */
     unsigned i;
