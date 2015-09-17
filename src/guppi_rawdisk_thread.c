@@ -105,7 +105,8 @@ void guppi_rawdisk_thread(void *_args) {
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
     int curblock=0;
-    int block_count=0, blocks_per_file=128, filenum=0;
+    //int block_count=0, blocks_per_file=128, filenum=0;
+    int block_count=0, blocks_per_file=0, filenum=0;
     int got_packet_0=0, first=1;
     // Header modes: 0 = no headers; 1 = start of file; 2 = every block
     int header_mode=2, write_header=1;
@@ -144,11 +145,14 @@ void guppi_rawdisk_thread(void *_args) {
             guppi_read_obs_params(ptr, &gp, &pf);
             // Check what output format is
             char raw_mode[8];
+            char fname_ext[8];
+            sprintf(fname_ext, "raw");
             guppi_read_raw_mode(ptr, raw_mode);
+            if (strncmp(raw_mode,"VDIF",4)==0) { sprintf(fname_ext,"vdif"); }
             if (strncmp(raw_mode,"VDIF",8)==0) { header_mode=0; }
             if (strncmp(raw_mode,"VDIFHDR",8)==0) { header_mode=1; }
             char fname[256];
-            sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
+            sprintf(fname, "%s.%4.4d.%s", pf.basefilename, filenum, fname_ext);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
             // TODO: check for file exist.
             fraw = fopen(fname, "w");
@@ -161,7 +165,7 @@ void guppi_rawdisk_thread(void *_args) {
         }
         
         /* See if we need to open next file */
-        if (block_count >= blocks_per_file) {
+        if ((blocks_per_file>0) && (block_count>=blocks_per_file)) {
             fclose(fraw);
             filenum++;
             char fname[256];
