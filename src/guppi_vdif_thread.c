@@ -258,12 +258,10 @@ void *guppi_vdif_thread(void *_args) {
     unsigned packets_per_block; 
     if (hgeti4(status_buf, "BLOCSIZE", &block_size)==0) {
             block_size = db->block_size;
-            hputi4(status_buf, "BLOCSIZE", block_size);
     } else {
         if (block_size > db->block_size) {
             guppi_error("guppi_net_thread", "BLOCSIZE > databuf block_size");
             block_size = db->block_size;
-            hputi4(status_buf, "BLOCSIZE", block_size);
         }
     }
     int block_size_rounded;
@@ -280,8 +278,12 @@ void *guppi_vdif_thread(void *_args) {
                 block_size_rounded);
         guppi_warn("guppi_net_thread", msg);
         block_size = block_size_rounded;
-        hputi4(status_buf, "BLOCSIZE", block_size);
     }
+    /* Fill final block size back into status area */
+    guppi_status_lock_safe(&st);
+    hputi4(st.buf, "BLOCSIZE", block_size);
+    hputi4(status_buf, "BLOCSIZE", block_size);
+    guppi_status_unlock_safe(&st);
 
     /* Get number of bits */
     int nbit;
