@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sched.h>
+#include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -419,12 +420,20 @@ void *guppi_vdif_thread(void *_args) {
         if ((cs->seq_num>=cs->nextblock_seq_num) || force_new_block) {
 
             /* Debug info */
-            printf("New Block(%2d):", cs->curblock);
-            printf("  istream=%d", istream);
-            printf("  seq_num=%lld", cs->seq_num);
-            printf("  npacket=%lld", cs->npacket_block);
-            printf("  ndrop=%lld", cs->ndropped_block);
-            printf("\n");
+            if (cs->ndropped_block) {
+                time_t logt;
+                struct tm *log_tmp;
+                char logtstr[64];
+                logt = time(NULL);
+                log_tmp = localtime(&logt);
+                strftime(logtstr, 64, "%F %T", log_tmp);
+                printf("%s New Block(%2d):", logtstr, cs->curblock);
+                printf("  istream=%d", istream);
+                printf("  seq_num=%lld", cs->seq_num);
+                printf("  npacket=%lld", cs->npacket_block);
+                printf("  ndrop=%lld", cs->ndropped_block);
+                printf("\n");
+            }
 
             if (cs->curblock>=0) { 
                 /* TODO: check if all streams are done with this yet */
