@@ -391,7 +391,8 @@ void *guppi_vdif_thread(void *_args) {
 
         /* Skip if we haven't reached start time yet */
         if (getVDIFFrameMJD(p.data) < stt_imjd) { continue; }
-        if (getVDIFFrameSecond(p.data) < stt_smjd) { continue; }
+        if ((getVDIFFrameMJD(p.data) == stt_imjd) 
+                && (getVDIFFrameSecond(p.data) < stt_smjd)) { continue; }
 
         /* Check seq num diff */
         //cs->seq_num = guppi_vdif_packet_seq_num(&p,&p0,vdif_packets_per_second);
