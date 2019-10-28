@@ -34,10 +34,10 @@ extern void guppi_read_subint_params(char *buf,
                                      struct guppi_params *g,
                                      struct psrfits *p);
 
-int safe_fclose(FILE *f) {
-    if (f==NULL) return 0;
+int safe_fclose(FILE **f) {
+    if ((*f)==NULL) return 0;
     sync();
-    return fclose(f);
+    return fclose(*f);
 }
 
 void guppi_rawdisk_thread(void *_args) {
@@ -100,7 +100,7 @@ void guppi_rawdisk_thread(void *_args) {
 
     /* Init output file */
     FILE *fraw = NULL;
-    pthread_cleanup_push((void *)safe_fclose, fraw);
+    pthread_cleanup_push((void *)safe_fclose, &fraw);
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0;
