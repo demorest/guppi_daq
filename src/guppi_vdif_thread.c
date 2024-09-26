@@ -75,6 +75,19 @@ int check_block_active(const struct vdif_stream *stream,
     return result;
 }
 
+/* return total amount of dropped data over streams */
+float drop_frac(const struct vdif_stream *stream0,
+        int nstream) {
+    long long npacket_total=0;
+    long long ndropped_total=0;
+    int i;
+    for (i=0; i<nstream; i++) {
+        npacket_total += stream0[i].npacket_total;
+        ndropped_total += stream0[i].ndropped_total;
+    }
+    return (float)ndropped_total / (float)npacket_total;
+}
+
 /* Copy the latest packet belonging to vdif stream into the data block
  * area.  This interleaves samples depending on index and nstream.
  */
@@ -461,6 +474,12 @@ void *guppi_vdif_thread(void *_args) {
                     cs->npacket_block ? 
                     (double)cs->ndropped_block/(double)cs->npacket_block 
                     : 0.0);
+            char stmp[32];
+            sprintf(stmp, "rcv: %d %d", 
+                    stream[0].npacket_total>0?1:0,
+                    stream[1].npacket_total>0?1:0
+                   );
+            hputs(st.buf, STATUS_KEY, stmp) ;
             guppi_status_unlock_safe(&st);
 #endif
 
