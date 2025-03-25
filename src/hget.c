@@ -181,7 +181,8 @@ int *ival;
     char val[VLENGTH+1];
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII to binary */
     if (value != NULL) {
@@ -241,7 +242,8 @@ short *ival;
     char val[VLENGTH+1];
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII to binary */
     if (value != NULL) {
@@ -298,7 +300,8 @@ float *rval;
     char val[VLENGTH+1];
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* translate value from ASCII to binary */
     if (value != NULL) {
@@ -344,7 +347,8 @@ double *dval;   /* Right ascension in degrees (returned) */
     char *value;
 
     /* Get value from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII colon-delimited string to binary */
     if (value != NULL) {
@@ -373,7 +377,8 @@ double *dval;   /* Right ascension in degrees (returned) */
     char *value;
 
     /* Get value from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII colon-delimited string to binary */
     if (value != NULL) {
@@ -436,7 +441,8 @@ double *dval;
     char val[VLENGTH+1];
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII to binary */
     if (value != NULL) {
@@ -485,7 +491,8 @@ int *ival;
     char val[VLENGTH+1];
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII to binary */
     if (value != NULL) {
@@ -530,7 +537,8 @@ double *dval;
     int mday[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Translate value from ASCII to binary */
     if (value != NULL) {
@@ -805,7 +813,8 @@ char *str;      /* String (returned) */
     int lval;
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     if (value != NULL) {
         lval = strlen (value);
@@ -840,7 +849,8 @@ int *ndec;      /* Number of decimal places in keyword value */
     int i, nchar;
 
     /* Get value and comment from header string */
-    value = hgetc (hstring,keyword);
+    char buf[80];
+    value = hgetc (hstring,keyword,buf);
 
     /* Find end of string and count backward to decimal point */
     *ndec = 0;
@@ -861,7 +871,7 @@ int *ndec;      /* Number of decimal places in keyword value */
 /* Extract character value for variable from FITS header string */
 
 char *
-hgetc (hstring,keyword0)
+hgetc (hstring,keyword0,cval)
 
 const char *hstring;    /* character string containing FITS header information
                    in the format <keyword>= <value> {/ <comment>} */
@@ -870,9 +880,10 @@ const char *keyword0;   /* character string containing the name of the keyword
                    line beginning with this string.  if "[n]" is present,
                    the n'th token in the value is returned.
                    (the first 8 characters must be unique) */
+char *cval;  /* space for return val, needs to be at least 80 chars */
 {
     //static char cval[80];
-    char cval[80];
+    //char cval[80];
     char *value;
     char cwhite[2];
     char squot[2], dquot[2], lbracket[2], rbracket[2], slash[2], comma[2];

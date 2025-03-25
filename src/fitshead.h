@@ -109,7 +109,8 @@ extern "C" {
 
     char* hgetc(                /* Return pointer to value for FITS keyword */
         const char* hstring,    /* FITS header string */
-        const char* keyword);   /* FITS keyword */
+        const char* keyword,    /* FITS keyword */
+        char* cval);            /* Memory for return value */
 
     char* ksearch(              /* Return pointer to keyword in FITS header */
         const char* hstring,    /* FITS header string */
