@@ -409,6 +409,7 @@ int main(int argc, char *argv[]) {
                     start_raw_mode(args, thread_id);
                 } else {
                     printf("  unrecognized obs_mode!\n");
+                    printf("%s", stat.buf);
                 }
 
             }
